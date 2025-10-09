@@ -1,26 +1,51 @@
-import { useState } from 'react';
-import { Search, Filter, Plus, Eye, Check, X, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Filter, Plus, Eye, Check, X, Clock, Calendar, User, AlertCircle } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { SurgeryRequest } from '../../types';
 
 export function SurgeryRequests() {
-  const { surgeryRequests, patients, users, updateSurgeryRequest } = useHospital();
+  const { surgeryRequests, patients, users, updateSurgeryRequest, otResources, otSlots } = useHospital();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState<SurgeryRequest | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalData, setApprovalData] = useState({
+    scheduledDate: '',
+    scheduledTime: '',
+    otRoomId: '',
+    notes: ''
+  });
+  const navigate = useNavigate();
 
-  // Filter surgery requests
+  // Filter surgery requests to only show those from doctors (specialists)
+  // and only show pending requests for OT coordinators
   const filteredRequests = surgeryRequests.filter(request => {
+    // Find the requesting user
+    const requestingUser = users.find(u => u.id === request.requestingDoctorId);
+    
+    // Only show requests from doctors or specialists
+    const isFromDoctor = requestingUser && (
+      requestingUser.role === 'doctor' || 
+      requestingUser.role === 'ophthalmologist' ||
+      requestingUser.role === 'radiologist'
+    );
+    
+    // Match search term
     const matchesSearch = 
       request.surgeryType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patients.find(p => p.id === request.patientId)?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patients.find(p => p.id === request.patientId)?.lastName.toLowerCase().includes(searchTerm.toLowerCase());
     
+    // Match status filter
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    // Only show pending requests for OT coordinators
+    const isPending = request.status === 'pending';
+    
+    return isFromDoctor && matchesSearch && matchesStatus && isPending;
   });
 
   const getStatusColor = (status: string) => {
@@ -54,14 +79,48 @@ export function SurgeryRequests() {
     }
   };
 
+  const handleScheduleRequest = (request: SurgeryRequest) => {
+    setSelectedRequest(request);
+    setShowApprovalModal(true);
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setApprovalData({
+      ...approvalData,
+      scheduledDate: tomorrow.toISOString().split('T')[0]
+    });
+  };
+
+  const handleConfirmSchedule = () => {
+    if (selectedRequest && approvalData.scheduledDate && approvalData.scheduledTime && approvalData.otRoomId) {
+      updateSurgeryRequest(selectedRequest.id, {
+        status: 'scheduled',
+        scheduledDate: approvalData.scheduledDate,
+        scheduledTime: approvalData.scheduledTime,
+        otRoomId: approvalData.otRoomId,
+        notes: approvalData.notes,
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Reset form and close modal
+      setApprovalData({
+        scheduledDate: '',
+        scheduledTime: '',
+        otRoomId: '',
+        notes: ''
+      });
+      setShowApprovalModal(false);
+      setSelectedRequest(null);
+    }
+  };
+
+  // Get available OT rooms
+  const otRooms = otResources.filter(resource => resource.type === 'ot-room');
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Surgery Requests</h1>
-        <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center">
-          <Plus className="w-4 h-4 mr-2" />
-          New Request
-        </button>
       </div>
 
       {/* Filters */}
@@ -153,6 +212,9 @@ export function SurgeryRequests() {
                         <div className="text-sm text-gray-900">
                           {doctor ? doctor.name : 'Unknown Doctor'}
                         </div>
+                        <div className="text-sm text-gray-500">
+                          {doctor ? doctor.role : ''}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(request.requestedDate).toLocaleDateString()}
@@ -175,8 +237,30 @@ export function SurgeryRequests() {
                         <button
                           onClick={() => handleReviewRequest(request)}
                           className="text-green-600 hover:text-green-900 mr-3"
+                          title="View Details"
                         >
                           <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleScheduleRequest(request)}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                          title="Schedule Surgery"
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={handleApproveRequest}
+                          className="text-yellow-600 hover:text-yellow-900 mr-3"
+                          title="Approve Request"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={handleRejectRequest}
+                          className="text-red-600 hover:text-red-900"
+                          title="Reject Request"
+                        >
+                          <X className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -205,86 +289,200 @@ export function SurgeryRequests() {
                   onClick={() => setSelectedRequest(null)}
                   className="text-gray-400 hover:text-gray-500"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               
-              <div className="space-y-6">
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Patient Information</h4>
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <p className="text-sm">
-                      <span className="font-medium">Name:</span> {
-                        patients.find(p => p.id === selectedRequest.patientId) ? 
+              <div className="mt-2 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Patient</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {patients.find(p => p.id === selectedRequest.patientId) ? 
                         `${patients.find(p => p.id === selectedRequest.patientId)?.firstName} ${patients.find(p => p.id === selectedRequest.patientId)?.lastName}` : 
-                        'Unknown Patient'
-                      }
-                    </p>
-                    <p className="text-sm mt-1">
-                      <span className="font-medium">Diagnosis:</span> {selectedRequest.diagnosis}
+                        'Unknown Patient'}
                     </p>
                   </div>
-                </div>
-                
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Surgery Details</h4>
-                  <div className="bg-gray-50 p-4 rounded-md space-y-2">
-                    <p className="text-sm"><span className="font-medium">Type:</span> {selectedRequest.surgeryType}</p>
-                    <p className="text-sm"><span className="font-medium">Urgency:</span> {selectedRequest.urgency}</p>
-                    <p className="text-sm"><span className="font-medium">Status:</span> 
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 ${getStatusColor(selectedRequest.status)}`}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Requesting Doctor</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {users.find(u => u.id === selectedRequest.requestingDoctorId)?.name || 'Unknown Doctor'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Surgery Type</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedRequest.surgeryType}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Urgency</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedRequest.urgency === 'emergency' ? 'bg-red-100 text-red-800' :
+                        selectedRequest.urgency === 'urgent' ? 'bg-orange-100 text-orange-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {selectedRequest.urgency.charAt(0).toUpperCase() + selectedRequest.urgency.slice(1)}
+                      </span>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Request Date</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {new Date(selectedRequest.requestedDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedRequest.status)}`}>
                         {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
                       </span>
                     </p>
-                    {selectedRequest.notes && (
-                      <p className="text-sm"><span className="font-medium">Notes:</span> {selectedRequest.notes}</p>
-                    )}
                   </div>
                 </div>
                 
-                {selectedRequest.preOpAssessment && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Diagnosis</label>
+                  <p className="mt-1 text-sm text-gray-900">{selectedRequest.diagnosis}</p>
+                </div>
+                
+                {selectedRequest.notes && (
                   <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-2">Pre-Op Assessment</h4>
-                    <div className="bg-gray-50 p-4 rounded-md space-y-2">
-                      <p className="text-sm"><span className="font-medium">ASA Classification:</span> {selectedRequest.preOpAssessment.asaClassification}</p>
-                      <p className="text-sm"><span className="font-medium">Anesthesia Plan:</span> {selectedRequest.preOpAssessment.anesthesiaPlan}</p>
-                      <p className="text-sm"><span className="font-medium">Fasting Status:</span> {selectedRequest.preOpAssessment.fastingStatus}</p>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700">Notes</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedRequest.notes}</p>
                   </div>
                 )}
-                
-                <div className="flex justify-end space-x-3 pt-4">
-                  {selectedRequest.status === 'pending' && (
-                    <>
-                      <button
-                        onClick={handleRejectRequest}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Reject
-                      </button>
-                      <button
-                        onClick={handleApproveRequest}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Approve
-                      </button>
-                    </>
-                  )}
-                  {selectedRequest.status === 'reviewed' && (
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center">
-                      <Clock className="w-4 h-4 mr-2" />
-                      Schedule Surgery
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setSelectedRequest(null)}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                  >
-                    Close
-                  </button>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setSelectedRequest(null)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => handleScheduleRequest(selectedRequest)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                >
+                  Schedule Surgery
+                </button>
+                <button
+                  onClick={handleApproveRequest}
+                  className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700"
+                >
+                  Approve Request
+                </button>
+                <button
+                  onClick={handleRejectRequest}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+                >
+                  Reject Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Surgery Modal */}
+      {showApprovalModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Schedule Surgery</h3>
+                <button
+                  onClick={() => setShowApprovalModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-800">Surgery Request</h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {selectedRequest.surgeryType} for {patients.find(p => p.id === selectedRequest.patientId) ? 
+                          `${patients.find(p => p.id === selectedRequest.patientId)?.firstName} ${patients.find(p => p.id === selectedRequest.patientId)?.lastName}` : 
+                          'Unknown Patient'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheduled Date
+                  </label>
+                  <input
+                    type="date"
+                    value={approvalData.scheduledDate}
+                    onChange={(e) => setApprovalData({...approvalData, scheduledDate: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Scheduled Time
+                  </label>
+                  <input
+                    type="time"
+                    value={approvalData.scheduledTime}
+                    onChange={(e) => setApprovalData({...approvalData, scheduledTime: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Operating Theatre
+                  </label>
+                  <select
+                    value={approvalData.otRoomId}
+                    onChange={(e) => setApprovalData({...approvalData, otRoomId: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="">Select an operating theatre</option>
+                    {otRooms.map(room => (
+                      <option key={room.id} value={room.id}>{room.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={approvalData.notes}
+                    onChange={(e) => setApprovalData({...approvalData, notes: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="Additional scheduling notes"
+                    rows={3}
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowApprovalModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmSchedule}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                  disabled={!approvalData.scheduledDate || !approvalData.scheduledTime || !approvalData.otRoomId}
+                >
+                  Confirm Schedule
+                </button>
               </div>
             </div>
           </div>

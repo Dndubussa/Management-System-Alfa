@@ -1,14 +1,28 @@
 import { useState } from 'react';
-import { Calendar, Clock, Users, Scissors, Plus, Filter } from 'lucide-react';
+import { Calendar, Clock, Users, Scissors, Plus, Filter, X } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { SurgeryRequest } from '../../types';
 
 export function OTSchedule() {
-  const { surgeryRequests, otSlots, otResources, patients, users } = useHospital();
+  const { surgeryRequests, otSlots, otResources, patients, users, addSurgeryRequest } = useHospital();
   const { user } = useAuth();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedRoom, setSelectedRoom] = useState('all');
+  const navigate = useNavigate();
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [newSurgery, setNewSurgery] = useState({
+    patientId: '',
+    requestingDoctorId: user?.id || '',
+    surgeryType: '',
+    urgency: 'routine' as 'emergency' | 'urgent' | 'routine',
+    requestedDate: new Date().toISOString(),
+    status: 'pending' as 'pending' | 'reviewed' | 'scheduled' | 'in-progress' | 'completed' | 'cancelled' | 'postponed',
+    diagnosis: '',
+    notes: ''
+  });
 
   // Get scheduled surgeries
   const scheduledSurgeries = surgeryRequests.filter(req => req.status === 'scheduled' && req.scheduledDate);
@@ -45,6 +59,27 @@ export function OTSchedule() {
   };
 
   const timeSlots = generateTimeSlots();
+
+  const handleScheduleSurgery = () => {
+    // Add the new surgery request
+    addSurgeryRequest({
+      ...newSurgery,
+      requestedDate: new Date().toISOString()
+    });
+    
+    // Reset form and close modal
+    setNewSurgery({
+      patientId: '',
+      requestingDoctorId: user?.id || '',
+      surgeryType: '',
+      urgency: 'routine',
+      requestedDate: new Date().toISOString(),
+      status: 'pending',
+      diagnosis: '',
+      notes: ''
+    });
+    setShowScheduleModal(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -96,12 +131,123 @@ export function OTSchedule() {
               Month
             </button>
           </div>
-          <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center">
+          <button 
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
+            onClick={() => setShowScheduleModal(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Surgery
           </button>
         </div>
       </div>
+
+      {/* Schedule Surgery Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Schedule New Surgery</h3>
+                <button
+                  onClick={() => setShowScheduleModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Patient
+                  </label>
+                  <select
+                    value={newSurgery.patientId}
+                    onChange={(e) => setNewSurgery({...newSurgery, patientId: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="">Select a patient</option>
+                    {patients.map(patient => (
+                      <option key={patient.id} value={patient.id}>
+                        {patient.firstName} {patient.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Surgery Type
+                  </label>
+                  <input
+                    type="text"
+                    value={newSurgery.surgeryType}
+                    onChange={(e) => setNewSurgery({...newSurgery, surgeryType: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="e.g., Appendectomy"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Diagnosis
+                  </label>
+                  <textarea
+                    value={newSurgery.diagnosis}
+                    onChange={(e) => setNewSurgery({...newSurgery, diagnosis: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="Enter diagnosis"
+                    rows={3}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Urgency
+                  </label>
+                  <select
+                    value={newSurgery.urgency}
+                    onChange={(e) => setNewSurgery({...newSurgery, urgency: e.target.value as any})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  >
+                    <option value="routine">Routine</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="emergency">Emergency</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={newSurgery.notes}
+                    onChange={(e) => setNewSurgery({...newSurgery, notes: e.target.value})}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    placeholder="Additional notes"
+                    rows={2}
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowScheduleModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleScheduleSurgery}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                >
+                  Schedule Surgery
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Calendar Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

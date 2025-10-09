@@ -26,10 +26,13 @@ export function LoginForm() {
           // Redirect to role-specific dashboard
           switch (user.role) {
             case 'receptionist':
-              navigate('/dashboard');
+              navigate('/'); // Receptionists go to the main dashboard route
               break;
             case 'doctor':
-              navigate('/dashboard');
+              navigate('/'); // Doctors go to the main dashboard route
+              break;
+            case 'ophthalmologist':
+              navigate('/'); // Ophthalmologists go to the main dashboard route
               break;
             case 'lab':
               navigate('/lab-orders');
@@ -47,7 +50,7 @@ export function LoginForm() {
               navigate('/ot-dashboard');
               break;
             default:
-              navigate('/dashboard');
+              navigate('/'); // Default to main dashboard route
           }
         }
       } else {
@@ -58,16 +61,7 @@ export function LoginForm() {
     }
   };
 
-  const demoUsers = [
-    { email: 'amina@alfaspecialized.co.tz', role: 'Receptionist (Mapokezi)' },
-    { email: 'hassan@alfaspecialized.co.tz', role: 'Doctor (Daktari)' },
-    { email: 'grace@alfaspecialized.co.tz', role: 'Lab Technician (Maabara)' },
-    { email: 'mohamed@alfaspecialized.co.tz', role: 'Pharmacist (Famasi)' },
-    { email: 'sarah@alfaspecialized.co.tz', role: 'Radiologist' },
-    { email: 'sarah.k@alfaspecialized.co.tz', role: 'Ophthalmologist' },
-    { email: 'admin@alfaspecialized.co.tz', role: 'System Administrator' },
-    { email: 'ot-coordinator@alfaspecialized.co.tz', role: 'OT Coordinator' }
-  ];
+  // Removed demo users and prefilled credentials
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -140,27 +134,7 @@ export function LoginForm() {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
 
-            <div className="mt-6">
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-3">Demo Login Credentials (Ufunguo wa Kuingia):</p>
-                <div className="grid gap-2 text-xs">
-                  {demoUsers.map((user, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => {
-                        setEmail(user.email);
-                        setPassword('password123');
-                      }}
-                      className="text-green-600 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded transition-colors"
-                    >
-                      {user.role}: {user.email}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Nywila (Password): password123</p>
-              </div>
-            </div>
+            {/* Demo credentials and prefill removed */}
           </div>
         </form>
       </div>

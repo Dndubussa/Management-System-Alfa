@@ -14,15 +14,8 @@ interface ValidationResult {
   issues: string[];
 }
 
-const demoUsers: DemoUser[] = [
-  { email: 'amina@alfaspecialized.co.tz', role: 'Receptionist (Mapokezi)' },
-  { email: 'hassan@alfaspecialized.co.tz', role: 'Doctor (Daktari)' },
-  { email: 'grace@alfaspecialized.co.tz', role: 'Lab Technician (Maabara)' },
-  { email: 'mohamed@alfaspecialized.co.tz', role: 'Pharmacist (Famasi)' },
-  { email: 'sarah@alfaspecialized.co.tz', role: 'Radiologist' },
-  { email: 'sarah.k@alfaspecialized.co.tz', role: 'Ophthalmologist' },
-  { email: 'admin@alfaspecialized.co.tz', role: 'System Administrator' }
-];
+// Demo user validation removed for production
+const demoUsers: DemoUser[] = [];
 
 export function UserValidation() {
   const { users } = useHospital();
@@ -64,7 +57,7 @@ export function UserValidation() {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">User Validation Report</h2>
-      <p className="text-gray-600 mb-6">Verifying that all demo users in the login form exist in the system</p>
+      <p className="text-gray-600 mb-6">User validation module</p>
       
       <div className="space-y-4">
         {validationResults.map((result, index) => (

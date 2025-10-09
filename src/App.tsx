@@ -166,7 +166,7 @@ function OphthalmologyEMRRoute() {
 
 function AppContent() {
   const { user } = useAuth();
-  const { generateBill } = useHospital();
+  const { generateBill, addNotification } = useHospital();
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -220,8 +220,21 @@ function AppContent() {
   };
 
   const handleSavePatient = () => {
+    // Determine if this was an edit or new registration based on whether selectedPatient exists
+    const isEdit = !!selectedPatient;
+    
     setShowPatientForm(false);
     setSelectedPatient(null);
+    
+    // Add notification for successful patient save
+    addNotification({
+      userIds: [user?.id || ''],
+      type: 'general',
+      title: 'Patient Saved',
+      message: `Patient information has been successfully ${isEdit ? 'updated' : 'registered'}.`,
+      isRead: false
+    });
+    
     navigate('/patients');
   };
 
@@ -317,6 +330,7 @@ function AppContent() {
             <Route path="/emr" element={<EMRDashboard onCreateRecord={handleCreateRecord} onViewRecord={handleViewRecord} />} />
             <Route path="/emr/new/:patientId" element={<NewEMRRecordRoute />} />
             <Route path="/ophthalmology-emr/:patientId?" element={<OphthalmologyEMRRoute />} />
+            <Route path="/imaging" element={<OphthalmologyImaging />} />
             <Route path="/lab-orders" element={<LabOrderList />} />
             <Route path="/results" element={<TestResults />} />
             <Route path="/prescriptions" element={<PrescriptionList />} />

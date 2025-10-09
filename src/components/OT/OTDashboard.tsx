@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { Calendar, Scissors, Users, Settings, FileBarChart, Bell, TrendingUp, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export function OTDashboard() {
-  const { surgeryRequests, otSlots, otResources, users } = useHospital();
+  const { surgeryRequests, otSlots, otResources, users, updateSurgeryRequest } = useHospital();
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('today');
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const navigate = useNavigate();
 
   // Filter surgery requests by status
   const pendingRequests = surgeryRequests.filter(req => req.status === 'pending');
@@ -21,8 +24,8 @@ export function OTDashboard() {
   const urgentSurgeries = surgeryRequests.filter(req => req.urgency === 'urgent');
   const routineSurgeries = surgeryRequests.filter(req => req.urgency === 'routine');
 
-  // Use the date from mock data for filtering
-  const dashboardDate = '2024-01-25';
+  // Use today's date for filtering
+  const dashboardDate = new Date().toISOString().slice(0, 10);
 
   // Get available OT rooms
   const availableOTRooms = otResources.filter(resource => 
@@ -49,6 +52,14 @@ export function OTDashboard() {
     availableOTRooms,
     availableSurgeons
   });
+
+  const handleReviewRequest = (request: any) => {
+    // For now, we'll just log the request
+    console.log('Reviewing request:', request);
+    // In a real implementation, you might want to navigate to a review page or open a modal
+    // For now, let's update the status to 'reviewed'
+    updateSurgeryRequest(request.id, { status: 'reviewed' });
+  };
 
   return (
     <div className="space-y-6">
@@ -188,7 +199,10 @@ export function OTDashboard() {
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Pending Surgery Requests</h2>
-              <button className="text-sm text-green-600 hover:text-green-800 font-medium">
+              <button 
+                className="text-sm text-green-600 hover:text-green-800 font-medium"
+                onClick={() => navigate('/surgery-requests')}
+              >
                 View All
               </button>
             </div>
@@ -228,10 +242,14 @@ export function OTDashboard() {
                         }`}>
                           {request.urgency.charAt(0).toUpperCase() + request.urgency.slice(1)}
                         </span>
-                        <button className="text-sm text-green-600 hover:text-green-800 font-medium">
+                        <button 
+                          className="text-sm text-green-600 hover:text-green-800 font-medium"
+                          onClick={() => handleReviewRequest(request)}
+                        >
                           Review Request
                         </button>
                       </div>
+
                     </div>
                   );
                 })}

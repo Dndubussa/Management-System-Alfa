@@ -1,0 +1,1454 @@
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import crypto from 'crypto';
+import { supabase } from './src/config/supabase.js';
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Serve static files from the React app build directory
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Helper function for Supabase queries
+const handleSupabaseResponse = (data, error, res) => {
+  if (error) {
+    console.error('Supabase error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+  return res.json(data);
+};
+
+// Password hashing utilities
+const hashPassword = (password) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+};
+
+const verifyPassword = (password, hashedPassword) => {
+  const [salt, hash] = hashedPassword.split(':');
+  const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return hash === verifyHash;
+};
+
+// API Routes
+
+// Authentication
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // 1) Authenticate against Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    if (authError || !authData?.user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const authUser = authData.user;
+
+    // 2) Fetch profile from public.users by email (preferred) or id
+    let profile = null;
+    let profileError = null;
+
+    const { data: byEmail, error: byEmailError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (!byEmailError && byEmail) {
+      profile = byEmail;
+    } else {
+      // If no profile by email, try by id
+      const { data: byId, error: byIdError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+      if (!byIdError && byId) {
+        profile = byId;
+      } else {
+        profileError = byEmailError || byIdError;
+      }
+    }
+
+    // 3) If no profile, create one using Auth user id and fallback metadata
+    if (!profile) {
+      const fallbackName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || email;
+      const defaultRole = 'doctor';
+      const defaultDepartment = 'General';
+
+      const { data: upserted, error: upsertError } = await supabase
+        .from('users')
+        .upsert({
+          id: authUser.id,
+          name: fallbackName,
+          email,
+          role: defaultRole,
+          department: defaultDepartment,
+        }, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (upsertError) {
+        return res.status(500).json({ error: upsertError.message || 'Failed to create user profile' });
+      }
+      profile = upserted;
+    }
+
+    // 4) Return combined user info
+    const responseUser = {
+      id: profile.id || authUser.id,
+      name: profile.name || authUser.user_metadata?.full_name || authUser.email,
+      email: profile.email || authUser.email,
+      role: profile.role || 'doctor',
+      department: profile.department || 'General',
+    };
+
+    return res.json({ success: true, user: responseUser, token: authData.session?.access_token || null });
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  // In a real application, you would invalidate the token
+  res.json({ success: true });
+});
+
+// Patients
+app.get('/api/patients', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/patients/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Patient not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/patients', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('patients')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/patients/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('patients')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Patient not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/patients/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('patients')
+      .delete()
+      .eq('id', req.params.id);
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data && data.length > 0) {
+      res.status(204).send();
+    } else {
+      res.status(404).json({ error: 'Patient not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Medical Records
+app.get('/api/medical-records', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/medical-records/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Medical record not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/medical-records', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/medical-records/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Medical record not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Prescriptions
+app.get('/api/prescriptions', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/prescriptions/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Prescription not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/prescriptions/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .update({ status })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Prescription not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Lab Orders
+app.get('/api/lab-orders', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('lab_orders')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/lab-orders/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('lab_orders')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Lab order not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/lab-orders/:id/status', async (req, res) => {
+  try {
+    const { status, results } = req.body;
+    const updateData = { status };
+    if (results) updateData.results = results;
+    if (status === 'completed') updateData.completed_at = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from('lab_orders')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Lab order not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Appointments
+app.get('/api/appointments', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/appointments/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Appointment not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/appointments', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('appointments')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/appointments/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { data, error } = await supabase
+      .from('appointments')
+      .update({ status })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Appointment not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Users
+app.get('/api/users', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', req.params.id);
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data && data.length > 0) {
+      res.status(204).send();
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Notifications
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/notifications/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Notification not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/notifications', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/notifications/:id/read', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    // For Supabase, we'll need to handle the is_read field differently
+    // This is a simplified implementation
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Notification not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Service Prices
+app.get('/api/service-prices', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_prices')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/service-prices/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_prices')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Service price not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/service-prices', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_prices')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/service-prices/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_prices')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Service price not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Bills
+app.get('/api/bills', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('bills')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/bills/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('bills')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Bill not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/bills', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('bills')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/bills/:id/status', async (req, res) => {
+  try {
+    const { status, paymentMethod } = req.body;
+    const updateData = { status };
+    if (paymentMethod) updateData.payment_method = paymentMethod;
+    if (status === 'paid') updateData.paid_at = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from('bills')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Bill not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Departments
+app.get('/api/departments', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/departments/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Department not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/departments', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/departments/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Department not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Referrals
+app.get('/api/referrals', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('referrals')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/referrals/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('referrals')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Referral not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/referrals', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('referrals')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/referrals/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { data, error } = await supabase
+      .from('referrals')
+      .update({ 
+        status, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Referral not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Insurance Claims
+app.get('/api/insurance-claims', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('insurance_claims')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/insurance-claims/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('insurance_claims')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Insurance claim not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/insurance-claims', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('insurance_claims')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/insurance-claims/:id/status', async (req, res) => {
+  try {
+    const { status, rejectionReason } = req.body;
+    const updateData = { status, rejection_reason: rejectionReason };
+    if (status === 'approved') updateData.approval_date = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from('insurance_claims')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Insurance claim not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Surgery Requests
+app.get('/api/surgery-requests', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('surgery_requests')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/surgery-requests/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('surgery_requests')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Surgery request not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/surgery-requests', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('surgery_requests')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/surgery-requests/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('surgery_requests')
+      .update({ 
+        ...req.body, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Surgery request not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// OT Slots
+app.get('/api/ot-slots', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_slots')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/ot-slots/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_slots')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'OT slot not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/ot-slots', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_slots')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/ot-slots/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_slots')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'OT slot not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// OT Resources
+app.get('/api/ot-resources', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_resources')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/ot-resources/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_resources')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'OT resource not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/ot-resources', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_resources')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/ot-resources/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_resources')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'OT resource not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// OT Checklists
+app.get('/api/ot-checklists', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_checklists')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/ot-checklists/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_checklists')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'OT checklist not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/ot-checklists', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_checklists')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/ot-checklists/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_checklists')
+      .update({ 
+        ...req.body, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'OT checklist not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Surgery Progress
+app.get('/api/surgery-progress', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('surgery_progress')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/surgery-progress/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('surgery_progress')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Surgery progress not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/surgery-progress', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('surgery_progress')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/surgery-progress/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('surgery_progress')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Surgery progress not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// OT Reports
+app.get('/api/ot-reports', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_reports')
+      .select('*');
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/ot-reports/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_reports')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'OT report not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/ot-reports', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_reports')
+      .insert([req.body])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/ot-reports/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ot_reports')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'OT report not found' });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// API health/info root
+app.get('/api', (req, res) => {
+  res.json({ status: 'ok', name: 'Alfa Hospital API', version: 1 });
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist/index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`API endpoints are available at http://localhost:${PORT}/api`);
+});
