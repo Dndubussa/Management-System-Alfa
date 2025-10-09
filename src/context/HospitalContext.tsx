@@ -421,8 +421,13 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     if (appointmentId) {
       const appointment = appointments.find(a => a.id === appointmentId);
       if (appointment) {
-        // Find the service price for consultation
-        const consultationPrice = servicePrices.find(sp => sp.category === 'consultation');
+        // Prefer explicit consultation service name if present, else fallback via category
+        const preferredNames = ['Consultation', 'Doctor Consultation', 'Medical Consultation'];
+        let consultationPrice = preferredNames
+          .map(n => findBestPriceByName(n, 'consultation'))
+          .find(Boolean) as ServicePrice | undefined;
+        if (!consultationPrice) consultationPrice = findBestPriceByName('consultation', 'consultation');
+        if (!consultationPrice) consultationPrice = servicePrices.find(sp => sp.category === 'consultation');
         if (consultationPrice) {
           const billItem: BillItem = {
             id: Date.now().toString() + '-1',
@@ -442,32 +447,31 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     if (recordId) {
       const record = medicalRecords.find(r => r.id === recordId);
       if (record) {
-        // Add prescriptions to bill
+        // Prescriptions -> try exact/fuzzy medication name in medication category
         const recordPrescriptions = prescriptions.filter(p => p.recordId === recordId);
         recordPrescriptions.forEach(prescription => {
-          // Find the service price for medications
-          const medicationPrice = servicePrices.find(sp => sp.category === 'medication');
-          if (medicationPrice) {
+          let matchedPrice = findBestPriceByName(prescription.medication, 'medication');
+          if (!matchedPrice) matchedPrice = findBestPriceByName(prescription.medication);
+          if (!matchedPrice) matchedPrice = servicePrices.find(sp => sp.category === 'medication');
+          if (matchedPrice) {
             const billItem: BillItem = {
               id: Date.now().toString() + '-' + prescription.id,
-              serviceId: medicationPrice.id,
-              serviceName: medicationPrice.serviceName,
-              category: medicationPrice.category,
-              unitPrice: medicationPrice.price,
-              quantity: 1, // This should be based on actual medication quantity
-              totalPrice: medicationPrice.price
+              serviceId: matchedPrice.id,
+              serviceName: matchedPrice.serviceName,
+              category: matchedPrice.category,
+              unitPrice: matchedPrice.price,
+              quantity: 1,
+              totalPrice: matchedPrice.price
             };
             newBill.items.push(billItem);
           }
         });
 
-        // Add lab orders to bill
+        // Lab orders -> fuzzy match testName within lab-test category
         const recordLabOrders = labOrders.filter(lo => lo.recordId === recordId);
         recordLabOrders.forEach(labOrder => {
-          // Find the service price for lab tests
-          const labTestPrice = servicePrices.find(sp => 
-            sp.category === 'lab-test' && sp.serviceName === labOrder.testName
-          );
+          let labTestPrice = findBestPriceByName(labOrder.testName, 'lab-test');
+          if (!labTestPrice) labTestPrice = findBestPriceByName(labOrder.testName);
           if (labTestPrice) {
             const billItem: BillItem = {
               id: Date.now().toString() + '-' + labOrder.id,
@@ -486,8 +490,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
     // Calculate totals
     newBill.subtotal = newBill.items.reduce((sum, item) => sum + item.totalPrice, 0);
-    newBill.tax = newBill.subtotal * 0.18; // 18% tax
-    newBill.total = newBill.subtotal + newBill.tax - newBill.discount;
+    newBill.tax = 0; // No tax applied
+    newBill.total = newBill.subtotal - newBill.discount;
 
     // Add the new bill to the bills array
     setBills(prev => [...prev, newBill]);
@@ -717,10 +721,10 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           };
           const updatedItems = [...bill.items, newItem];
           
-          // Recalculate totals
+          // Recalculate totals (no tax)
           const subtotal = updatedItems.reduce((sum, i) => sum + i.totalPrice, 0);
-          const tax = subtotal * 0.18; // 18% tax
-          const total = subtotal + tax - bill.discount;
+          const tax = 0;
+          const total = subtotal - bill.discount;
           
           return {
             ...bill,
@@ -967,6 +971,41 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       throw err;
     }
   };
+
+  // ---------- Price lookup helpers (fuzzy matching) ----------
+  function normalizeName(value: string): string {
+    return (value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ') // keep alnum, collapse others to space
+      .replace(/\s+/g, ' ') // collapse spaces
+      .trim();
+  }
+
+  function scoreMatch(a: string, b: string): number {
+    if (!a || !b) return 0;
+    if (a === b) return 100; // exact
+    if (a.includes(b) || b.includes(a)) return 80; // substring
+    // token overlap
+    const ta = new Set(a.split(' '));
+    const tb = new Set(b.split(' '));
+    let overlap = 0;
+    ta.forEach(t => { if (tb.has(t)) overlap++; });
+    if (overlap > 0) return 60 + Math.min(20, overlap * 5); // small boost per overlap
+    return 0;
+  }
+
+  function findBestPriceByName(name: string, category?: ServicePrice['category']): ServicePrice | undefined {
+    const normName = normalizeName(name);
+    const candidates = category ? servicePrices.filter(sp => sp.category === category) : servicePrices;
+    let best: { item: ServicePrice; score: number } | null = null;
+    for (const sp of candidates) {
+      const score = scoreMatch(normalizeName(sp.serviceName), normName);
+      if (!best || score > best.score) {
+        best = { item: sp, score };
+      }
+    }
+    return best && best.score >= 60 ? best.item : undefined; // require reasonable similarity
+  }
 
   return (
     <HospitalContext.Provider value={{

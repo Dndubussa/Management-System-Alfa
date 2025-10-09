@@ -132,7 +132,7 @@ export interface Bill {
   discount: number;
   total: number;
   status: 'pending' | 'paid' | 'cancelled';
-  paymentMethod?: string;
+  paymentMethod?: 'cash' | 'lipa_kwa_simu' | 'card' | 'insurance';
   createdAt: string;
   paidAt?: string;
 }
@@ -160,7 +160,7 @@ export interface AutobillingConfig {
   autoGenerateForMedicalRecords: boolean;
   autoGenerateForPrescriptions: boolean;
   autoGenerateForLabOrders: boolean;
-  defaultPaymentMethod: string;
+  defaultPaymentMethod: 'cash' | 'lipa_kwa_simu' | 'card' | 'insurance';
 }
 
 export interface QueueItem {
