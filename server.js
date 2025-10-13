@@ -23,6 +23,38 @@ const convertCamelToSnake = (obj) => {
   return converted;
 };
 
+// Enhanced error handling function
+const handleSupabaseResponse = (data, error, res) => {
+  if (error) {
+    console.error('Supabase error:', error);
+    res.status(500).json({ error: error.message, details: error });
+  } else {
+    res.json(data);
+  }
+};
+
+// Test Supabase connection on startup
+const testSupabaseConnection = async () => {
+  try {
+    console.log('🔍 Testing Supabase connection...');
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      console.error('❌ Supabase connection failed:', error.message);
+      return false;
+    }
+    
+    console.log('✅ Supabase connection successful');
+    return true;
+  } catch (err) {
+    console.error('❌ Supabase connection test failed:', err.message);
+    return false;
+  }
+};
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -31,13 +63,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Helper function for Supabase queries
-const handleSupabaseResponse = (data, error, res) => {
-  if (error) {
-    console.error('Supabase error:', error);
-    return res.status(500).json({ error: error.message });
-  }
-  return res.json(data);
-};
 
 // Password hashing utilities
 const hashPassword = (password) => {
@@ -1664,7 +1689,15 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
 
-app.listen(PORT, () => {
+// Start server with Supabase connection test
+app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`API endpoints are available at http://localhost:${PORT}/api`);
+  
+  // Test Supabase connection
+  const connectionOk = await testSupabaseConnection();
+  if (!connectionOk) {
+    console.log('⚠️  Warning: Supabase connection failed. Some features may not work.');
+    console.log('Please check your .env.local file and Supabase credentials.');
+  }
 });

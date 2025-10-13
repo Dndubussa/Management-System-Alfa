@@ -17,7 +17,11 @@
     "test:supabase:simple": "node src/scripts/simpleConnectionTest.js",
     "verify:supabase:config": "node src/scripts/finalVerification.js",
     "import:prices": "npx ts-node src/scripts/importPrices.ts",
-    "seed:icd10": "npx ts-node src/scripts/seedICD10.ts"
+    "seed:icd10": "npx ts-node src/scripts/seedICD10.ts",
+    "setup:env": "node setup-environment.js",
+    "test:connection": "node test-supabase-connection.js",
+    "validate:schema": "node validate-database-schema.js",
+    "fix:backend": "node fix-backend-issues.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
