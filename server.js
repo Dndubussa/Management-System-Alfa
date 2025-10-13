@@ -778,10 +778,34 @@ app.put('/api/notifications/:id/read', async (req, res) => {
 // Service Prices
 app.get('/api/service-prices', async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('service_prices')
-      .select('*');
-    handleSupabaseResponse(data, error, res);
+    // Get all services using pagination to overcome Supabase's 1000 row limit
+    let allServices = [];
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('service_prices')
+        .select('*')
+        .order('service_name')
+        .range(from, from + pageSize - 1);
+      
+      if (error) {
+        return handleSupabaseResponse(null, error, res);
+      }
+      
+      if (data && data.length > 0) {
+        allServices = allServices.concat(data);
+        from += pageSize;
+        hasMore = data.length === pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    console.log(`Retrieved ${allServices.length} services from database`);
+    res.json(allServices);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
