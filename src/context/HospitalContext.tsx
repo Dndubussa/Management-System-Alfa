@@ -120,7 +120,9 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         setLoading(true);
         setError(null);
         
-        // Load all data in parallel
+        // Load all data in parallel with individual error handling
+        console.log('Starting to load data from API...');
+        
         const [
           patientsData,
           medicalRecordsData,
@@ -138,22 +140,40 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           otSlotsData,
           otResourcesData
         ] = await Promise.all([
-          api.getPatients(),
-          api.getMedicalRecords(),
-          api.getPrescriptions(),
-          api.getLabOrders(),
-          api.getAppointments(),
-          api.getNotifications(),
-          api.getServicePrices(),
-          api.getBills(),
-          api.getDepartments(),
-          api.getReferrals(),
-          api.getUsers(),
-          api.getInsuranceClaims(),
-          api.getSurgeryRequests(),
-          api.getOTSlots(),
-          api.getOTResources()
+          api.getPatients().catch(err => { console.error('Error loading patients:', err); throw err; }),
+          api.getMedicalRecords().catch(err => { console.error('Error loading medical records:', err); throw err; }),
+          api.getPrescriptions().catch(err => { console.error('Error loading prescriptions:', err); throw err; }),
+          api.getLabOrders().catch(err => { console.error('Error loading lab orders:', err); throw err; }),
+          api.getAppointments().catch(err => { console.error('Error loading appointments:', err); throw err; }),
+          api.getNotifications().catch(err => { console.error('Error loading notifications:', err); throw err; }),
+          api.getServicePrices().catch(err => { console.error('Error loading service prices:', err); throw err; }),
+          api.getBills().catch(err => { console.error('Error loading bills:', err); throw err; }),
+          api.getDepartments().catch(err => { console.error('Error loading departments:', err); throw err; }),
+          api.getReferrals().catch(err => { console.error('Error loading referrals:', err); throw err; }),
+          api.getUsers().catch(err => { console.error('Error loading users:', err); throw err; }),
+          api.getInsuranceClaims().catch(err => { console.error('Error loading insurance claims:', err); throw err; }),
+          api.getSurgeryRequests().catch(err => { console.error('Error loading surgery requests:', err); throw err; }),
+          api.getOTSlots().catch(err => { console.error('Error loading OT slots:', err); throw err; }),
+          api.getOTResources().catch(err => { console.error('Error loading OT resources:', err); throw err; })
         ]);
+        
+        console.log('Data loaded successfully:', {
+          patients: patientsData.length,
+          medicalRecords: medicalRecordsData.length,
+          prescriptions: prescriptionsData.length,
+          labOrders: labOrdersData.length,
+          appointments: appointmentsData.length,
+          notifications: notificationsData.length,
+          servicePrices: servicePricesData.length,
+          bills: billsData.length,
+          departments: departmentsData.length,
+          referrals: referralsData.length,
+          users: usersData.length,
+          insuranceClaims: insuranceClaimsData.length,
+          surgeryRequests: surgeryRequestsData.length,
+          otSlots: otSlotsData.length,
+          otResources: otResourcesData.length
+        });
         
         setPatients(patientsData);
         setMedicalRecords(medicalRecordsData);
@@ -172,7 +192,12 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         setOTResources(otResourcesData);
       } catch (err) {
         console.error('Error loading data:', err);
-        setError('Failed to load data from server');
+        console.error('Error details:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack
+        });
+        setError(`Failed to load data from server: ${err.message}`);
       } finally {
         setLoading(false);
       }

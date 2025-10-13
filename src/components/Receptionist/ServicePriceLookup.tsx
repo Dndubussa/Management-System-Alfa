@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Download, Eye, Plus, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Download, Plus, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { ServicePrice, PriceLookupFilter } from '../../types';
 
 export function ServicePriceLookup() {
-  const { servicePrices } = useHospital();
+  const { servicePrices, loading, error } = useHospital();
+  
+  // Debug logging
+  console.log('ServicePriceLookup - servicePrices:', servicePrices);
+  console.log('ServicePriceLookup - loading:', loading);
+  console.log('ServicePriceLookup - error:', error);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [minPrice, setMinPrice] = useState('');
@@ -12,7 +17,6 @@ export function ServicePriceLookup() {
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'price'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedServices, setSelectedServices] = useState<ServicePrice[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
 
@@ -65,15 +69,6 @@ export function ServicePriceLookup() {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, minPrice, maxPrice, sortBy, sortOrder]);
 
-  const handleAddToEstimate = (service: ServicePrice) => {
-    if (!selectedServices.find(s => s.id === service.id)) {
-      setSelectedServices([...selectedServices, service]);
-    }
-  };
-
-  const handleRemoveFromEstimate = (serviceId: string) => {
-    setSelectedServices(selectedServices.filter(s => s.id !== serviceId));
-  };
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -84,17 +79,6 @@ export function ServicePriceLookup() {
     setSortOrder('asc');
   };
 
-  const handleSelectAll = () => {
-    if (selectedServices.length === paginatedServices.length) {
-      // Deselect all current page services
-      const currentPageIds = paginatedServices.map(s => s.id);
-      setSelectedServices(selectedServices.filter(s => !currentPageIds.includes(s.id)));
-    } else {
-      // Select all current page services
-      const newSelections = paginatedServices.filter(s => !selectedServices.find(selected => selected.id === s.id));
-      setSelectedServices([...selectedServices, ...newSelections]);
-    }
-  };
 
   const handleSort = (column: 'name' | 'category' | 'price') => {
     if (sortBy === column) {
@@ -124,6 +108,30 @@ export function ServicePriceLookup() {
     a.click();
     window.URL.revokeObjectURL(url);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h1 className="text-2xl font-bold text-gray-900">Service Price Lookup</h1>
+          <p className="text-gray-600 mt-1">Loading service prices...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h1 className="text-2xl font-bold text-gray-900">Service Price Lookup</h1>
+          <p className="text-red-600 mt-1">Error loading service prices: {error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -173,8 +181,6 @@ export function ServicePriceLookup() {
           {/* Quick Stats */}
           <div className="flex items-center space-x-4 text-sm text-gray-600">
             <span>{filteredServices.length} services found</span>
-            <span>•</span>
-            <span>{selectedServices.length} selected</span>
           </div>
         </div>
 
@@ -255,27 +261,6 @@ export function ServicePriceLookup() {
         )}
       </div>
 
-      {/* Selected Services Summary */}
-      {selectedServices.length > 0 && (
-        <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900">
-                Selected Services ({selectedServices.length})
-              </h3>
-              <p className="text-blue-700">
-                Total: TZS {selectedServices.reduce((sum, service) => sum + service.price, 0).toLocaleString()}
-              </p>
-            </div>
-            <button
-              onClick={() => setSelectedServices([])}
-              className="text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              Clear All
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Services Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -284,23 +269,15 @@ export function ServicePriceLookup() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={paginatedServices.length > 0 && selectedServices.filter(s => paginatedServices.some(p => p.id === s.id)).length === paginatedServices.length}
-                      onChange={handleSelectAll}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <button
-                      onClick={() => handleSort('name')}
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                    >
-                      <span>Service Name</span>
-                      {sortBy === 'name' && (
-                        sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleSort('name')}
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                  >
+                    <span>Service Name</span>
+                    {sortBy === 'name' && (
+                      sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button
@@ -327,27 +304,14 @@ export function ServicePriceLookup() {
                     )}
                   </button>
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedServices.map((service) => {
-                const isSelected = selectedServices.find(s => s.id === service.id) !== undefined;
-                return (
-                  <tr key={service.id} className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+              {paginatedServices.map((service) => (
+                  <tr key={service.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => isSelected ? handleRemoveFromEstimate(service.id) : handleAddToEstimate(service)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <div className="text-sm font-medium text-gray-900">
-                          {service.serviceName}
-                        </div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {service.serviceName}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -365,15 +329,8 @@ export function ServicePriceLookup() {
                         {service.price.toLocaleString()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                        <Eye className="w-3 h-3 mr-1" />
-                        View
-                      </button>
-                    </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </div>
