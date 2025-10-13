@@ -727,3 +727,62 @@ interface OTReport {
   }[];
   createdAt: string;
 }
+
+// Service Estimates API functions
+export const estimatesApi = {
+  getEstimates: async (): Promise<ServiceEstimate[]> => {
+    const rows = await apiRequest<any[]>('/estimates');
+    return rows.map(mapEstimateFromDb);
+  },
+
+  getEstimate: async (id: string): Promise<ServiceEstimate> => {
+    const row = await apiRequest<any>(`/estimates/${id}`);
+    return mapEstimateFromDb(row);
+  },
+
+  createEstimate: async (estimate: Omit<ServiceEstimate, 'id' | 'estimateNumber' | 'createdAt' | 'updatedAt'>): Promise<ServiceEstimate> => {
+    const estimateData = toSnakeCaseKeys(estimate);
+    const row = await apiRequest<any>('/estimates', {
+      method: 'POST',
+      body: JSON.stringify(estimateData)
+    });
+    return mapEstimateFromDb(row);
+  },
+
+  updateEstimate: async (id: string, estimate: Partial<ServiceEstimate>): Promise<ServiceEstimate> => {
+    const estimateData = toSnakeCaseKeys(estimate);
+    const row = await apiRequest<any>(`/estimates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(estimateData)
+    });
+    return mapEstimateFromDb(row);
+  },
+
+  deleteEstimate: async (id: string): Promise<void> => {
+    await apiRequest(`/estimates/${id}`, {
+      method: 'DELETE'
+    });
+  }
+};
+
+// Helper function to map estimate from database format
+function mapEstimateFromDb(row: any): ServiceEstimate {
+  return {
+    id: row.id,
+    estimateNumber: row.estimate_number,
+    patientName: row.patient_name,
+    patientPhone: row.patient_phone,
+    patientEmail: row.patient_email,
+    services: row.services || [],
+    subtotal: parseFloat(row.subtotal) || 0,
+    discount: row.discount ? parseFloat(row.discount) : undefined,
+    discountReason: row.discount_reason,
+    total: parseFloat(row.total) || 0,
+    validUntil: row.valid_until,
+    status: row.status,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    notes: row.notes
+  };
+}

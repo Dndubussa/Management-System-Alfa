@@ -13,6 +13,7 @@ import {
   ChevronRight,
   ListOrdered,
   Eye,
+  Calculator,
   Camera,
   Shield,
   Scissors,
@@ -62,7 +63,7 @@ export function Sidebar({ onTabChange }: SidebarProps) {
           ...baseItems,
           { id: 'patients', label: 'Patients', icon: Users, path: '/patients' },
           { id: 'appointments', label: 'Appointments', icon: Calendar, path: '/appointments' },
-          // Remove queue management
+          { id: 'price-lookup', label: 'Price Lookup & Estimates', icon: Calculator, path: '/receptionist/price-lookup' },
           { id: 'receptionist', label: 'Insurance Claims', icon: FileText, path: '/receptionist' },
           { id: 'billing', label: 'Billing', icon: CreditCard, path: '/billing' },
         ];

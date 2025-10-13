@@ -34,6 +34,7 @@ import { ReportsDashboard } from './components/Reports/ReportsDashboard';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { ReceptionistDashboard } from './components/Receptionist/ReceptionistDashboard';
 import { InsuranceClaimDetails } from './components/Receptionist/InsuranceClaimDetails';
+import { PriceLookupAndEstimates } from './components/Receptionist/PriceLookupAndEstimates';
 import { DoctorAppointmentDashboard } from './components/Appointments/DoctorAppointmentDashboard';
 
 // OT Coordinator Components
@@ -390,6 +391,7 @@ function AppContent() {
             
             {/* Receptionist-specific Routes */}
             <Route path="/receptionist" element={<ReceptionistDashboard onViewBill={handleViewBill} onViewClaim={handleViewClaim} />} />
+            <Route path="/receptionist/price-lookup" element={<PriceLookupAndEstimates />} />
             <Route path="/insurance-claim/:claimId" element={<ClaimDetailRoute />} />
             
             {/* Admin-specific Routes */}

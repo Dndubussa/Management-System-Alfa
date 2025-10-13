@@ -1678,6 +1678,122 @@ app.get('/api/icd10/:code', async (req, res) => {
   }
 });
 
+// Service Estimates API endpoints
+app.get('/api/estimates', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_estimates')
+      .select('*')
+      .order('created_at', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/estimates/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_estimates')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/estimates', async (req, res) => {
+  try {
+    // Generate estimate number
+    const currentYear = new Date().getFullYear();
+    const { data: lastEstimate } = await supabase
+      .from('service_estimates')
+      .select('estimate_number')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    let nextNumber = 1;
+    if (lastEstimate && lastEstimate.estimate_number) {
+      const match = lastEstimate.estimate_number.match(/EST-(\d{4})-(\d+)/);
+      if (match && match[1] === currentYear.toString()) {
+        nextNumber = parseInt(match[2]) + 1;
+      }
+    }
+
+    const estimateNumber = `EST-${currentYear}-${nextNumber.toString().padStart(4, '0')}`;
+
+    // Convert camelCase to snake_case for database
+    const estimateData = {
+      estimate_number: estimateNumber,
+      patient_name: req.body.patientName || null,
+      patient_phone: req.body.patientPhone || null,
+      patient_email: req.body.patientEmail || null,
+      services: JSON.stringify(req.body.services || []),
+      subtotal: req.body.subtotal || 0,
+      discount: req.body.discount || 0,
+      discount_reason: req.body.discountReason || null,
+      total: req.body.total || 0,
+      valid_until: req.body.validUntil,
+      status: req.body.status || 'draft',
+      created_by: req.body.createdBy,
+      notes: req.body.notes || null
+    };
+
+    const { data, error } = await supabase
+      .from('service_estimates')
+      .insert([estimateData])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/estimates/:id', async (req, res) => {
+  try {
+    const updateData = {
+      patient_name: req.body.patientName,
+      patient_phone: req.body.patientPhone,
+      patient_email: req.body.patientEmail,
+      services: JSON.stringify(req.body.services),
+      subtotal: req.body.subtotal,
+      discount: req.body.discount,
+      discount_reason: req.body.discountReason,
+      total: req.body.total,
+      valid_until: req.body.validUntil,
+      status: req.body.status,
+      notes: req.body.notes,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('service_estimates')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/estimates/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_estimates')
+      .delete()
+      .eq('id', req.params.id);
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API health/info root
 app.get('/api', (req, res) => {
   res.json({ status: 'ok', name: 'Alfa Hospital API', version: 1 });

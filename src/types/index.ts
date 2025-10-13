@@ -555,3 +555,43 @@ export interface PerformanceAppraisal {
   submittedDate: string;
   reviewedDate?: string;
 }
+
+// Service Price Lookup & Estimate Generator interfaces
+export interface ServiceEstimate {
+  id: string;
+  estimateNumber: string; // EST-YYYY-NNNNN
+  patientName?: string; // For walk-in patients
+  patientPhone?: string;
+  patientEmail?: string;
+  services: EstimateService[];
+  subtotal: number;
+  discount?: number;
+  discountReason?: string;
+  total: number;
+  validUntil: string;
+  status: 'draft' | 'sent' | 'accepted' | 'expired' | 'converted';
+  createdBy: string; // Receptionist ID
+  createdAt: string;
+  updatedAt: string;
+  notes?: string;
+}
+
+export interface EstimateService {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  category: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  description?: string;
+}
+
+export interface PriceLookupFilter {
+  search?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: 'name' | 'category' | 'price';
+  sortOrder?: 'asc' | 'desc';
+}
