@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'receptionist' | 'doctor' | 'lab' | 'pharmacy' | 'radiologist' | 'ophthalmologist' | 'admin' | 'ot-coordinator';
+  role: 'receptionist' | 'doctor' | 'lab' | 'pharmacy' | 'radiologist' | 'ophthalmologist' | 'admin' | 'ot-coordinator' | 'insurance-officer' | 'cashier' | 'physical-therapist' | 'nurse' | 'hr';
   department: string;
 }
 
@@ -54,6 +54,45 @@ export interface MedicalRecord {
   prescriptions: Prescription[];
   labOrders: LabOrder[];
   status: 'active' | 'completed' | 'cancelled';
+}
+
+// Nurse domain models (frontend only until backend tables exist)
+export interface VitalSignEntry {
+  id: string;
+  patientId: string;
+  recordedBy: string; // nurse user id
+  recordedAt: string;
+  temperature?: string;
+  pulse?: string;
+  respiratoryRate?: string;
+  bloodPressure?: string;
+  height?: string;
+  weight?: string;
+  muac?: string; // for children
+  oxygenSaturation?: string;
+  painScore?: string;
+  urgency?: 'critical' | 'urgent' | 'normal';
+}
+
+export interface NursingNoteEntry {
+  id: string;
+  patientId: string;
+  authorId: string; // nurse user id
+  timestamp: string;
+  intervention: string;
+  response?: string;
+}
+
+export interface MedicationAdministrationEntry {
+  id: string;
+  prescriptionId: string;
+  patientId: string;
+  nurseId: string;
+  timeAdministered: string;
+  dose: string;
+  route: string; // oral, injection, IV, topical
+  initials: string;
+  remarks?: string;
 }
 
 export interface Prescription {
@@ -374,4 +413,145 @@ export interface OTReport {
     notes?: string;
   }[];
   createdAt: string;
+}
+
+// HR-specific interfaces
+export interface Staff {
+  id: string;
+  staffId: string; // ASH-STF-###
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  idNumber: string;
+  passportNumber?: string;
+  phone: string;
+  email: string;
+  address: string;
+  role: string;
+  department: string;
+  employmentType: 'permanent' | 'contract' | 'locum';
+  hireDate: string;
+  status: 'active' | 'inactive' | 'terminated' | 'on-leave';
+  supervisorId?: string;
+  salary?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StaffDocument {
+  id: string;
+  staffId: string;
+  documentType: 'cv' | 'certificate' | 'license' | 'contract' | 'id_copy' | 'other';
+  fileName: string;
+  fileUrl: string;
+  uploadedAt: string;
+  expiryDate?: string;
+}
+
+export interface Recruitment {
+  id: string;
+  position: string;
+  department: string;
+  employmentType: 'permanent' | 'contract' | 'locum';
+  requirements: string;
+  description: string;
+  status: 'open' | 'closed' | 'cancelled';
+  postedDate: string;
+  closingDate: string;
+  createdBy: string;
+}
+
+export interface JobApplication {
+  id: string;
+  recruitmentId: string;
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
+  cvUrl: string;
+  coverLetter?: string;
+  status: 'submitted' | 'shortlisted' | 'interviewed' | 'rejected' | 'hired';
+  appliedDate: string;
+  interviewDate?: string;
+  notes?: string;
+}
+
+export interface StaffLicense {
+  id: string;
+  staffId: string;
+  licenseType: string;
+  licenseNumber: string;
+  issuingAuthority: string;
+  issueDate: string;
+  expiryDate: string;
+  status: 'active' | 'expired' | 'renewed';
+  documentUrl?: string;
+}
+
+export interface Attendance {
+  id: string;
+  staffId: string;
+  date: string;
+  checkIn?: string;
+  checkOut?: string;
+  status: 'present' | 'absent' | 'late' | 'half-day' | 'on-leave';
+  hoursWorked?: number;
+  overtime?: number;
+  notes?: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  staffId: string;
+  leaveType: 'annual' | 'sick' | 'emergency' | 'maternity' | 'paternity' | 'study';
+  startDate: string;
+  endDate: string;
+  days: number;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedDate: string;
+  approvedBy?: string;
+  approvedDate?: string;
+  rejectionReason?: string;
+}
+
+export interface Training {
+  id: string;
+  title: string;
+  description: string;
+  type: 'internal' | 'external' | 'online';
+  provider: string;
+  startDate: string;
+  endDate: string;
+  duration: number; // in hours
+  maxParticipants: number;
+  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  createdBy: string;
+}
+
+export interface TrainingAttendance {
+  id: string;
+  trainingId: string;
+  staffId: string;
+  status: 'registered' | 'attended' | 'absent' | 'completed';
+  certificateUrl?: string;
+  score?: number;
+  feedback?: string;
+}
+
+export interface PerformanceAppraisal {
+  id: string;
+  staffId: string;
+  period: string; // e.g., "2024-Q1"
+  appraisalType: 'annual' | 'quarterly' | 'probation';
+  supervisorId: string;
+  selfRating: number;
+  supervisorRating: number;
+  peerRating?: number;
+  overallRating: number;
+  strengths: string;
+  areasForImprovement: string;
+  goals: string;
+  status: 'draft' | 'submitted' | 'reviewed' | 'approved';
+  submittedDate: string;
+  reviewedDate?: string;
 }

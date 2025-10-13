@@ -1,10 +1,11 @@
--- Supabase schema for Alfa Specialized Hospital Management System
+-- Supabase schema for Alfa Specialized Hospital Management System (Incremental Version)
+-- This version checks what exists and only adds what does not exist
 
 -- Enable necessary extensions
 create extension if not exists "uuid-ossp";
 
 -- Patients table
-create table patients (
+create table if not exists patients (
   id uuid default uuid_generate_v4() primary key,
   mrn text unique not null,
   first_name text not null,
@@ -23,13 +24,14 @@ create table patients (
 );
 
 -- Medical records table
-create table medical_records (
+create table if not exists medical_records (
   id uuid default uuid_generate_v4() primary key,
   patient_id uuid references patients(id) not null,
   doctor_id uuid not null,
   visit_date date not null,
   chief_complaint text not null,
   diagnosis text not null,
+  diagnosis_codes jsonb,
   treatment text not null,
   notes text not null,
   blood_pressure text not null,
@@ -43,7 +45,7 @@ create table medical_records (
 );
 
 -- Prescriptions table
-create table prescriptions (
+create table if not exists prescriptions (
   id uuid default uuid_generate_v4() primary key,
   record_id uuid references medical_records(id) not null,
   patient_id uuid references patients(id) not null,
@@ -58,7 +60,7 @@ create table prescriptions (
 );
 
 -- Lab orders table
-create table lab_orders (
+create table if not exists lab_orders (
   id uuid default uuid_generate_v4() primary key,
   record_id uuid references medical_records(id) not null,
   patient_id uuid references patients(id) not null,
@@ -72,7 +74,7 @@ create table lab_orders (
 );
 
 -- Appointments table
-create table appointments (
+create table if not exists appointments (
   id uuid default uuid_generate_v4() primary key,
   patient_id uuid references patients(id) not null,
   doctor_id uuid not null,
@@ -84,7 +86,7 @@ create table appointments (
 );
 
 -- Users table
-create table users (
+create table if not exists users (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
   email text unique not null,
@@ -93,7 +95,7 @@ create table users (
 );
 
 -- Notifications table
-create table notifications (
+create table if not exists notifications (
   id uuid default uuid_generate_v4() primary key,
   user_ids uuid[] not null,
   type text check (type in ('prescription', 'lab-order', 'appointment', 'general', 'queue', 'billing')) not null,
@@ -105,7 +107,7 @@ create table notifications (
 );
 
 -- Service prices table
-create table service_prices (
+create table if not exists service_prices (
   id uuid default uuid_generate_v4() primary key,
   category text check (category in ('consultation', 'lab-test', 'medication', 'procedure')) not null,
   service_name text not null,
@@ -114,7 +116,7 @@ create table service_prices (
 );
 
 -- Bills table
-create table bills (
+create table if not exists bills (
   id uuid default uuid_generate_v4() primary key,
   patient_id uuid references patients(id) not null,
   subtotal numeric not null,
@@ -128,7 +130,7 @@ create table bills (
 );
 
 -- Bill items table
-create table bill_items (
+create table if not exists bill_items (
   id uuid default uuid_generate_v4() primary key,
   bill_id uuid references bills(id) not null,
   service_id uuid not null,
@@ -140,7 +142,7 @@ create table bill_items (
 );
 
 -- Departments table
-create table departments (
+create table if not exists departments (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
   description text not null,
@@ -148,7 +150,7 @@ create table departments (
 );
 
 -- Referrals table
-create table referrals (
+create table if not exists referrals (
   id uuid default uuid_generate_v4() primary key,
   patient_id uuid references patients(id) not null,
   referring_doctor_id uuid not null,
@@ -161,7 +163,7 @@ create table referrals (
 );
 
 -- Insurance claims table
-create table insurance_claims (
+create table if not exists insurance_claims (
   id uuid default uuid_generate_v4() primary key,
   bill_id uuid references bills(id) not null,
   patient_id uuid references patients(id) not null,
@@ -178,7 +180,7 @@ create table insurance_claims (
 );
 
 -- Surgery requests table
-create table surgery_requests (
+create table if not exists surgery_requests (
   id uuid default uuid_generate_v4() primary key,
   patient_id uuid references patients(id) not null,
   requesting_doctor_id uuid not null,
@@ -191,10 +193,11 @@ create table surgery_requests (
   emr_summary text,
   lab_results text,
   radiology_results text,
-  asa_classification text,
-  anesthesia_plan text,
-  fasting_status text,
-  pre_op_medications text,
+  pre_op_assessment jsonb,
+  required_resources jsonb,
+  scheduled_date date,
+  scheduled_time time,
+  assigned_staff jsonb,
   ot_room_id uuid,
   consent_form_signed boolean,
   created_at timestamp with time zone default now(),
@@ -202,7 +205,7 @@ create table surgery_requests (
 );
 
 -- OT slots table
-create table ot_slots (
+create table if not exists ot_slots (
   id uuid default uuid_generate_v4() primary key,
   date date not null,
   start_time time not null,
@@ -214,7 +217,7 @@ create table ot_slots (
 );
 
 -- OT resources table
-create table ot_resources (
+create table if not exists ot_resources (
   id uuid default uuid_generate_v4() primary key,
   type text check (type in ('surgeon', 'anesthesiologist', 'nurse', 'ot-room', 'equipment', 'instrument')) not null,
   name text not null,
@@ -224,27 +227,17 @@ create table ot_resources (
 );
 
 -- OT checklists table
-create table ot_checklists (
+create table if not exists ot_checklists (
   id uuid default uuid_generate_v4() primary key,
   surgery_request_id uuid references surgery_requests(id) not null,
+  items jsonb,
   status text check (status in ('pending', 'in-progress', 'completed')) not null,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
 
--- OT checklist items table
-create table ot_checklist_items (
-  id uuid default uuid_generate_v4() primary key,
-  checklist_id uuid references ot_checklists(id) not null,
-  category text not null,
-  description text not null,
-  checked boolean not null,
-  checked_by uuid,
-  checked_at timestamp with time zone
-);
-
 -- Surgery progress table
-create table surgery_progress (
+create table if not exists surgery_progress (
   id uuid default uuid_generate_v4() primary key,
   surgery_request_id uuid references surgery_requests(id) not null,
   status text check (status in ('pre-op', 'in-progress', 'closed', 'post-op', 'completed')) not null,
@@ -254,29 +247,12 @@ create table surgery_progress (
 );
 
 -- OT reports table
-create table ot_reports (
+create table if not exists ot_reports (
   id uuid default uuid_generate_v4() primary key,
   date date not null,
   type text check (type in ('daily', 'weekly', 'monthly')) not null,
-  total_surgeries integer not null,
-  emergency_surgeries integer not null,
-  elective_surgeries integer not null,
-  cancelled_surgeries integer not null,
-  postponed_surgeries integer not null,
-  complications integer not null,
-  mortality integer not null,
+  metrics jsonb,
   created_at timestamp with time zone default now()
-);
-
--- OT report surgeries table
-create table ot_report_surgeries (
-  id uuid default uuid_generate_v4() primary key,
-  report_id uuid references ot_reports(id) not null,
-  surgery_request_id uuid references surgery_requests(id) not null,
-  surgery_type text not null,
-  status text check (status in ('completed', 'cancelled', 'postponed')) not null,
-  complications text,
-  notes text
 );
 
 -- Set up automatic updated_at updates
@@ -288,22 +264,36 @@ begin
 end;
 $$ language 'plpgsql';
 
-create trigger update_patients_updated_at before update
-    on patients for each row
-    execute procedure update_updated_at_column();
-
-create trigger update_medical_records_updated_at before update
-    on medical_records for each row
-    execute procedure update_updated_at_column();
-
-create trigger update_referrals_updated_at before update
-    on referrals for each row
-    execute procedure update_updated_at_column();
-
-create trigger update_surgery_requests_updated_at before update
-    on surgery_requests for each row
-    execute procedure update_updated_at_column();
-
-create trigger update_ot_checklists_updated_at before update
-    on ot_checklists for each row
-    execute procedure update_updated_at_column();
+-- Check if triggers exist before creating them
+do $$
+begin
+    if not exists (select 1 from pg_trigger where tgname = 'update_patients_updated_at') then
+        create trigger update_patients_updated_at before update
+            on patients for each row
+            execute procedure update_updated_at_column();
+    end if;
+    
+    if not exists (select 1 from pg_trigger where tgname = 'update_medical_records_updated_at') then
+        create trigger update_medical_records_updated_at before update
+            on medical_records for each row
+            execute procedure update_updated_at_column();
+    end if;
+    
+    if not exists (select 1 from pg_trigger where tgname = 'update_referrals_updated_at') then
+        create trigger update_referrals_updated_at before update
+            on referrals for each row
+            execute procedure update_updated_at_column();
+    end if;
+    
+    if not exists (select 1 from pg_trigger where tgname = 'update_surgery_requests_updated_at') then
+        create trigger update_surgery_requests_updated_at before update
+            on surgery_requests for each row
+            execute procedure update_updated_at_column();
+    end if;
+    
+    if not exists (select 1 from pg_trigger where tgname = 'update_ot_checklists_updated_at') then
+        create trigger update_ot_checklists_updated_at before update
+            on ot_checklists for each row
+            execute procedure update_updated_at_column();
+    end if;
+end $$;

@@ -19,35 +19,101 @@ interface ChronicPatient {
 }
 
 export function ChronicDiseaseDashboard() {
-  const { patients } = useHospital();
+  const { patients, medicalRecords } = useHospital();
   const [searchTerm, setSearchTerm] = useState('');
   const [conditionFilter, setConditionFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Mock chronic disease patients data
-  const chronicPatients: ChronicPatient[] = [
-    {
-      patient: patients[0],
-      condition: 'diabetes',
-      lastVisit: '2024-01-15',
-      nextVisit: '2024-02-15',
-      status: 'stable',
-      metrics: {
-        bloodSugar: '140 mg/dL',
-        hba1c: '6.8%'
-      }
-    },
-    {
-      patient: patients[1],
-      condition: 'hypertension',
-      lastVisit: '2024-01-10',
-      nextVisit: '2024-02-10',
-      status: 'warning',
-      metrics: {
-        bloodPressure: '150/95 mmHg'
-      }
-    }
-  ];
+  // Generate chronic disease patients from real medical records
+  const chronicPatients: ChronicPatient[] = React.useMemo(() => {
+    const chronicConditions = ['diabetes', 'hypertension', 'asthma', 'heart', 'copd', 'chronic', 'kidney'];
+    
+    return patients
+      .map(patient => {
+        const patientRecords = medicalRecords.filter(record => record.patientId === patient.id);
+        const chronicRecords = patientRecords.filter(record => 
+          chronicConditions.some(condition => 
+            record.diagnosis.toLowerCase().includes(condition)
+          )
+        );
+        
+        if (chronicRecords.length === 0) return null;
+        
+        const latestRecord = chronicRecords[chronicRecords.length - 1];
+        const condition = chronicConditions.find(c => 
+          latestRecord.diagnosis.toLowerCase().includes(c)
+        ) || 'chronic';
+        
+        // Determine status based on recent visits and metrics
+        const lastVisitDate = new Date(latestRecord.visitDate);
+        const daysSinceLastVisit = Math.floor((Date.now() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let status: 'stable' | 'warning' | 'critical' = 'stable';
+        
+        // Determine status based on days since last visit
+        if (daysSinceLastVisit > 180) {
+          status = 'critical';
+        } else if (daysSinceLastVisit > 90) {
+          status = 'warning';
+        }
+        
+        // Additional status determination based on condition and metrics
+        if (condition === 'diabetes') {
+          const notes = latestRecord.notes.toLowerCase();
+          const bloodSugarMatch = notes.match(/blood sugar[:\s]*(\d+)/i);
+          if (bloodSugarMatch) {
+            const bloodSugar = parseInt(bloodSugarMatch[1]);
+            if (bloodSugar > 200) status = 'critical';
+            else if (bloodSugar > 140) status = 'warning';
+          }
+        } else if (condition === 'hypertension') {
+          const bp = latestRecord.bloodPressure;
+          if (bp) {
+            const bpMatch = bp.match(/(\d+)\/(\d+)/);
+            if (bpMatch) {
+              const systolic = parseInt(bpMatch[1]);
+              const diastolic = parseInt(bpMatch[2]);
+              if (systolic > 180 || diastolic > 110) status = 'critical';
+              else if (systolic > 140 || diastolic > 90) status = 'warning';
+            }
+          }
+        }
+        
+        // Extract metrics from medical record vitals and notes
+        const metrics: any = {};
+        if (condition === 'diabetes') {
+          // Try to extract blood sugar and HbA1c from notes or use vitals
+          const notes = latestRecord.notes.toLowerCase();
+          const bloodSugarMatch = notes.match(/blood sugar[:\s]*(\d+)/i);
+          const hba1cMatch = notes.match(/hba1c[:\s]*(\d+\.?\d*)/i);
+          
+          metrics.bloodSugar = bloodSugarMatch ? `${bloodSugarMatch[1]} mg/dL` : 'Not recorded';
+          metrics.hba1c = hba1cMatch ? `${hba1cMatch[1]}%` : 'Not recorded';
+        } else if (condition === 'hypertension') {
+          metrics.bloodPressure = latestRecord.bloodPressure || 'Not recorded';
+        } else if (condition === 'asthma') {
+          // Try to extract peak flow from notes
+          const notes = latestRecord.notes.toLowerCase();
+          const peakFlowMatch = notes.match(/peak flow[:\s]*(\d+)/i);
+          metrics.peakFlow = peakFlowMatch ? `${peakFlowMatch[1]} L/min` : 'Not recorded';
+        } else if (condition === 'kidney') {
+          // Try to extract creatinine from notes
+          const notes = latestRecord.notes.toLowerCase();
+          const creatinineMatch = notes.match(/creatinine[:\s]*(\d+\.?\d*)/i);
+          metrics.creatinine = creatinineMatch ? `${creatinineMatch[1]} mg/dL` : 'Not recorded';
+        }
+        
+        return {
+          patient,
+          condition,
+          lastVisit: latestRecord.visitDate,
+          nextVisit: new Date(lastVisitDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from last visit
+          status,
+          metrics
+        };
+      })
+      .filter((item): item is ChronicPatient => item !== null);
+  }, [patients, medicalRecords]);
 
   const filteredPatients = chronicPatients.filter(item => {
     const matchesSearch = searchTerm === '' || 
@@ -113,7 +179,9 @@ export function ChronicDiseaseDashboard() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Diabetes Patients</p>
-              <p className="text-2xl font-semibold text-gray-900">24</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {chronicPatients.filter(p => p.condition === 'diabetes').length}
+              </p>
             </div>
           </div>
         </div>
@@ -125,7 +193,9 @@ export function ChronicDiseaseDashboard() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Hypertension Patients</p>
-              <p className="text-2xl font-semibold text-gray-900">32</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {chronicPatients.filter(p => p.condition === 'hypertension').length}
+              </p>
             </div>
           </div>
         </div>
@@ -137,7 +207,9 @@ export function ChronicDiseaseDashboard() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Asthma Patients</p>
-              <p className="text-2xl font-semibold text-gray-900">18</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {chronicPatients.filter(p => p.condition === 'asthma').length}
+              </p>
             </div>
           </div>
         </div>

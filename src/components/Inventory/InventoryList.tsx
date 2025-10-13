@@ -18,57 +18,8 @@ export function InventoryList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
 
-  // Mock inventory data
-  const [inventory] = useState<InventoryItem[]>([
-    {
-      id: '1',
-      name: 'Amoxicillin 500mg',
-      category: 'Antibiotics',
-      currentStock: 150,
-      minStock: 50,
-      maxStock: 500,
-      unit: 'tablets',
-      expiryDate: '2025-06-15',
-      supplier: 'PharmaCorp',
-      cost: 0.25
-    },
-    {
-      id: '2',
-      name: 'Ibuprofen 200mg',
-      category: 'Pain Relief',
-      currentStock: 25,
-      minStock: 100,
-      maxStock: 1000,
-      unit: 'tablets',
-      expiryDate: '2024-12-30',
-      supplier: 'MediSupply',
-      cost: 0.15
-    },
-    {
-      id: '3',
-      name: 'Insulin Pen',
-      category: 'Diabetes',
-      currentStock: 80,
-      minStock: 20,
-      maxStock: 200,
-      unit: 'units',
-      expiryDate: '2024-08-20',
-      supplier: 'DiabetesCare',
-      cost: 45.00
-    },
-    {
-      id: '4',
-      name: 'Blood Pressure Monitor',
-      category: 'Equipment',
-      currentStock: 5,
-      minStock: 3,
-      maxStock: 15,
-      unit: 'units',
-      expiryDate: '2026-01-01',
-      supplier: 'MedEquip',
-      cost: 120.00
-    }
-  ]);
+  // Inventory data - will be fetched from Supabase when table is implemented
+  const [inventory] = useState<InventoryItem[]>([]);
 
   const categories = ['All', 'Antibiotics', 'Pain Relief', 'Diabetes', 'Equipment'];
 
@@ -206,58 +157,75 @@ export function InventoryList() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredInventory.map((item) => {
-              const stockStatus = getStockStatus(item);
-              const StatusIcon = stockStatus.icon;
-              const expiringSoon = isExpiringSoon(item.expiryDate);
+            {filteredInventory.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center">
+                    <Package className="w-12 h-12 text-gray-300 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Inventory Management</h3>
+                    <p className="text-gray-500 mb-2">
+                      This feature requires the inventory table to be implemented in the database.
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      Once implemented, you'll be able to manage medical supplies, medications, and equipment inventory.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredInventory.map((item) => {
+                const stockStatus = getStockStatus(item);
+                const StatusIcon = stockStatus.icon;
+                const expiringSoon = isExpiringSoon(item.expiryDate);
 
-              return (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                      <div className="text-sm text-gray-500">{item.category}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <StatusIcon className="w-4 h-4 mr-2 text-gray-400" />
+                return (
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {item.currentStock} {item.unit}
-                        </div>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${stockStatus.color}`}>
-                          {stockStatus.status}
-                        </span>
+                        <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                        <div className="text-sm text-gray-500">{item.category}</div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div>Min: {item.minStock}</div>
-                    <div>Max: {item.maxStock}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`text-sm ${expiringSoon ? 'text-red-600 font-medium' : 'text-gray-900'}`}>
-                      {formatDate(item.expiryDate)}
-                    </div>
-                    {expiringSoon && (
-                      <div className="text-xs text-red-500">Expiring soon</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.supplier}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${item.cost.toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-green-600 hover:text-green-900 transition-colors">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <StatusIcon className="w-4 h-4 mr-2 text-gray-400" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {item.currentStock} {item.unit}
+                          </div>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${stockStatus.color}`}>
+                            {stockStatus.status}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div>Min: {item.minStock}</div>
+                      <div>Max: {item.maxStock}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className={`text-sm ${expiringSoon ? 'text-red-600 font-medium' : 'text-gray-900'}`}>
+                        {formatDate(item.expiryDate)}
+                      </div>
+                      {expiringSoon && (
+                        <div className="text-xs text-red-500">Expiring soon</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.supplier}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      ${item.cost.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button className="text-green-600 hover:text-green-900 transition-colors">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

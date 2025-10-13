@@ -14,6 +14,7 @@ import {
   Upload
 } from 'lucide-react';
 import { OphthalmologyRecord, VisualAcuity, Refraction, IntraocularPressure, OphthalmologyFinding } from '../../types';
+import { ICD10Selector } from '../ICD10/ICD10Selector';
 
 export function OphthalmologyEMRForm() {
   const { patientId } = useParams();
@@ -50,6 +51,7 @@ export function OphthalmologyEMRForm() {
   const [diagnosis, setDiagnosis] = useState('');
   const [treatment, setTreatment] = useState('');
   const [notes, setNotes] = useState('');
+  const [icd10Codes, setIcd10Codes] = useState<any[]>([]);
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [labOrders, setLabOrders] = useState<any[]>([]);
   const [octOrder, setOctOrder] = useState('');
@@ -78,7 +80,11 @@ export function OphthalmologyEMRForm() {
       visitDate: new Date().toISOString(),
       chiefComplaint,
       diagnosis,
-      diagnosisCodes: [],
+      diagnosisCodes: icd10Codes.map(code => ({
+        code: code.code,
+        description: code.description,
+        type: 'ICD-10' as const
+      })),
       treatment,
       notes,
       vitals: {
@@ -568,6 +574,18 @@ export function OphthalmologyEMRForm() {
           rows={3}
           placeholder="Enter primary diagnosis..."
         />
+        
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            ICD-10 Diagnosis Codes
+          </label>
+          <ICD10Selector
+            selectedCodes={icd10Codes}
+            onCodesChange={setIcd10Codes}
+            maxCodes={5}
+            className="w-full"
+          />
+        </div>
       </div>
 
       {/* Treatment Plan */}

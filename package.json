@@ -16,7 +16,8 @@
     "verify:schema": "node src/scripts/verifySupabaseSchema.js",
     "test:supabase:simple": "node src/scripts/simpleConnectionTest.js",
     "verify:supabase:config": "node src/scripts/finalVerification.js",
-    "import:prices": "npx ts-node src/scripts/importPrices.ts"
+    "import:prices": "npx ts-node src/scripts/importPrices.ts",
+    "seed:icd10": "npx ts-node src/scripts/seedICD10.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

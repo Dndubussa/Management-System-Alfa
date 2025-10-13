@@ -45,6 +45,48 @@ import { OTChecklists } from './components/OT/OTChecklists';
 import { OTPatientQueue } from './components/OT/OTPatientQueue';
 import { OTReports } from './components/OT/OTReports';
 
+// Insurance Officer Components
+import { InsuranceOfficerDashboard } from './components/Insurance/InsuranceOfficerDashboard';
+import { InsuranceProviders } from './components/Insurance/InsuranceProviders';
+import { InsuranceReports } from './components/Insurance/InsuranceReports';
+import { InsuranceVerification } from './components/Insurance/InsuranceVerification';
+import { ClaimSubmission } from './components/Insurance/ClaimSubmission';
+import { ClaimTracking } from './components/Insurance/ClaimTracking';
+
+// Cashier Components
+import { CashierDashboard } from './components/Cashier/CashierDashboard';
+import { InvoiceGeneration } from './components/Cashier/InvoiceGeneration';
+import { OutstandingBills } from './components/Cashier/OutstandingBills';
+import { InsuranceClaims } from './components/Cashier/InsuranceClaims';
+import { ReportsReconciliations } from './components/Cashier/ReportsReconciliations';
+
+// Physical Therapist Components
+import { PTDashboard } from './components/PhysicalTherapist/PTDashboard';
+import { PTAppointments } from './components/PhysicalTherapist/PTAppointments';
+import { PTAssessment } from './components/PhysicalTherapist/PTAssessment';
+import { PTTherapyPlans } from './components/PhysicalTherapist/PTTherapyPlans';
+import { PTEMR } from './components/PhysicalTherapist/PTEMR';
+import { PTReports } from './components/PhysicalTherapist/PTReports';
+
+// Nurse Components (to be created)
+import { NurseDashboard } from './components/Nurse/NurseDashboard';
+import { NurseTriageVitals } from './components/Nurse/NurseTriageVitals';
+import { NurseCareNotes } from './components/Nurse/NurseCareNotes';
+import { NurseMedicationAdmin } from './components/Nurse/NurseMedicationAdmin';
+import { NurseProcedures } from './components/Nurse/NurseProcedures';
+import { NurseInpatientCare } from './components/Nurse/NurseInpatientCare';
+import { NurseReports } from './components/Nurse/NurseReports';
+
+// HR Components
+import HRDashboard from './components/HR/HRDashboard';
+import StaffManagement from './components/HR/StaffManagement';
+import Recruitment from './components/HR/Recruitment';
+import LicensingCompliance from './components/HR/LicensingCompliance';
+import AttendanceScheduling from './components/HR/AttendanceScheduling';
+import TrainingDevelopment from './components/HR/TrainingDevelopment';
+import PerformanceAppraisal from './components/HR/PerformanceAppraisal';
+import HRReports from './components/HR/HRReports';
+
 // Custom hook to find bill by ID
 function useBill(billId: string | undefined) {
   const { bills } = useHospital();
@@ -362,6 +404,50 @@ function AppContent() {
             <Route path="/ot-patient-queue" element={<OTPatientQueue />} />
             <Route path="/ot-reports" element={<OTReports />} />
             
+            {/* Insurance Officer Routes */}
+            <Route path="/insurance-dashboard" element={<InsuranceOfficerDashboard />} />
+            <Route path="/insurance-claims" element={<InsuranceOfficerDashboard />} />
+            <Route path="/insurance-reports" element={<InsuranceReports />} />
+            <Route path="/insurance-providers" element={<InsuranceProviders />} />
+            <Route path="/insurance-verification" element={<InsuranceVerification />} />
+            <Route path="/insurance-submission" element={<ClaimSubmission />} />
+            <Route path="/insurance-tracking" element={<ClaimTracking />} />
+            
+            {/* Cashier Routes */}
+            <Route path="/cashier-dashboard" element={<CashierDashboard />} />
+            <Route path="/cashier-bills" element={<CashierDashboard />} />
+            <Route path="/cashier-invoices" element={<InvoiceGeneration />} />
+            <Route path="/cashier-outstanding" element={<OutstandingBills />} />
+            <Route path="/cashier-insurance" element={<InsuranceClaims />} />
+            <Route path="/cashier-reports" element={<ReportsReconciliations />} />
+            
+            {/* Physical Therapist Routes */}
+            <Route path="/pt-dashboard" element={<PTDashboard />} />
+            <Route path="/pt-appointments" element={<PTAppointments />} />
+            <Route path="/pt-assessment" element={<PTAssessment />} />
+            <Route path="/pt-plans" element={<PTTherapyPlans />} />
+            <Route path="/pt-emr" element={<PTEMR />} />
+            <Route path="/pt-reports" element={<PTReports />} />
+            
+            {/* Nurse Routes */}
+            <Route path="/nurse-dashboard" element={<NurseDashboard />} />
+            <Route path="/nurse-triage" element={<NurseTriageVitals />} />
+            <Route path="/nurse-notes" element={<NurseCareNotes />} />
+            <Route path="/nurse-mar" element={<NurseMedicationAdmin />} />
+            <Route path="/nurse-procedures" element={<NurseProcedures />} />
+            <Route path="/nurse-inpatient" element={<NurseInpatientCare />} />
+            <Route path="/nurse-reports" element={<NurseReports />} />
+            
+            {/* HR Routes */}
+            <Route path="/hr-dashboard" element={<HRDashboard />} />
+            <Route path="/hr-staff" element={<StaffManagement />} />
+            <Route path="/hr-recruitment" element={<Recruitment />} />
+            <Route path="/hr-licensing" element={<LicensingCompliance />} />
+            <Route path="/hr-attendance" element={<AttendanceScheduling />} />
+            <Route path="/hr-training" element={<TrainingDevelopment />} />
+            <Route path="/hr-performance" element={<PerformanceAppraisal />} />
+            <Route path="/hr-reports" element={<HRReports />} />
+
             {/* Fallback Route */}
             <Route path="*" element={<div>Page not found</div>} />
           </Routes>
@@ -380,6 +466,11 @@ function DashboardRoute() {
   const isOphthalmologist = user?.role === 'ophthalmologist';
   const isAdmin = user?.role === 'admin';
   const isOTCoordinator = user?.role === 'ot-coordinator';
+  const isInsuranceOfficer = user?.role === 'insurance-officer';
+  const isCashier = user?.role === 'cashier';
+  const isPhysicalTherapist = user?.role === 'physical-therapist';
+  const isNurse = user?.role === 'nurse';
+  const isHR = user?.role === 'hr';
   
   // Use specialized dashboard for doctors
   if (isDoctor) {
@@ -398,6 +489,31 @@ function DashboardRoute() {
   // Use OT dashboard for OT Coordinator
   if (isOTCoordinator) {
     return <OTDashboard />;
+  }
+  
+  // Use Insurance Officer dashboard
+  if (isInsuranceOfficer) {
+    return <InsuranceOfficerDashboard />;
+  }
+  
+  // Use Cashier dashboard
+  if (isCashier) {
+    return <CashierDashboard />;
+  }
+  
+  // Use Physical Therapist dashboard
+  if (isPhysicalTherapist) {
+    return <PTDashboard />;
+  }
+  
+  // Use Nurse dashboard for nurses
+  if (isNurse) {
+    return <NurseDashboard />;
+  }
+  
+  // Use HR dashboard for HR staff
+  if (isHR) {
+    return <HRDashboard />;
   }
   
   return (

@@ -4,6 +4,7 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { MedicalRecord, Prescription, LabOrder, Patient } from '../../types';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
+import { ICD10Selector } from '../ICD10/ICD10Selector';
 
 interface MedicalRecordFormProps {
   patientId: string;
@@ -33,6 +34,14 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
     },
     status: record?.status || 'active' as const
   });
+
+  const [icd10Codes, setIcd10Codes] = useState(
+    record?.diagnosisCodes?.map(dc => ({
+      code: dc.code,
+      description: dc.description,
+      category: dc.type === 'ICD-10' ? 'ICD-10' : 'SNOMED CT'
+    })) || []
+  );
 
   const [prescriptions, setPrescriptions] = useState<Omit<Prescription, 'id' | 'recordId' | 'patientId' | 'doctorId' | 'status' | 'createdAt'>[]>(
     record?.prescriptions?.map(p => ({
@@ -84,7 +93,11 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: record?.diagnosisCodes || [],
+      diagnosisCodes: icd10Codes.map(code => ({
+        code: code.code,
+        description: code.description,
+        type: 'ICD-10' as const
+      })),
       treatment: formData.treatment,
       notes: formData.notes,
       vitals: formData.vitals,
@@ -189,7 +202,11 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: record?.diagnosisCodes || [],
+      diagnosisCodes: icd10Codes.map(code => ({
+        code: code.code,
+        description: code.description,
+        type: 'ICD-10' as const
+      })),
       treatment: formData.treatment,
       notes: formData.notes,
       vitals: formData.vitals,
@@ -229,7 +246,11 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: record?.diagnosisCodes || [],
+      diagnosisCodes: icd10Codes.map(code => ({
+        code: code.code,
+        description: code.description,
+        type: 'ICD-10' as const
+      })),
       treatment: formData.treatment,
       notes: formData.notes,
       vitals: formData.vitals,
@@ -269,7 +290,11 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: record?.diagnosisCodes || [],
+      diagnosisCodes: icd10Codes.map(code => ({
+        code: code.code,
+        description: code.description,
+        type: 'ICD-10' as const
+      })),
       treatment: formData.treatment,
       notes: formData.notes,
       vitals: formData.vitals,
@@ -309,7 +334,11 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: record?.diagnosisCodes || [],
+      diagnosisCodes: icd10Codes.map(code => ({
+        code: code.code,
+        description: code.description,
+        type: 'ICD-10' as const
+      })),
       treatment: formData.treatment,
       notes: formData.notes,
       vitals: formData.vitals,
@@ -453,6 +482,18 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
                 onChange={handleChange}
                 placeholder="Medical diagnosis or assessment"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ICD-10 Diagnosis Codes
+              </label>
+              <ICD10Selector
+                selectedCodes={icd10Codes}
+                onCodesChange={setIcd10Codes}
+                maxCodes={5}
+                className="w-full"
               />
             </div>
 

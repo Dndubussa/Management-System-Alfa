@@ -18,7 +18,14 @@ import {
   Scissors,
   Clock,
   CheckSquare,
-  FileBarChart
+  FileBarChart,
+  FileCheck,
+  UserCheck,
+  DollarSign,
+  PieChart,
+  UserPlus,
+  GraduationCap,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -135,6 +142,63 @@ export function Sidebar({ onTabChange }: SidebarProps) {
           { id: 'lab-orders', label: 'All Lab Orders', icon: TestTube, path: '/lab-orders' },
           { id: 'billing', label: 'All Bills', icon: CreditCard, path: '/billing' },
           { id: 'reports', label: 'System Reports', icon: BarChart3, path: '/reports' },
+        ];
+      
+      case 'insurance-officer':
+        return [
+          ...baseItems,
+          { id: 'insurance-dashboard', label: 'Dashboard', icon: FileCheck, path: '/insurance-dashboard' },
+          { id: 'verification', label: 'Insurance Verification', icon: UserCheck, path: '/insurance-verification' },
+          { id: 'claims', label: 'Claim Submission', icon: FileText, path: '/insurance-submission' },
+          { id: 'tracking', label: 'Claim Tracking', icon: Shield, path: '/insurance-tracking' },
+          { id: 'reports', label: 'Reports & Analytics', icon: BarChart3, path: '/insurance-reports' },
+          { id: 'providers', label: 'Insurance Providers', icon: Users, path: '/insurance-providers' },
+        ];
+      
+      case 'cashier':
+        return [
+          ...baseItems,
+          { id: 'cashier-dashboard', label: 'Dashboard', icon: DollarSign, path: '/cashier-dashboard' },
+          { id: 'bills-payments', label: 'Bills & Payments', icon: CreditCard, path: '/cashier-bills' },
+          { id: 'invoice-generation', label: 'Invoice Generation', icon: FileText, path: '/cashier-invoices' },
+          { id: 'outstanding-bills', label: 'Outstanding Bills', icon: Clock, path: '/cashier-outstanding' },
+          { id: 'insurance-claims', label: 'Insurance Claims', icon: FileCheck, path: '/cashier-insurance' },
+          { id: 'reports', label: 'Reports & Reconciliations', icon: PieChart, path: '/cashier-reports' },
+        ];
+      
+      case 'physical-therapist':
+        return [
+          ...baseItems,
+          { id: 'pt-dashboard', label: 'Dashboard', icon: BarChart3, path: '/pt-dashboard' },
+          { id: 'pt-appointments', label: 'Appointments', icon: Calendar, path: '/pt-appointments' },
+          { id: 'pt-assessment', label: 'Patient Assessment', icon: Users, path: '/pt-assessment' },
+          { id: 'pt-plans', label: 'Therapy Plans', icon: FileText, path: '/pt-plans' },
+          { id: 'pt-emr', label: 'Patient History', icon: FileText, path: '/pt-emr' },
+          { id: 'pt-reports', label: 'Reports', icon: BarChart3, path: '/pt-reports' },
+        ];
+      
+      case 'nurse':
+        return [
+          ...baseItems,
+          { id: 'nurse-dashboard', label: 'Dashboard', icon: BarChart3, path: '/nurse-dashboard' },
+          { id: 'nurse-triage', label: 'Triage & Vitals', icon: Activity, path: '/nurse-triage' },
+          { id: 'nurse-notes', label: 'Patient Care Notes', icon: FileText, path: '/nurse-notes' },
+          { id: 'nurse-mar', label: 'Medication Admin', icon: PieChart, path: '/nurse-mar' },
+          { id: 'nurse-procedures', label: 'Procedures & Immunizations', icon: CheckSquare, path: '/nurse-procedures' },
+          { id: 'nurse-inpatient', label: 'Inpatient Care', icon: Users, path: '/nurse-inpatient' },
+          { id: 'nurse-reports', label: 'Nursing Reports', icon: FileBarChart, path: '/nurse-reports' },
+        ];
+      case 'hr':
+        return [
+          ...baseItems,
+          { id: 'hr-dashboard', label: 'HR Dashboard', icon: BarChart3, path: '/hr-dashboard' },
+          { id: 'hr-staff', label: 'Staff Management', icon: UserPlus, path: '/hr-staff' },
+          { id: 'hr-recruitment', label: 'Recruitment & Onboarding', icon: UserCheck, path: '/hr-recruitment' },
+          { id: 'hr-licensing', label: 'Licensing & Compliance', icon: Shield, path: '/hr-licensing' },
+          { id: 'hr-attendance', label: 'Attendance & Scheduling', icon: Calendar, path: '/hr-attendance' },
+          { id: 'hr-training', label: 'Training & Development', icon: GraduationCap, path: '/hr-training' },
+          { id: 'hr-performance', label: 'Performance & Appraisal', icon: TrendingUp, path: '/hr-performance' },
+          { id: 'hr-reports', label: 'HR Reports', icon: FileBarChart, path: '/hr-reports' },
         ];
       
       default:

@@ -195,25 +195,45 @@ export function ReportsDashboard() {
       const report = generateReportData();
       const doc = new jsPDF();
       
-      // Add title
+      // Add hospital header with logo and name
+      doc.setFillColor(22, 160, 133); // Hospital green color
+      doc.rect(0, 0, 210, 25, 'F'); // Header background
+      
+      // Hospital name
+      doc.setTextColor(255, 255, 255); // White text
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ALFA SPECIALIZED HOSPITAL', 14, 12);
+      
+      // Hospital tagline
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Excellence in Healthcare Services', 14, 18);
+      
+      // Reset text color for content
+      doc.setTextColor(0, 0, 0);
+      
+      // Add report title
       doc.setFontSize(18);
-      doc.text(report.title, 14, 20);
+      doc.setFont('helvetica', 'bold');
+      doc.text(report.title, 14, 35);
       
       // Add date range info
       doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
       let dateRangeText = dateRanges.find(r => r.id === dateRange)?.name || 'All Time';
       if (dateRange === 'custom' && customStartDate && customEndDate) {
         dateRangeText = `${customStartDate} to ${customEndDate}`;
       }
-      doc.text(`Date Range: ${dateRangeText}`, 14, 30);
+      doc.text(`Date Range: ${dateRangeText}`, 14, 45);
       
       // Add doctor info if applicable
       if (user?.role === 'doctor' || user?.role === 'ophthalmologist') {
-        doc.text(`Doctor: ${user.name}`, 14, 38);
+        doc.text(`Doctor: ${user.name}`, 14, 53);
       }
       
       // Add generated date
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 46);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 61);
       
       // Add table if there's data
       if (report.data.length > 0) {
@@ -288,7 +308,7 @@ export function ReportsDashboard() {
         autoTable(doc, {
           head: [report.columns],
           body: tableData,
-          startY: 55,
+          startY: 70, // Moved down to accommodate header
           styles: { fontSize: 8 },
           headStyles: { fillColor: [22, 160, 133] },
           alternateRowStyles: { fillColor: [240, 240, 240] }
@@ -320,8 +340,29 @@ export function ReportsDashboard() {
     setTimeout(() => {
       const report = generateReportData();
       
-      // Create CSV content
-      let csvContent = `${report.columns.join(',')}\n`;
+      // Create CSV content with hospital header
+      let csvContent = `ALFA SPECIALIZED HOSPITAL\n`;
+      csvContent += `Excellence in Healthcare Services\n`;
+      csvContent += `${report.title}\n`;
+      
+      // Add date range info
+      let dateRangeText = dateRanges.find(r => r.id === dateRange)?.name || 'All Time';
+      if (dateRange === 'custom' && customStartDate && customEndDate) {
+        dateRangeText = `${customStartDate} to ${customEndDate}`;
+      }
+      csvContent += `Date Range: ${dateRangeText}\n`;
+      
+      // Add doctor info if applicable
+      if (user?.role === 'doctor' || user?.role === 'ophthalmologist') {
+        csvContent += `Doctor: ${user.name}\n`;
+      }
+      
+      // Add generated date
+      csvContent += `Generated: ${new Date().toLocaleString()}\n`;
+      csvContent += `\n`; // Empty line before data
+      
+      // Add column headers
+      csvContent += `${report.columns.join(',')}\n`;
       
       if (report.data.length > 0) {
         const csvRows = report.data.map((item) => {
@@ -457,6 +498,19 @@ export function ReportsDashboard() {
       {viewingReport ? (
         // Report Viewer
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Hospital Header */}
+          <div className="bg-green-600 text-white p-4 rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-bold">ALFA SPECIALIZED HOSPITAL</h1>
+                <p className="text-green-100 text-sm">Excellence in Healthcare Services</p>
+              </div>
+              <div className="text-right text-sm">
+                <p>Generated: {new Date().toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+          
           <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <div>
               <h2 className="text-lg font-medium text-gray-900">{viewingReport.title}</h2>

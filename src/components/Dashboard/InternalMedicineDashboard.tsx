@@ -94,7 +94,7 @@ export function InternalMedicineDashboard() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
           <Heart className="w-6 h-6 text-red-500 mr-2" />
-          Internal Medicine Dashboard
+          Dr. {user?.name || 'Doctor'} Dashboard
         </h1>
         <p className="text-gray-600">
           {new Date().toLocaleDateString('en-US', { 
@@ -102,7 +102,7 @@ export function InternalMedicineDashboard() {
             year: 'numeric', 
             month: 'long', 
             day: 'numeric' 
-          })}
+          })} • Internal Medicine Department
         </p>
       </div>
 

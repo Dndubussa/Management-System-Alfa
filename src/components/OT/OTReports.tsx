@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { FileText, Calendar, Download, BarChart3, PieChart, TrendingUp, Filter, Scissors } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export function OTReports() {
   const { otReports, surgeryRequests } = useHospital();
@@ -38,13 +40,88 @@ export function OTReports() {
   ];
 
   const generateReport = () => {
-    // In a real implementation, this would generate the actual report
-    alert('Report generated successfully!');
+    // Generate PDF report with hospital branding
+    const doc = new jsPDF();
+    
+    // Add hospital header with logo and name
+    doc.setFillColor(22, 160, 133); // Hospital green color
+    doc.rect(0, 0, 210, 25, 'F'); // Header background
+    
+    // Hospital name
+    doc.setTextColor(255, 255, 255); // White text
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ALFA SPECIALIZED HOSPITAL', 14, 12);
+    
+    // Hospital tagline
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Excellence in Healthcare Services', 14, 18);
+    
+    // Reset text color for content
+    doc.setTextColor(0, 0, 0);
+    
+    // Add report title
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    const reportTitle = reportTypes.find(r => r.id === reportType)?.name || 'OT Report';
+    doc.text(reportTitle, 14, 35);
+    
+    // Add date range info
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    let dateRangeText = dateRanges.find(r => r.id === dateRange)?.name || 'All Time';
+    doc.text(`Date Range: ${dateRangeText}`, 14, 45);
+    
+    // Add generated date
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 53);
+    
+    // Add OT statistics
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Operating Theatre Statistics', 14, 70);
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total Surgeries: ${reportData.totalSurgeries}`, 14, 80);
+    doc.text(`Emergency Surgeries: ${reportData.emergencySurgeries}`, 14, 88);
+    doc.text(`Elective Surgeries: ${reportData.electiveSurgeries}`, 14, 96);
+    doc.text(`Cancelled Surgeries: ${reportData.cancelledSurgeries}`, 14, 104);
+    doc.text(`Postponed Surgeries: ${reportData.postponedSurgeries}`, 14, 112);
+    
+    // Save the PDF
+    doc.save(`OT_${reportType}_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   const downloadReport = (format: 'pdf' | 'csv') => {
-    // In a real implementation, this would download the report in the specified format
-    alert(`Report downloaded as ${format.toUpperCase()}!`);
+    if (format === 'pdf') {
+      generateReport();
+    } else {
+      // Generate CSV report with hospital branding
+      let csvContent = `ALFA SPECIALIZED HOSPITAL\n`;
+      csvContent += `Excellence in Healthcare Services\n`;
+      csvContent += `${reportTypes.find(r => r.id === reportType)?.name || 'OT Report'}\n`;
+      csvContent += `Date Range: ${dateRanges.find(r => r.id === dateRange)?.name || 'All Time'}\n`;
+      csvContent += `Generated: ${new Date().toLocaleString()}\n\n`;
+      
+      csvContent += `Metric,Value\n`;
+      csvContent += `Total Surgeries,${reportData.totalSurgeries}\n`;
+      csvContent += `Emergency Surgeries,${reportData.emergencySurgeries}\n`;
+      csvContent += `Elective Surgeries,${reportData.electiveSurgeries}\n`;
+      csvContent += `Cancelled Surgeries,${reportData.cancelledSurgeries}\n`;
+      csvContent += `Postponed Surgeries,${reportData.postponedSurgeries}\n`;
+      
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `OT_${reportType}_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (

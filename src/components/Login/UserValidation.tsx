@@ -14,37 +14,43 @@ interface ValidationResult {
   issues: string[];
 }
 
-// Demo user validation removed for production
-const demoUsers: DemoUser[] = [];
-
 export function UserValidation() {
   const { users } = useHospital();
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
 
   useEffect(() => {
-    const results: ValidationResult[] = demoUsers.map(demoUser => {
-      const user = users.find(u => u.email === demoUser.email);
+    // Validate all users in the system
+    const results: ValidationResult[] = users.map(user => {
       const issues: string[] = [];
       
-      if (!user) {
-        issues.push('User not found in system');
-        return {
-          ...demoUser,
-          exists: false,
-          issues
-        };
+      // Check if user has required fields
+      if (!user.name || user.name.trim() === '') {
+        issues.push('User name is missing or empty');
       }
       
-      // Check if role matches
-      const demoRole = demoUser.role.toLowerCase().split(' ')[0]; // Get first word (receptionist, doctor, etc.)
-      if (demoRole !== user.role && 
-          !(demoRole === 'ophthalmologist' && user.role === 'ophthalmologist') &&
-          !(demoRole === 'administrator' && user.role === 'admin')) {
-        issues.push(`Role mismatch: demo shows ${demoRole}, system has ${user.role}`);
+      if (!user.email || user.email.trim() === '') {
+        issues.push('User email is missing or empty');
+      }
+      
+      if (!user.role || user.role.trim() === '') {
+        issues.push('User role is missing or empty');
+      }
+      
+      if (!user.department || user.department.trim() === '') {
+        issues.push('User department is missing or empty');
+      }
+      
+      // Check for valid email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (user.email && !emailRegex.test(user.email)) {
+        issues.push('Invalid email format');
       }
       
       return {
-        ...demoUser,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
         exists: true,
         user,
         issues
@@ -57,7 +63,7 @@ export function UserValidation() {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">User Validation Report</h2>
-      <p className="text-gray-600 mb-6">User validation module</p>
+      <p className="text-gray-600 mb-6">Validating all users in the system for data integrity and completeness</p>
       
       <div className="space-y-4">
         {validationResults.map((result, index) => (

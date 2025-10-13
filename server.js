@@ -13,6 +13,16 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Utility function to convert camelCase to snake_case
+const convertCamelToSnake = (obj) => {
+  const converted = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    converted[snakeKey] = value;
+  }
+  return converted;
+};
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -168,9 +178,44 @@ app.get('/api/patients/:id', async (req, res) => {
 
 app.post('/api/patients', async (req, res) => {
   try {
+    // Generate MRN (Medical Record Number)
+    const currentYear = new Date().getFullYear();
+    const { data: lastPatient } = await supabase
+      .from('patients')
+      .select('mrn')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    let nextNumber = 1;
+    if (lastPatient && lastPatient.mrn) {
+      const match = lastPatient.mrn.match(/ALFA-(\d{4})-(\d+)/);
+      if (match && match[1] === currentYear.toString()) {
+        nextNumber = parseInt(match[2]) + 1;
+      }
+    }
+
+    const mrn = `ALFA-${currentYear}-${nextNumber.toString().padStart(5, '0')}`;
+
+    // Convert camelCase to snake_case for database
+    const patientData = {
+      mrn: mrn,
+      first_name: req.body.firstName,
+      last_name: req.body.lastName,
+      date_of_birth: req.body.dateOfBirth,
+      gender: req.body.gender,
+      phone: req.body.phone,
+      address: req.body.address,
+      emergency_contact_name: req.body.emergencyContact?.name || '',
+      emergency_contact_phone: req.body.emergencyContact?.phone || '',
+      emergency_contact_relationship: req.body.emergencyContact?.relationship || '',
+      insurance_provider: req.body.insuranceInfo?.provider || '',
+      insurance_membership_number: req.body.insuranceInfo?.membershipNumber || ''
+    };
+
     const { data, error } = await supabase
       .from('patients')
-      .insert([req.body])
+      .insert([patientData])
       .select()
       .single();
     handleSupabaseResponse(data, error, res);
@@ -259,9 +304,26 @@ app.get('/api/medical-records/:id', async (req, res) => {
 
 app.post('/api/medical-records', async (req, res) => {
   try {
+    // Convert camelCase to snake_case for database
+    const recordData = {
+      patient_id: req.body.patientId,
+      doctor_id: req.body.doctorId,
+      visit_date: req.body.visitDate,
+      chief_complaint: req.body.chiefComplaint,
+      diagnosis: req.body.diagnosis,
+      treatment: req.body.treatment,
+      notes: req.body.notes,
+      blood_pressure: req.body.vitals?.bloodPressure || '',
+      heart_rate: req.body.vitals?.heartRate || '',
+      temperature: req.body.vitals?.temperature || '',
+      weight: req.body.vitals?.weight || '',
+      height: req.body.vitals?.height || '',
+      status: req.body.status || 'active'
+    };
+
     const { data, error } = await supabase
       .from('medical_records')
-      .insert([req.body])
+      .insert([recordData])
       .select()
       .single();
     handleSupabaseResponse(data, error, res);
@@ -302,6 +364,20 @@ app.get('/api/prescriptions', async (req, res) => {
     handleSupabaseResponse(data, error, res);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/prescriptions', async (req, res) => {
+  try {
+    const prescriptionData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .insert([prescriptionData])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -360,6 +436,20 @@ app.get('/api/lab-orders', async (req, res) => {
     handleSupabaseResponse(data, error, res);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/lab-orders', async (req, res) => {
+  try {
+    const labOrderData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('lab_orders')
+      .insert([labOrderData])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -449,9 +539,20 @@ app.get('/api/appointments/:id', async (req, res) => {
 
 app.post('/api/appointments', async (req, res) => {
   try {
+    // Convert camelCase to snake_case for database
+    const appointmentData = {
+      patient_id: req.body.patientId,
+      doctor_id: req.body.doctorId,
+      date_time: req.body.dateTime,
+      duration: req.body.duration,
+      type: req.body.type,
+      status: req.body.status || 'scheduled',
+      notes: req.body.notes || ''
+    };
+
     const { data, error } = await supabase
       .from('appointments')
-      .insert([req.body])
+      .insert([appointmentData])
       .select()
       .single();
     handleSupabaseResponse(data, error, res);
@@ -520,9 +621,10 @@ app.get('/api/users/:id', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
   try {
+    const userData = convertCamelToSnake(req.body);
     const { data, error } = await supabase
       .from('users')
-      .insert([req.body])
+      .insert([userData])
       .select()
       .single();
     handleSupabaseResponse(data, error, res);
@@ -754,9 +856,10 @@ app.get('/api/bills/:id', async (req, res) => {
 
 app.post('/api/bills', async (req, res) => {
   try {
+    const billData = convertCamelToSnake(req.body);
     const { data, error } = await supabase
       .from('bills')
-      .insert([req.body])
+      .insert([billData])
       .select()
       .single();
     handleSupabaseResponse(data, error, res);
@@ -1047,9 +1150,10 @@ app.get('/api/surgery-requests/:id', async (req, res) => {
 
 app.post('/api/surgery-requests', async (req, res) => {
   try {
+    const surgeryData = convertCamelToSnake(req.body);
     const { data, error } = await supabase
       .from('surgery_requests')
-      .insert([req.body])
+      .insert([surgeryData])
       .select()
       .single();
     handleSupabaseResponse(data, error, res);
@@ -1434,6 +1538,118 @@ app.put('/api/ot-reports/:id', async (req, res) => {
     }
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+// ICD-10 Codes
+app.get('/api/icd10', async (req, res) => {
+  try {
+    const { search, category, chapter, limit = 50, offset = 0 } = req.query;
+    
+    let query = supabase
+      .from('icd10_codes')
+      .select('*')
+      .eq('is_active', true)
+      .order('code')
+      .range(offset, offset + limit - 1);
+    
+    if (search) {
+      query = query.or(`code.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+    
+    if (category) {
+      query = query.eq('category', category);
+    }
+    
+    if (chapter) {
+      query = query.eq('chapter', chapter);
+    }
+    
+    const { data, error } = await query;
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/icd10/search', async (req, res) => {
+  try {
+    const { q, limit = 20 } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.json([]);
+    }
+    
+    const { data, error } = await supabase
+      .from('icd10_codes')
+      .select('code, description, category')
+      .eq('is_active', true)
+      .or(`code.ilike.%${q}%,description.ilike.%${q}%`)
+      .order('code')
+      .limit(limit);
+    
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    
+    res.json(data || []);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/icd10/categories', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('icd10_codes')
+      .select('category')
+      .eq('is_active', true)
+      .not('category', 'is', null);
+    
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    
+    const categories = [...new Set(data.map(item => item.category))].sort();
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/icd10/chapters', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('icd10_chapters')
+      .select('*')
+      .order('chapter_number');
+    
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/icd10/:code', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('icd10_codes')
+      .select('*')
+      .eq('code', req.params.code)
+      .eq('is_active', true)
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(data, error, res);
+    }
+    
+    if (data) {
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'ICD-10 code not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
