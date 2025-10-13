@@ -146,7 +146,7 @@ export interface Notification {
 
 export interface ServicePrice {
   id: string;
-  category: 'consultation' | 'lab-test' | 'medication' | 'procedure';
+  category: 'consultation' | 'lab-test' | 'medication' | 'procedure' | 'radiology' | 'physiotherapy' | 'psychiatry' | 'ophthalmology';
   serviceName: string;
   price: number;
   description: string;

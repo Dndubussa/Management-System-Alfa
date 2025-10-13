@@ -13,7 +13,7 @@ function parseCsv(content: string): { category: string; service_name: string; pr
 		const raw = lines[i]?.trim();
 		if (!raw) continue;
 		// Category lines end with a comma (e.g., LABORATORY SERVICES,)
-		if (!raw.includes(',') && raw.endsWith(',')) {
+		if (raw.endsWith(',') && !raw.includes('"')) {
 			category = raw.replace(/,$/, '').trim();
 			continue;
 		}
@@ -100,11 +100,15 @@ async function run() {
 	}
 }
 
-function mapCategory(raw: string): 'consultation' | 'lab-test' | 'medication' | 'procedure' {
+function mapCategory(raw: string): 'consultation' | 'lab-test' | 'medication' | 'procedure' | 'radiology' | 'physiotherapy' | 'psychiatry' | 'ophthalmology' {
 	const s = raw.toLowerCase();
 	if (s.includes('lab')) return 'lab-test';
-	if (s.includes('pharmacy') || s.includes('drug') || s.includes('medic')) return 'medication';
-	if (s.includes('procedure') || s.includes('surgery') || s.includes('theatre')) return 'procedure';
+	if (s.includes('pharmacy') || s.includes('pharmaceutical')) return 'medication';
+	if (s.includes('procedure') || s.includes('surgical') || s.includes('surgery')) return 'procedure';
+	if (s.includes('radiology') || s.includes('scan') || s.includes('x-ray')) return 'radiology';
+	if (s.includes('physiotherapy') || s.includes('therapy')) return 'physiotherapy';
+	if (s.includes('psychiatry') || s.includes('counselling')) return 'psychiatry';
+	if (s.includes('ophthalmology') || s.includes('eye')) return 'ophthalmology';
 	return 'consultation';
 }
 
