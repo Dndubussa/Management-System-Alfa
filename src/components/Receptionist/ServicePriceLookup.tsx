@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Download, Eye, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, Download, Eye, Plus, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { ServicePrice, PriceLookupFilter } from '../../types';
 
@@ -13,6 +13,8 @@ export function ServicePriceLookup() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedServices, setSelectedServices] = useState<ServicePrice[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -52,6 +54,17 @@ export function ServicePriceLookup() {
     return filtered;
   }, [servicePrices, searchTerm, selectedCategory, minPrice, maxPrice, sortBy, sortOrder]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedServices = filteredServices.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, minPrice, maxPrice, sortBy, sortOrder]);
+
   const handleAddToEstimate = (service: ServicePrice) => {
     if (!selectedServices.find(s => s.id === service.id)) {
       setSelectedServices([...selectedServices, service]);
@@ -69,6 +82,27 @@ export function ServicePriceLookup() {
     setMaxPrice('');
     setSortBy('name');
     setSortOrder('asc');
+  };
+
+  const handleSelectAll = () => {
+    if (selectedServices.length === paginatedServices.length) {
+      // Deselect all current page services
+      const currentPageIds = paginatedServices.map(s => s.id);
+      setSelectedServices(selectedServices.filter(s => !currentPageIds.includes(s.id)));
+    } else {
+      // Select all current page services
+      const newSelections = paginatedServices.filter(s => !selectedServices.find(selected => selected.id === s.id));
+      setSelectedServices([...selectedServices, ...newSelections]);
+    }
+  };
+
+  const handleSort = (column: 'name' | 'category' | 'price') => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
   };
 
   const exportToCSV = () => {
@@ -243,52 +277,179 @@ export function ServicePriceLookup() {
         </div>
       )}
 
-      {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredServices.map((service) => (
-          <div key={service.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{service.serviceName}</h3>
-                <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
-                  {service.category}
-                </span>
-              </div>
-              <button
-                onClick={() => handleAddToEstimate(service)}
-                disabled={selectedServices.find(s => s.id === service.id) !== undefined}
-                className="ml-2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
+      {/* Services Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={paginatedServices.length > 0 && selectedServices.filter(s => paginatedServices.some(p => p.id === s.id)).length === paginatedServices.length}
+                      onChange={handleSelectAll}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <button
+                      onClick={() => handleSort('name')}
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                    >
+                      <span>Service Name</span>
+                      {sortBy === 'name' && (
+                        sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    onClick={() => handleSort('category')}
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                  >
+                    <span>Category</span>
+                    {sortBy === 'category' && (
+                      sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Description
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    onClick={() => handleSort('price')}
+                    className="flex items-center space-x-1 hover:text-gray-700 ml-auto"
+                  >
+                    <span>Price (TZS)</span>
+                    {sortBy === 'price' && (
+                      sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedServices.map((service) => {
+                const isSelected = selectedServices.find(s => s.id === service.id) !== undefined;
+                return (
+                  <tr key={service.id} className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => isSelected ? handleRemoveFromEstimate(service.id) : handleAddToEstimate(service)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <div className="text-sm font-medium text-gray-900">
+                          {service.serviceName}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                        {service.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-500 max-w-xs truncate">
+                        {service.description || 'No description available'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm font-semibold text-green-600">
+                        {service.price.toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <button className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <Eye className="w-3 h-3 mr-1" />
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-            <div className="mb-4">
-              <p className="text-2xl font-bold text-green-600">
-                TZS {service.price.toLocaleString()}
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                <span className="font-medium">{Math.min(endIndex, filteredServices.length)}</span> of{' '}
+                <span className="font-medium">{filteredServices.length}</span> results
               </p>
-              {service.description && (
-                <p className="text-gray-600 text-sm mt-2">{service.description}</p>
-              )}
             </div>
-
-            <div className="flex space-x-2">
-              <button className="flex-1 flex items-center justify-center px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                <Eye className="w-4 h-4 mr-2" />
-                View Details
-              </button>
-              {selectedServices.find(s => s.id === service.id) && (
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                 <button
-                  onClick={() => handleRemoveFromEstimate(service.id)}
-                  className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <X className="w-4 h-4" />
+                  <span className="sr-only">Previous</span>
+                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                 </button>
-              )}
+                
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                  if (pageNum > totalPages) return null;
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        currentPage === pageNum
+                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Next</span>
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </nav>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Empty State */}
       {filteredServices.length === 0 && (
