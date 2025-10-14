@@ -43,18 +43,39 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
     setError('');
 
     try {
+      // Validate required fields
+      if (!formData.name.trim()) {
+        throw new Error('Patient name is required');
+      }
+      if (!formData.age || parseInt(formData.age) <= 0) {
+        throw new Error('Valid age is required');
+      }
+      if (!formData.phone.trim()) {
+        throw new Error('Phone number is required');
+      }
+
       // Convert age back to date of birth for the API
       const currentYear = new Date().getFullYear();
       const birthYear = currentYear - parseInt(formData.age);
       const dateOfBirth = `${birthYear}-01-01`; // Approximate date of birth
 
+      // Split name properly
+      const nameParts = formData.name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Ensure we have at least a first name
+      if (!firstName) {
+        throw new Error('Please enter a valid patient name');
+      }
+
       const patientData = {
-        firstName: formData.name.split(' ')[0] || '',
-        lastName: formData.name.split(' ').slice(1).join(' ') || '',
+        firstName,
+        lastName,
         dateOfBirth,
         gender: formData.gender,
-        phone: formData.phone,
-        address: formData.address,
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
         emergencyContact: {
           name: '',
           phone: '',
@@ -65,6 +86,8 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
           membershipNumber: ''
         }
       };
+
+      console.log('Submitting patient data:', patientData);
 
       if (patient) {
         await updatePatient(patient.id, patientData);
@@ -79,9 +102,9 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
         onSave();
       }, 2000);
 
-    } catch (err) {
-      setError('Failed to save patient. Please try again.');
+    } catch (err: any) {
       console.error('Error saving patient:', err);
+      setError(err.message || 'Failed to save patient. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

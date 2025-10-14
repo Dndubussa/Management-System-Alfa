@@ -189,7 +189,9 @@ export const api = {
     return mapPatientFromDb(row);
   },
   createPatient: async (patient: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>) => {
+    console.log('Creating patient with data:', patient);
     const body = mapPatientToDb(patient);
+    console.log('Mapped patient data for database:', body);
     const row = await apiRequest<any>('/patients', {
       method: 'POST',
       body: JSON.stringify(body),
