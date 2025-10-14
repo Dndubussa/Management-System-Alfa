@@ -4,9 +4,12 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { SurgeryRequest } from '../../types';
+import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
+import { useConsultationBilling } from '../../hooks/useConsultationBilling';
 
 export function OTSchedule() {
   const { surgeryRequests, otSlots, otResources, patients, users, addSurgeryRequest } = useHospital();
+  const { createConsultationBill } = useConsultationBilling();
   const { user } = useAuth();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -23,6 +26,14 @@ export function OTSchedule() {
     diagnosis: '',
     notes: ''
   });
+
+  const [consultationCost, setConsultationCost] = useState<number>(0);
+  const [consultationService, setConsultationService] = useState<string>('');
+
+  const handleCostCalculated = (cost: number, serviceName: string) => {
+    setConsultationCost(cost);
+    setConsultationService(serviceName);
+  };
 
   // Get scheduled surgeries
   const scheduledSurgeries = surgeryRequests.filter(req => req.status === 'scheduled' && req.scheduledDate);
@@ -60,25 +71,48 @@ export function OTSchedule() {
 
   const timeSlots = generateTimeSlots();
 
-  const handleScheduleSurgery = () => {
-    // Add the new surgery request
-    addSurgeryRequest({
-      ...newSurgery,
-      requestedDate: new Date().toISOString()
-    });
-    
-    // Reset form and close modal
-    setNewSurgery({
-      patientId: '',
-      requestingDoctorId: user?.id || '',
-      surgeryType: '',
-      urgency: 'routine',
-      requestedDate: new Date().toISOString(),
-      status: 'pending',
-      diagnosis: '',
-      notes: ''
-    });
-    setShowScheduleModal(false);
+  const handleScheduleSurgery = async () => {
+    try {
+      // Add the new surgery request
+      const newSurgeryRequest = await addSurgeryRequest({
+        ...newSurgery,
+        requestedDate: new Date().toISOString()
+      });
+
+      // Create automatic billing for consultation if cost > 0
+      if (consultationCost > 0 && newSurgeryRequest) {
+        try {
+          await createConsultationBill(
+            newSurgery.patientId,
+            undefined, // No appointment ID for surgery requests
+            consultationService || `${newSurgery.urgency.charAt(0).toUpperCase() + newSurgery.urgency.slice(1)} Surgery Consultation`,
+            consultationCost,
+            newSurgery.urgency,
+            `Surgery consultation for ${newSurgery.surgeryType}`
+          );
+        } catch (error) {
+          console.error('Failed to create automatic billing:', error);
+        }
+      }
+      
+      // Reset form and close modal
+      setNewSurgery({
+        patientId: '',
+        requestingDoctorId: user?.id || '',
+        surgeryType: '',
+        urgency: 'routine',
+        requestedDate: new Date().toISOString(),
+        status: 'pending',
+        diagnosis: '',
+        notes: ''
+      });
+      setConsultationCost(0);
+      setConsultationService('');
+      setShowScheduleModal(false);
+    } catch (error) {
+      console.error('Error scheduling surgery:', error);
+      alert('Failed to schedule surgery. Please try again.');
+    }
   };
 
   return (
@@ -215,6 +249,17 @@ export function OTSchedule() {
                     <option value="emergency">Emergency</option>
                   </select>
                 </div>
+
+                {/* Consultation Cost Display */}
+                {newSurgery.patientId && (
+                  <ConsultationCostDisplay
+                    appointmentType={newSurgery.urgency === 'emergency' ? 'emergency' : 'consultation'}
+                    doctorId={newSurgery.requestingDoctorId}
+                    department="surgery"
+                    onCostCalculated={handleCostCalculated}
+                    showBreakdown={true}
+                  />
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -242,6 +287,7 @@ export function OTSchedule() {
                   className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
                 >
                   Schedule Surgery
+                  {consultationCost > 0 && ` (${consultationCost.toLocaleString()} TZS)`}
                 </button>
               </div>
             </div>

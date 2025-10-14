@@ -3,6 +3,8 @@ import { Save, X, Plus, Minus, Download } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { MedicalRecord, Prescription, LabOrder, Patient } from '../../types';
+import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
+import { useConsultationBilling } from '../../hooks/useConsultationBilling';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
 import { ICD10Selector } from '../ICD10/ICD10Selector';
 
@@ -15,6 +17,7 @@ interface MedicalRecordFormProps {
 
 export function MedicalRecordForm({ patientId, record, onSave, onCancel }: MedicalRecordFormProps) {
   const { addMedicalRecord, patients, addNotification } = useHospital();
+  const { createConsultationBill } = useConsultationBilling();
   const { user } = useAuth();
   
   const patient = patients.find(p => p.id === patientId);
@@ -59,6 +62,14 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       instructions: l.instructions
     })) || []
   );
+
+  const [consultationCost, setConsultationCost] = useState<number>(0);
+  const [consultationService, setConsultationService] = useState<string>('');
+
+  const handleCostCalculated = (cost: number, serviceName: string) => {
+    setConsultationCost(cost);
+    setConsultationService(serviceName);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +118,22 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
     };
 
     addMedicalRecord(medicalRecord);
+
+    // Create automatic billing for consultation if cost > 0
+    if (consultationCost > 0) {
+      try {
+        createConsultationBill(
+          patientId,
+          undefined, // No appointment ID for EMR records
+          consultationService || 'Medical Consultation',
+          consultationCost,
+          'consultation',
+          `EMR consultation for ${patient?.firstName} ${patient?.lastName}`
+        );
+      } catch (error) {
+        console.error('Failed to create automatic billing:', error);
+      }
+    }
 
     // Send notifications to pharmacy for prescriptions
     if (fullPrescriptions.length > 0) {
@@ -451,6 +478,15 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
           </div>
         </div>
 
+        {/* Consultation Cost Display */}
+        <ConsultationCostDisplay
+          appointmentType="consultation"
+          doctorId={user?.id}
+          department={user?.department}
+          onCostCalculated={handleCostCalculated}
+          showBreakdown={true}
+        />
+
         {/* Clinical Information */}
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-4">Clinical Information</h3>
@@ -775,7 +811,10 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2"
           >
             <Save className="w-4 h-4" />
-            <span>{record ? 'Update Record' : 'Save Record'}</span>
+            <span>
+              {record ? 'Update Record' : 'Save Record'}
+              {!record && consultationCost > 0 && ` (${consultationCost.toLocaleString()} TZS)`}
+            </span>
           </button>
         </div>
       </form>

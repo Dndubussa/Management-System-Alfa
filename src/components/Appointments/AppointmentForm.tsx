@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Save, X, DollarSign, Calculator } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { Appointment } from '../../types';
+import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
+import { useConsultationBilling } from '../../hooks/useConsultationBilling';
 
 interface AppointmentFormProps {
   appointment?: Appointment;
@@ -10,7 +12,8 @@ interface AppointmentFormProps {
 }
 
 export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFormProps) {
-  const { patients, addNotification, addAppointment, users, servicePrices, addBill } = useHospital();
+  const { patients, addNotification, addAppointment, users } = useHospital();
+  const { createConsultationBill } = useConsultationBilling();
   const doctors = users.filter(user => user.role === 'doctor' || user.role === 'ophthalmologist');
   
   // Initialize with current date and time
@@ -29,113 +32,12 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
 
   const [consultationCost, setConsultationCost] = useState<number>(0);
   const [consultationService, setConsultationService] = useState<string>('');
-  const [showCostBreakdown, setShowCostBreakdown] = useState(false);
 
-  // Calculate consultation cost based on appointment type and doctor from hospital price list
-  const calculateConsultationCost = () => {
-    if (!formData.type || !formData.doctorId) return { cost: 0, serviceName: '' };
-    
-    // Get the selected doctor to determine their specialty
-    const selectedDoctor = doctors.find(doctor => doctor.id === formData.doctorId);
-    const doctorSpecialty = selectedDoctor?.department?.toLowerCase() || '';
-    
-    // Define consultation services based on appointment type
-    // These are for seeing a doctor in their department before any tests or prescriptions
-    let consultationServices = [];
-    
-    if (formData.type === 'consultation') {
-      // Look for actual doctor consultation services (not procedures or medications)
-      consultationServices = servicePrices.filter(service => {
-        const serviceName = service.serviceName.toLowerCase();
-        
-        // Exclude medications, procedures, and tests - only consultation fees
-        if (serviceName.includes('injection') || 
-            serviceName.includes('tablet') || 
-            serviceName.includes('capsule') ||
-            serviceName.includes('syrup') ||
-            serviceName.includes('ointment') ||
-            serviceName.includes('drops') ||
-            serviceName.includes('surgery') ||
-            serviceName.includes('operation') ||
-            serviceName.includes('test') ||
-            serviceName.includes('x-ray') ||
-            serviceName.includes('ultrasound') ||
-            serviceName.includes('blood') ||
-            serviceName.includes('urine') ||
-            serviceName.includes('biopsy') ||
-            serviceName.includes('scan')) {
-          return false;
-        }
-        
-        // Look for actual consultation services
-        if (serviceName.includes('specialist') && 
-            (serviceName.includes('2/wk') || serviceName.includes('weekly'))) {
-          return true;
-        }
-        if (serviceName.includes('super specialist')) {
-          return true;
-        }
-        if (serviceName.includes('consultation')) {
-          return true;
-        }
-        if (serviceName.includes('doctor') && !serviceName.includes('visit')) {
-          return true;
-        }
-        if (serviceName.includes('physician')) {
-          return true;
-        }
-        
-        return false;
-      });
-    } else if (formData.type === 'follow-up') {
-      // Look for follow-up consultation services
-      consultationServices = servicePrices.filter(service => {
-        const serviceName = service.serviceName.toLowerCase();
-        return serviceName.includes('follow') && 
-               serviceName.includes('assessment');
-      });
-    } else if (formData.type === 'emergency') {
-      // Look for emergency consultation services
-      consultationServices = servicePrices.filter(service => {
-        const serviceName = service.serviceName.toLowerCase();
-        return serviceName.includes('emergency') && 
-               !serviceName.includes('pulpotomy') && // Exclude dental procedures
-               !serviceName.includes('surgery');
-      });
-    }
-    
-    // Return the first matching consultation service
-    if (consultationServices.length > 0) {
-      return { 
-        cost: consultationServices[0].price, 
-        serviceName: consultationServices[0].serviceName 
-      };
-    }
-    
-    // Fallback: Use the most appropriate general consultation service
-    const generalConsultation = servicePrices.find(service => {
-      const serviceName = service.serviceName.toLowerCase();
-      return serviceName.includes('specialist') && 
-             serviceName.includes('2/wk');
-    });
-    
-    if (generalConsultation) {
-      return { 
-        cost: generalConsultation.price, 
-        serviceName: generalConsultation.serviceName 
-      };
-    }
-    
-    // Last resort: return 0 if no consultation services found
-    return { cost: 0, serviceName: '' };
+  // Handle consultation cost calculation from the reusable component
+  const handleCostCalculated = (cost: number, serviceName: string) => {
+    setConsultationCost(cost);
+    setConsultationService(serviceName);
   };
-
-  // Update consultation cost when form data changes
-  useEffect(() => {
-    const result = calculateConsultationCost();
-    setConsultationCost(result.cost);
-    setConsultationService(result.serviceName);
-  }, [formData.type, formData.doctorId, servicePrices]);
 
   // For new appointments, automatically set to current date/time
   useEffect(() => {
@@ -175,33 +77,16 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
 
       // Create automatic billing for the consultation
       if (newAppointment && consultationCost > 0) {
-        const patient = patients.find(p => p.id === formData.patientId);
-        if (patient) {
-          // Create bill for consultation
-          const consultationBill = {
-            patientId: formData.patientId,
-            appointmentId: newAppointment.id,
-            services: [
-              {
-                serviceName: consultationService || `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation`,
-                price: consultationCost,
-                quantity: 1
-              }
-            ],
-            subtotal: consultationCost,
-            discount: 0,
-            total: consultationCost,
-            status: 'pending' as const,
-            paymentMethod: 'cash' as const,
-            notes: `Automatic billing for ${formData.type} appointment`
-          };
-
-          try {
-            await addBill(consultationBill);
-            console.log('Automatic billing created for consultation:', consultationBill);
-          } catch (error) {
-            console.error('Failed to create automatic billing:', error);
-          }
+        try {
+          await createConsultationBill(
+            formData.patientId,
+            newAppointment.id,
+            consultationService || `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation`,
+            consultationCost,
+            formData.type
+          );
+        } catch (error) {
+          console.error('Failed to create automatic billing:', error);
         }
       }
     }
@@ -315,45 +200,13 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
         </div>
 
         {/* Consultation Cost Display */}
-        {!appointment && consultationCost > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Calculator className="w-5 h-5 text-blue-600" />
-                <h3 className="text-sm font-medium text-blue-800">Consultation Cost</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCostBreakdown(!showCostBreakdown)}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                {showCostBreakdown ? 'Hide Details' : 'Show Details'}
-              </button>
-            </div>
-            
-            <div className="mt-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-700">
-                  {consultationService || `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation`}
-                </span>
-                <span className="text-lg font-semibold text-blue-900">
-                  {consultationCost.toLocaleString()} TZS
-                </span>
-              </div>
-              
-              {showCostBreakdown && (
-                <div className="mt-3 pt-3 border-t border-blue-200">
-                  <div className="text-xs text-blue-600 space-y-1">
-                    <p>• This is the consultation fee for seeing the doctor in their department</p>
-                    <p>• Additional costs for tests, medications, or procedures will be billed separately</p>
-                    <p>• This cost will be automatically billed when the appointment is scheduled</p>
-                    <p>• Payment can be made at the cashier's desk</p>
-                    <p>• Insurance claims can be processed separately</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+        {!appointment && (
+          <ConsultationCostDisplay
+            appointmentType={formData.type}
+            doctorId={formData.doctorId}
+            onCostCalculated={handleCostCalculated}
+            showBreakdown={true}
+          />
         )}
 
         <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
