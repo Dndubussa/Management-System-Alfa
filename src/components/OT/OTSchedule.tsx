@@ -6,10 +6,12 @@ import { useNavigate } from 'react-router-dom';
 import { SurgeryRequest } from '../../types';
 import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
 import { useConsultationBilling } from '../../hooks/useConsultationBilling';
+import { useServiceBilling } from '../../hooks/useServiceBilling';
 
 export function OTSchedule() {
   const { surgeryRequests, otSlots, otResources, patients, users, addSurgeryRequest } = useHospital();
   const { createConsultationBill } = useConsultationBilling();
+  const { createProcedureBill, findServicePrice } = useServiceBilling();
   const { user } = useAuth();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -29,11 +31,20 @@ export function OTSchedule() {
 
   const [consultationCost, setConsultationCost] = useState<number>(0);
   const [consultationService, setConsultationService] = useState<string>('');
+  const [procedureCost, setProcedureCost] = useState<number>(0);
 
   const handleCostCalculated = (cost: number, serviceName: string) => {
     setConsultationCost(cost);
     setConsultationService(serviceName);
   };
+
+  // Calculate procedure cost when surgery type changes
+  const handleSurgeryTypeChange = (surgeryType: string) => {
+    const cost = findServicePrice(surgeryType, 'procedure');
+    setProcedureCost(cost);
+  };
+
+  const totalCost = consultationCost + procedureCost;
 
   // Get scheduled surgeries
   const scheduledSurgeries = surgeryRequests.filter(req => req.status === 'scheduled' && req.scheduledDate);
@@ -92,6 +103,19 @@ export function OTSchedule() {
           );
         } catch (error) {
           console.error('Failed to create automatic billing:', error);
+        }
+      }
+
+      // Create billing for procedure if cost > 0
+      if (procedureCost > 0 && newSurgeryRequest) {
+        try {
+          await createProcedureBill(
+            newSurgery.patientId,
+            [{ procedureName: newSurgery.surgeryType, notes: newSurgery.notes }],
+            undefined
+          );
+        } catch (error) {
+          console.error('Failed to create procedure billing:', error);
         }
       }
       
@@ -216,7 +240,10 @@ export function OTSchedule() {
                   <input
                     type="text"
                     value={newSurgery.surgeryType}
-                    onChange={(e) => setNewSurgery({...newSurgery, surgeryType: e.target.value})}
+                    onChange={(e) => {
+                      setNewSurgery({...newSurgery, surgeryType: e.target.value});
+                      handleSurgeryTypeChange(e.target.value);
+                    }}
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                     placeholder="e.g., Appendectomy"
                   />
@@ -260,6 +287,17 @@ export function OTSchedule() {
                     showBreakdown={true}
                   />
                 )}
+
+                {/* Procedure Cost Display */}
+                {procedureCost > 0 && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-orange-800 mb-2">Procedure Cost</h3>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-orange-700">{newSurgery.surgeryType}</span>
+                      <span className="text-lg font-semibold text-orange-900">{procedureCost.toLocaleString()} TZS</span>
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -287,7 +325,7 @@ export function OTSchedule() {
                   className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
                 >
                   Schedule Surgery
-                  {consultationCost > 0 && ` (${consultationCost.toLocaleString()} TZS)`}
+                  {totalCost > 0 && ` (${totalCost.toLocaleString()} TZS)`}
                 </button>
               </div>
             </div>

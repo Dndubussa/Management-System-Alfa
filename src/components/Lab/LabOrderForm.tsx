@@ -4,6 +4,7 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
 import { useConsultationBilling } from '../../hooks/useConsultationBilling';
+import { useServiceBilling } from '../../hooks/useServiceBilling';
 
 interface LabOrderFormProps {
   patientId?: string;
@@ -19,6 +20,7 @@ interface LabOrderItem {
 export function LabOrderForm({ patientId, onSave, onCancel }: LabOrderFormProps) {
   const { patients, addLabOrder, addNotification } = useHospital();
   const { createConsultationBill } = useConsultationBilling();
+  const { createLabTestBill, findServicePrice } = useServiceBilling();
   const { user } = useAuth();
   
   const [formData, setFormData] = useState({
@@ -32,11 +34,16 @@ export function LabOrderForm({ patientId, onSave, onCancel }: LabOrderFormProps)
   
   const [consultationCost, setConsultationCost] = useState<number>(0);
   const [consultationService, setConsultationService] = useState<string>('');
+  const [labTestCosts, setLabTestCosts] = useState<{[key: number]: number}>({});
 
   const handleCostCalculated = (cost: number, serviceName: string) => {
     setConsultationCost(cost);
     setConsultationService(serviceName);
   };
+
+  // Calculate total lab test costs
+  const totalLabTestCost = Object.values(labTestCosts).reduce((sum, cost) => sum + cost, 0);
+  const totalCost = consultationCost + totalLabTestCost;
 
   const handleAddLabOrder = () => {
     setLabOrders([...labOrders, { testName: '', instructions: '' }]);
@@ -53,6 +60,15 @@ export function LabOrderForm({ patientId, onSave, onCancel }: LabOrderFormProps)
       i === index ? { ...order, [field]: value } : order
     );
     setLabOrders(updatedOrders);
+
+    // Calculate cost for this lab test
+    if (field === 'testName' && value.trim()) {
+      const cost = findServicePrice(value, 'lab-test');
+      setLabTestCosts(prev => ({
+        ...prev,
+        [index]: cost
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,6 +112,19 @@ export function LabOrderForm({ patientId, onSave, onCancel }: LabOrderFormProps)
           );
         } catch (error) {
           console.error('Failed to create automatic billing:', error);
+        }
+      }
+
+      // Create billing for lab tests
+      if (validLabOrders.length > 0) {
+        try {
+          await createLabTestBill(
+            formData.patientId,
+            validLabOrders,
+            undefined
+          );
+        } catch (error) {
+          console.error('Failed to create lab test billing:', error);
         }
       }
 
@@ -184,6 +213,32 @@ export function LabOrderForm({ patientId, onSave, onCancel }: LabOrderFormProps)
           showBreakdown={true}
         />
 
+        {/* Lab Test Costs Display */}
+        {totalLabTestCost > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-green-800 mb-3">Lab Test Costs</h3>
+            <div className="space-y-2">
+              {labOrders.map((order, index) => {
+                const cost = labTestCosts[index] || 0;
+                if (cost === 0 || !order.testName.trim()) return null;
+                
+                return (
+                  <div key={index} className="flex justify-between items-center text-sm">
+                    <span className="text-green-700">{order.testName}</span>
+                    <span className="font-semibold text-green-900">{cost.toLocaleString()} TZS</span>
+                  </div>
+                );
+              })}
+              <div className="pt-2 border-t border-green-200">
+                <div className="flex justify-between items-center font-semibold">
+                  <span className="text-green-800">Total Lab Tests:</span>
+                  <span className="text-green-900">{totalLabTestCost.toLocaleString()} TZS</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Lab Orders Section */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -262,7 +317,7 @@ export function LabOrderForm({ patientId, onSave, onCancel }: LabOrderFormProps)
             <Save className="w-4 h-4" />
             <span>
               Create Lab Orders
-              {consultationCost > 0 && ` (${consultationCost.toLocaleString()} TZS)`}
+              {totalCost > 0 && ` (${totalCost.toLocaleString()} TZS)`}
             </span>
           </button>
         </div>

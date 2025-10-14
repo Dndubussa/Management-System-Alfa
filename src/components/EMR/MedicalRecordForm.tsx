@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { MedicalRecord, Prescription, LabOrder, Patient } from '../../types';
 import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
 import { useConsultationBilling } from '../../hooks/useConsultationBilling';
+import { useServiceBilling } from '../../hooks/useServiceBilling';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
 import { ICD10Selector } from '../ICD10/ICD10Selector';
 
@@ -18,6 +19,7 @@ interface MedicalRecordFormProps {
 export function MedicalRecordForm({ patientId, record, onSave, onCancel }: MedicalRecordFormProps) {
   const { addMedicalRecord, patients, addNotification } = useHospital();
   const { createConsultationBill } = useConsultationBilling();
+  const { createMedicationBill, createLabTestBill, findServicePrice } = useServiceBilling();
   const { user } = useAuth();
   
   const patient = patients.find(p => p.id === patientId);
@@ -65,11 +67,18 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
 
   const [consultationCost, setConsultationCost] = useState<number>(0);
   const [consultationService, setConsultationService] = useState<string>('');
+  const [prescriptionCosts, setPrescriptionCosts] = useState<{[key: number]: number}>({});
+  const [labOrderCosts, setLabOrderCosts] = useState<{[key: number]: number}>({});
 
   const handleCostCalculated = (cost: number, serviceName: string) => {
     setConsultationCost(cost);
     setConsultationService(serviceName);
   };
+
+  // Calculate total costs
+  const totalPrescriptionCost = Object.values(prescriptionCosts).reduce((sum, cost) => sum + cost, 0);
+  const totalLabOrderCost = Object.values(labOrderCosts).reduce((sum, cost) => sum + cost, 0);
+  const totalCost = consultationCost + totalPrescriptionCost + totalLabOrderCost;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +141,39 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
         );
       } catch (error) {
         console.error('Failed to create automatic billing:', error);
+      }
+    }
+
+    // Create billing for prescriptions
+    if (fullPrescriptions.length > 0) {
+      try {
+        createMedicationBill(
+          patientId,
+          fullPrescriptions.map(p => ({
+            medication: p.medication,
+            dosage: p.dosage,
+            quantity: 1
+          })),
+          undefined
+        );
+      } catch (error) {
+        console.error('Failed to create prescription billing:', error);
+      }
+    }
+
+    // Create billing for lab orders
+    if (fullLabOrders.length > 0) {
+      try {
+        createLabTestBill(
+          patientId,
+          fullLabOrders.map(l => ({
+            testName: l.testName,
+            instructions: l.instructions
+          })),
+          undefined
+        );
+      } catch (error) {
+        console.error('Failed to create lab order billing:', error);
       }
     }
 
@@ -198,6 +240,15 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
     setPrescriptions(prev => prev.map((p, i) => 
       i === index ? { ...p, [field]: value } : p
     ));
+
+    // Calculate cost for this prescription
+    if (field === 'medication' && value.trim()) {
+      const cost = findServicePrice(value, 'medication');
+      setPrescriptionCosts(prev => ({
+        ...prev,
+        [index]: cost
+      }));
+    }
   };
 
   const addLabOrder = () => {
@@ -215,6 +266,15 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
     setLabOrders(prev => prev.map((l, i) => 
       i === index ? { ...l, [field]: value } : l
     ));
+
+    // Calculate cost for this lab order
+    if (field === 'testName' && value.trim()) {
+      const cost = findServicePrice(value, 'lab-test');
+      setLabOrderCosts(prev => ({
+        ...prev,
+        [index]: cost
+      }));
+    }
   };
 
   // Export current record
@@ -639,6 +699,32 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
           </div>
         </div>
 
+        {/* Prescription Costs Display */}
+        {totalPrescriptionCost > 0 && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-purple-800 mb-3">Prescription Costs</h3>
+            <div className="space-y-2">
+              {prescriptions.map((prescription, index) => {
+                const cost = prescriptionCosts[index] || 0;
+                if (cost === 0 || !prescription.medication.trim()) return null;
+                
+                return (
+                  <div key={index} className="flex justify-between items-center text-sm">
+                    <span className="text-purple-700">{prescription.medication}</span>
+                    <span className="font-semibold text-purple-900">{cost.toLocaleString()} TZS</span>
+                  </div>
+                );
+              })}
+              <div className="pt-2 border-t border-purple-200">
+                <div className="flex justify-between items-center font-semibold">
+                  <span className="text-purple-800">Total Prescriptions:</span>
+                  <span className="text-purple-900">{totalPrescriptionCost.toLocaleString()} TZS</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Prescriptions */}
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -737,6 +823,32 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
           )}
         </div>
 
+        {/* Lab Order Costs Display */}
+        {totalLabOrderCost > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-green-800 mb-3">Lab Test Costs</h3>
+            <div className="space-y-2">
+              {labOrders.map((labOrder, index) => {
+                const cost = labOrderCosts[index] || 0;
+                if (cost === 0 || !labOrder.testName.trim()) return null;
+                
+                return (
+                  <div key={index} className="flex justify-between items-center text-sm">
+                    <span className="text-green-700">{labOrder.testName}</span>
+                    <span className="font-semibold text-green-900">{cost.toLocaleString()} TZS</span>
+                  </div>
+                );
+              })}
+              <div className="pt-2 border-t border-green-200">
+                <div className="flex justify-between items-center font-semibold">
+                  <span className="text-green-800">Total Lab Tests:</span>
+                  <span className="text-green-900">{totalLabOrderCost.toLocaleString()} TZS</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Lab Orders */}
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -813,7 +925,7 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
             <Save className="w-4 h-4" />
             <span>
               {record ? 'Update Record' : 'Save Record'}
-              {!record && consultationCost > 0 && ` (${consultationCost.toLocaleString()} TZS)`}
+              {!record && totalCost > 0 && ` (${totalCost.toLocaleString()} TZS)`}
             </span>
           </button>
         </div>
