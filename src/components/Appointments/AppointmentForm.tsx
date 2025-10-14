@@ -28,51 +28,99 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
   });
 
   const [consultationCost, setConsultationCost] = useState<number>(0);
+  const [consultationService, setConsultationService] = useState<string>('');
   const [showCostBreakdown, setShowCostBreakdown] = useState(false);
 
-  // Calculate consultation cost based on appointment type and doctor
+  // Calculate consultation cost based on appointment type and doctor from hospital price list
   const calculateConsultationCost = () => {
-    if (!formData.type || !formData.doctorId) return 0;
+    if (!formData.type || !formData.doctorId) return { cost: 0, serviceName: '' };
     
-    // Find consultation services based on appointment type
+    // Get the selected doctor to determine their specialty
+    const selectedDoctor = doctors.find(doctor => doctor.id === formData.doctorId);
+    const doctorSpecialty = selectedDoctor?.department?.toLowerCase() || '';
+    
+    // Find consultation services based on appointment type and doctor specialty
     const consultationServices = servicePrices.filter(service => {
       const serviceName = service.serviceName.toLowerCase();
       const appointmentType = formData.type.toLowerCase();
       
-      // Map appointment types to service names
+      // Map appointment types to specific consultation services from price list
       if (appointmentType === 'consultation') {
-        return serviceName.includes('consultation') || 
-               serviceName.includes('general') ||
-               serviceName.includes('specialist');
+        // Look for general consultation services
+        if (serviceName.includes('consultation') || 
+            serviceName.includes('general') ||
+            serviceName.includes('specialist') ||
+            serviceName.includes('doctor') ||
+            serviceName.includes('physician')) {
+          return true;
+        }
+        
+        // Look for specialty-specific consultations
+        if (doctorSpecialty.includes('ophthalmology') && 
+            (serviceName.includes('eye') || serviceName.includes('ophthalmology'))) {
+          return true;
+        }
+        if (doctorSpecialty.includes('internal') && 
+            (serviceName.includes('internal') || serviceName.includes('medicine'))) {
+          return true;
+        }
       } else if (appointmentType === 'follow-up') {
         return serviceName.includes('follow') || 
-               serviceName.includes('review');
+               serviceName.includes('review') ||
+               serviceName.includes('return');
       } else if (appointmentType === 'emergency') {
         return serviceName.includes('emergency') || 
-               serviceName.includes('urgent');
+               serviceName.includes('urgent') ||
+               serviceName.includes('casualty');
       }
       return false;
     });
     
-    // Return the first matching service price, or default consultation price
+    // Return the first matching service
     if (consultationServices.length > 0) {
-      return consultationServices[0].price;
+      return { 
+        cost: consultationServices[0].price, 
+        serviceName: consultationServices[0].serviceName 
+      };
     }
     
-    // Default consultation prices based on type
-    const defaultPrices = {
-      consultation: 50000,  // 50,000 TZS for general consultation
-      'follow-up': 30000,   // 30,000 TZS for follow-up
-      emergency: 100000     // 100,000 TZS for emergency
-    };
+    // If no specific consultation found, look for general consultation services
+    const generalConsultation = servicePrices.find(service => {
+      const serviceName = service.serviceName.toLowerCase();
+      return serviceName.includes('consultation') || 
+             serviceName.includes('general') ||
+             serviceName.includes('doctor') ||
+             serviceName.includes('physician');
+    });
     
-    return defaultPrices[formData.type] || 50000;
+    if (generalConsultation) {
+      return { 
+        cost: generalConsultation.price, 
+        serviceName: generalConsultation.serviceName 
+      };
+    }
+    
+    // Fallback: look for any service with "consultation" in the name
+    const anyConsultation = servicePrices.find(service => 
+      service.serviceName.toLowerCase().includes('consultation')
+    );
+    
+    if (anyConsultation) {
+      return { 
+        cost: anyConsultation.price, 
+        serviceName: anyConsultation.serviceName 
+      };
+    }
+    
+    // Last resort: return 0 if no consultation services found
+    return { cost: 0, serviceName: '' };
   };
 
   // Update consultation cost when form data changes
   useEffect(() => {
-    const cost = calculateConsultationCost();
-    setConsultationCost(cost);
+    const result = calculateConsultationCost();
+    setConsultationCost(result.cost);
+    setConsultationService(result.serviceName);
   }, [formData.type, formData.doctorId, servicePrices]);
 
   // For new appointments, automatically set to current date/time
@@ -121,7 +169,7 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
             appointmentId: newAppointment.id,
             services: [
               {
-                serviceName: `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation`,
+                serviceName: consultationService || `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation`,
                 price: consultationCost,
                 quantity: 1
               }
@@ -272,7 +320,7 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
             <div className="mt-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-blue-700">
-                  {formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation
+                  {consultationService || `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation`}
                 </span>
                 <span className="text-lg font-semibold text-blue-900">
                   {consultationCost.toLocaleString()} TZS
