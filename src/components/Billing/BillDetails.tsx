@@ -1,8 +1,10 @@
-import React from 'react';
-import { X, Printer, Download, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Printer, Download, CreditCard, Shield } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { Bill } from '../../types';
 import { generateReceiptPDF, generateInvoicePDF } from '../../utils/billingExport';
+import { NHIFClaims } from './NHIFClaims';
+import { NHIFClaimResponse } from '../../types/nhif';
 
 interface BillDetailsProps {
   bill: Bill;
@@ -11,6 +13,8 @@ interface BillDetailsProps {
 
 export function BillDetails({ bill, onClose }: BillDetailsProps) {
   const { patients, updateBillStatus } = useHospital();
+  const [showNHIFClaims, setShowNHIFClaims] = useState(false);
+  const [claimResponse, setClaimResponse] = useState<NHIFClaimResponse | null>(null);
   
   const patient = patients.find(p => p.id === bill.patientId);
 
@@ -34,6 +38,14 @@ export function BillDetails({ bill, onClose }: BillDetailsProps) {
 
   const handlePayment = (paymentMethod: string) => {
     updateBillStatus(bill.id, 'paid', paymentMethod);
+  };
+
+  const handleClaimSubmitted = (response: NHIFClaimResponse) => {
+    setClaimResponse(response);
+    if (response.status === 'approved') {
+      // Auto-mark as paid if claim is approved
+      updateBillStatus(bill.id, 'paid', 'insurance');
+    }
   };
 
   const handlePrint = () => {
@@ -211,6 +223,29 @@ export function BillDetails({ bill, onClose }: BillDetailsProps) {
                 </button>
               )}
             </div>
+
+            {/* NHIF Claims Processing */}
+            {patient?.insuranceInfo?.provider === 'NHIF' && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">NHIF Claims</h3>
+                  <button
+                    onClick={() => setShowNHIFClaims(!showNHIFClaims)}
+                    className="flex items-center space-x-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
+                  >
+                    <Shield className="w-4 h-4" />
+                    <span>{showNHIFClaims ? 'Hide' : 'Show'} Claims</span>
+                  </button>
+                </div>
+                
+                {showNHIFClaims && (
+                  <NHIFClaims 
+                    bill={bill} 
+                    onClaimSubmitted={handleClaimSubmitted}
+                  />
+                )}
+              </div>
+            )}
 
             {bill.status === 'pending' && (
               <div className="flex space-x-3">
