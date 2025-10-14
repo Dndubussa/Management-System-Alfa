@@ -24,7 +24,6 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
     date: appointment?.dateTime ? appointment.dateTime.split('T')[0] : currentDate,
     time: appointment?.dateTime ? appointment.dateTime.split('T')[1].substring(0, 5) : currentTime,
     type: appointment?.type || 'consultation' as const,
-    status: appointment?.status || 'scheduled' as const,
     notes: appointment?.notes || ''
   });
 
@@ -104,11 +103,12 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
         id: appointment.id
       });
     } else {
-      // Add new appointment with default duration of 30 minutes
+      // Add new appointment with default duration of 30 minutes and status 'scheduled'
       const newAppointment = await addAppointment({
         ...formData,
         dateTime,
-        duration: 30 // Default duration
+        duration: 30, // Default duration
+        status: 'scheduled' // Default status for new appointments
       });
 
       // Create automatic billing for the consultation
@@ -234,23 +234,6 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
               <option value="consultation">Consultation</option>
               <option value="follow-up">Follow-up</option>
               <option value="emergency">Emergency</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            >
-              <option value="scheduled">Scheduled</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
             </select>
           </div>
         </div>
