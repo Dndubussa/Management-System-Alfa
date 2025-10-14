@@ -222,20 +222,20 @@ app.post('/api/patients', async (req, res) => {
 
     const mrn = `ALFA-${currentYear}-${nextNumber.toString().padStart(5, '0')}`;
 
-    // Use the already-mapped data from the API service
+    // Use the snake_case data from the API service (already mapped)
     const patientData = {
       mrn: mrn,
-      first_name: req.body.first_name || req.body.firstName,
-      last_name: req.body.last_name || req.body.lastName,
-      date_of_birth: req.body.date_of_birth || req.body.dateOfBirth,
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      date_of_birth: req.body.date_of_birth,
       gender: req.body.gender,
       phone: req.body.phone,
       address: req.body.address,
-      emergency_contact_name: req.body.emergency_contact_name || req.body.emergencyContact?.name || '',
-      emergency_contact_phone: req.body.emergency_contact_phone || req.body.emergencyContact?.phone || '',
-      emergency_contact_relationship: req.body.emergency_contact_relationship || req.body.emergencyContact?.relationship || '',
-      insurance_provider: req.body.insurance_provider || req.body.insuranceInfo?.provider || '',
-      insurance_membership_number: req.body.insurance_membership_number || req.body.insuranceInfo?.membershipNumber || ''
+      emergency_contact_name: req.body.emergency_contact_name || '',
+      emergency_contact_phone: req.body.emergency_contact_phone || '',
+      emergency_contact_relationship: req.body.emergency_contact_relationship || '',
+      insurance_provider: req.body.insurance_provider || '',
+      insurance_membership_number: req.body.insurance_membership_number || ''
     };
 
     console.log('Backend received patient data:', req.body);
