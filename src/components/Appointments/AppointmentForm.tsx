@@ -39,44 +39,72 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
     const selectedDoctor = doctors.find(doctor => doctor.id === formData.doctorId);
     const doctorSpecialty = selectedDoctor?.department?.toLowerCase() || '';
     
-    // Find consultation services based on appointment type and doctor specialty
-    const consultationServices = servicePrices.filter(service => {
-      const serviceName = service.serviceName.toLowerCase();
-      const appointmentType = formData.type.toLowerCase();
-      
-      // Map appointment types to specific consultation services from price list
-      if (appointmentType === 'consultation') {
-        // Look for general consultation services
-        if (serviceName.includes('consultation') || 
-            serviceName.includes('general') ||
-            serviceName.includes('specialist') ||
-            serviceName.includes('doctor') ||
-            serviceName.includes('physician')) {
+    // Define consultation services based on appointment type
+    // These are for seeing a doctor in their department before any tests or prescriptions
+    let consultationServices = [];
+    
+    if (formData.type === 'consultation') {
+      // Look for actual doctor consultation services (not procedures or medications)
+      consultationServices = servicePrices.filter(service => {
+        const serviceName = service.serviceName.toLowerCase();
+        
+        // Exclude medications, procedures, and tests - only consultation fees
+        if (serviceName.includes('injection') || 
+            serviceName.includes('tablet') || 
+            serviceName.includes('capsule') ||
+            serviceName.includes('syrup') ||
+            serviceName.includes('ointment') ||
+            serviceName.includes('drops') ||
+            serviceName.includes('surgery') ||
+            serviceName.includes('operation') ||
+            serviceName.includes('test') ||
+            serviceName.includes('x-ray') ||
+            serviceName.includes('ultrasound') ||
+            serviceName.includes('blood') ||
+            serviceName.includes('urine') ||
+            serviceName.includes('biopsy') ||
+            serviceName.includes('scan')) {
+          return false;
+        }
+        
+        // Look for actual consultation services
+        if (serviceName.includes('specialist') && 
+            (serviceName.includes('2/wk') || serviceName.includes('weekly'))) {
+          return true;
+        }
+        if (serviceName.includes('super specialist')) {
+          return true;
+        }
+        if (serviceName.includes('consultation')) {
+          return true;
+        }
+        if (serviceName.includes('doctor') && !serviceName.includes('visit')) {
+          return true;
+        }
+        if (serviceName.includes('physician')) {
           return true;
         }
         
-        // Look for specialty-specific consultations
-        if (doctorSpecialty.includes('ophthalmology') && 
-            (serviceName.includes('eye') || serviceName.includes('ophthalmology'))) {
-          return true;
-        }
-        if (doctorSpecialty.includes('internal') && 
-            (serviceName.includes('internal') || serviceName.includes('medicine'))) {
-          return true;
-        }
-      } else if (appointmentType === 'follow-up') {
-        return serviceName.includes('follow') || 
-               serviceName.includes('review') ||
-               serviceName.includes('return');
-      } else if (appointmentType === 'emergency') {
-        return serviceName.includes('emergency') || 
-               serviceName.includes('urgent') ||
-               serviceName.includes('casualty');
-      }
-      return false;
-    });
+        return false;
+      });
+    } else if (formData.type === 'follow-up') {
+      // Look for follow-up consultation services
+      consultationServices = servicePrices.filter(service => {
+        const serviceName = service.serviceName.toLowerCase();
+        return serviceName.includes('follow') && 
+               serviceName.includes('assessment');
+      });
+    } else if (formData.type === 'emergency') {
+      // Look for emergency consultation services
+      consultationServices = servicePrices.filter(service => {
+        const serviceName = service.serviceName.toLowerCase();
+        return serviceName.includes('emergency') && 
+               !serviceName.includes('pulpotomy') && // Exclude dental procedures
+               !serviceName.includes('surgery');
+      });
+    }
     
-    // Return the first matching service
+    // Return the first matching consultation service
     if (consultationServices.length > 0) {
       return { 
         cost: consultationServices[0].price, 
@@ -84,31 +112,17 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
       };
     }
     
-    // If no specific consultation found, look for general consultation services
+    // Fallback: Use the most appropriate general consultation service
     const generalConsultation = servicePrices.find(service => {
       const serviceName = service.serviceName.toLowerCase();
-      return serviceName.includes('consultation') || 
-             serviceName.includes('general') ||
-             serviceName.includes('doctor') ||
-             serviceName.includes('physician');
+      return serviceName.includes('specialist') && 
+             serviceName.includes('2/wk');
     });
     
     if (generalConsultation) {
       return { 
         cost: generalConsultation.price, 
         serviceName: generalConsultation.serviceName 
-      };
-    }
-    
-    // Fallback: look for any service with "consultation" in the name
-    const anyConsultation = servicePrices.find(service => 
-      service.serviceName.toLowerCase().includes('consultation')
-    );
-    
-    if (anyConsultation) {
-      return { 
-        cost: anyConsultation.price, 
-        serviceName: anyConsultation.serviceName 
       };
     }
     
@@ -330,6 +344,8 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
               {showCostBreakdown && (
                 <div className="mt-3 pt-3 border-t border-blue-200">
                   <div className="text-xs text-blue-600 space-y-1">
+                    <p>• This is the consultation fee for seeing the doctor in their department</p>
+                    <p>• Additional costs for tests, medications, or procedures will be billed separately</p>
                     <p>• This cost will be automatically billed when the appointment is scheduled</p>
                     <p>• Payment can be made at the cashier's desk</p>
                     <p>• Insurance claims can be processed separately</p>
