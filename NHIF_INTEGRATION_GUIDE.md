@@ -168,13 +168,16 @@ const preAuthRequest: NHIFPreAuthRequest = {
 const result = await requestPreAuth(preAuthRequest);
 ```
 
-## Security Considerations
+## Security Guidelines
 
 1. **Credential Protection**: Never commit API credentials to version control
 2. **HTTPS Only**: Always use HTTPS for API communications
 3. **Token Management**: Implement proper token refresh mechanisms
 4. **Audit Logging**: Log all NHIF API interactions
 5. **Error Handling**: Implement comprehensive error handling
+6. **Data Encryption**: Encrypt sensitive data at rest and in transit
+7. **Access Control**: Implement proper user authentication and authorization
+8. **Regular Updates**: Keep API credentials and security measures updated
 
 ## Testing
 
