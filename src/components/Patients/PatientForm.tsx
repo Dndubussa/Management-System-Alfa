@@ -16,7 +16,12 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
     age: patient ? calculateAge(patient.dateOfBirth) : '',
     gender: patient?.gender || 'male' as const,
     phone: patient?.phone || '',
-    address: patient?.address || ''
+    address: patient?.address || '',
+    emergencyContactName: patient?.emergencyContact?.name || '',
+    emergencyContactPhone: patient?.emergencyContact?.phone || '',
+    emergencyContactRelationship: patient?.emergencyContact?.relationship || '',
+    insuranceProvider: patient?.insuranceInfo?.provider || '',
+    insuranceMembershipNumber: patient?.insuranceInfo?.membershipNumber || ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,13 +82,13 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
         phone: formData.phone.trim(),
         address: formData.address.trim(),
         emergencyContact: {
-          name: '',
-          phone: '',
-          relationship: ''
+          name: formData.emergencyContactName.trim(),
+          phone: formData.emergencyContactPhone.trim(),
+          relationship: formData.emergencyContactRelationship.trim()
         },
         insuranceInfo: {
-          provider: '',
-          membershipNumber: ''
+          provider: formData.insuranceProvider.trim(),
+          membershipNumber: formData.insuranceMembershipNumber.trim()
         }
       };
 
@@ -241,6 +246,155 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
               placeholder="Enter complete address"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500 resize-none"
             />
+          </div>
+
+          {/* Emergency Contact Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+              Emergency Contact
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Emergency Contact Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contact Name
+                </label>
+                <input
+                  type="text"
+                  name="emergencyContactName"
+                  value={formData.emergencyContactName}
+                  onChange={handleChange}
+                  placeholder="Enter emergency contact name"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
+                />
+              </div>
+
+              {/* Emergency Contact Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contact Phone
+                </label>
+                <input
+                  type="tel"
+                  name="emergencyContactPhone"
+                  value={formData.emergencyContactPhone}
+                  onChange={handleChange}
+                  placeholder="Enter emergency contact phone"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
+                />
+              </div>
+
+              {/* Emergency Contact Relationship */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Relationship
+                </label>
+                <select
+                  name="emergencyContactRelationship"
+                  value={formData.emergencyContactRelationship}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900"
+                >
+                  <option value="">Select Relationship</option>
+                  <option value="Spouse">Spouse</option>
+                  <option value="Parent">Parent</option>
+                  <option value="Child">Child</option>
+                  <option value="Sibling">Sibling</option>
+                  <option value="Friend">Friend</option>
+                  <option value="Relative">Relative</option>
+                  <option value="Guardian">Guardian</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Insurance Information Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+              Insurance Information
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Insurance Provider */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Insurance Provider
+                </label>
+                <select
+                  name="insuranceProvider"
+                  value={formData.insuranceProvider}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900"
+                >
+                  <option value="">Select Insurance Provider</option>
+                  <option value="NHIF">NHIF (National Health Insurance Fund)</option>
+                  <option value="AAR">AAR Health Insurance</option>
+                  <option value="Jubilee">Jubilee Health Insurance</option>
+                  <option value="CIC">CIC Health Insurance</option>
+                  <option value="UAP">UAP Health Insurance</option>
+                  <option value="Resolution">Resolution Health Insurance</option>
+                  <option value="Sanlam">Sanlam Health Insurance</option>
+                  <option value="Britam">Britam Health Insurance</option>
+                  <option value="APA">APA Health Insurance</option>
+                  <option value="Minet">Minet Health Insurance</option>
+                  <option value="Heritage">Heritage Health Insurance</option>
+                  <option value="Prudential">Prudential Health Insurance</option>
+                  <option value="Allianz">Allianz Health Insurance</option>
+                  <option value="Liberty">Liberty Health Insurance</option>
+                  <option value="First Assurance">First Assurance Health Insurance</option>
+                  <option value="Kenindia">Kenindia Health Insurance</option>
+                  <option value="Madison">Madison Health Insurance</option>
+                  <option value="Takaful">Takaful Health Insurance</option>
+                  <option value="GA Insurance">GA Insurance Health</option>
+                  <option value="Direct">Direct Payment (Cash)</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {/* Insurance Membership Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Membership Number
+                </label>
+                <input
+                  type="text"
+                  name="insuranceMembershipNumber"
+                  value={formData.insuranceMembershipNumber}
+                  onChange={handleChange}
+                  placeholder="Enter insurance membership number"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
+                />
+              </div>
+            </div>
+
+            {/* Insurance Information Note */}
+            {formData.insuranceProvider && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <div className="w-5 h-5 text-blue-600 mt-0.5">
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium">Insurance Information</p>
+                    <p className="mt-1">
+                      {formData.insuranceProvider === 'Direct' 
+                        ? 'Patient will pay directly (cash payment)'
+                        : `Insurance claims will be processed through ${formData.insuranceProvider}`
+                      }
+                    </p>
+                    {formData.insuranceMembershipNumber && (
+                      <p className="mt-1">
+                        Membership Number: <span className="font-mono">{formData.insuranceMembershipNumber}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

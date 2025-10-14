@@ -1,7 +1,7 @@
 import React from 'react';
 import { useHospital } from '../../context/HospitalContext';
 import { Patient, MedicalRecord, Appointment } from '../../types';
-import { ArrowLeft, Calendar, Phone, Mail, MapPin, User, Heart, Stethoscope, FileText, Clock, Download } from 'lucide-react';
+import { ArrowLeft, Calendar, Phone, Mail, MapPin, User, Heart, Stethoscope, FileText, Clock, Download, Shield } from 'lucide-react';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
 
 interface PatientDetailProps {
@@ -169,10 +169,15 @@ export function PatientDetail({ patient, onBack, onEdit }: PatientDetailProps) {
               <p className="text-sm">{patient.emergencyContact.phone} ({patient.emergencyContact.relationship})</p>
             </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-500">Insurance</p>
-            <p className="font-medium">{patient.insuranceInfo.provider}</p>
-            <p className="text-sm">{patient.insuranceInfo.membershipNumber}</p>
+          <div className="flex items-start">
+            <Shield className="w-5 h-5 text-gray-400 mt-0.5 mr-3" />
+            <div>
+              <p className="text-sm text-gray-500">Insurance</p>
+              <p className="font-medium">{patient.insuranceInfo.provider || 'Not specified'}</p>
+              {patient.insuranceInfo.membershipNumber && (
+                <p className="text-sm font-mono">{patient.insuranceInfo.membershipNumber}</p>
+              )}
+            </div>
           </div>
           <div>
             <p className="text-sm text-gray-500">Registered</p>
