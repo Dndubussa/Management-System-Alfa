@@ -595,3 +595,124 @@ export interface PriceLookupFilter {
   sortBy?: 'name' | 'category' | 'price';
   sortOrder?: 'asc' | 'desc';
 }
+
+// ICD-10/ICD-11 Standardized Health Terminologies
+export interface ICD10Code {
+  id: string;
+  code: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ICD11Code {
+  id: string;
+  code: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  foundationUri?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CPT4Code {
+  id: string;
+  code: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TanzaniaServiceCode {
+  id: string;
+  shaCode: string;
+  serviceName: string;
+  category: string;
+  nhifTariff: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MedicalRecordDiagnosis {
+  id: string;
+  medicalRecordId: string;
+  icd10Code?: string;
+  icd11Code?: string;
+  diagnosisType: 'primary' | 'secondary' | 'differential';
+  diagnosisDate: string;
+  notes?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PrescriptionDiagnosis {
+  id: string;
+  prescriptionId: string;
+  icd10Code?: string;
+  icd11Code?: string;
+  diagnosisType: 'primary' | 'secondary' | 'differential';
+  createdAt: string;
+}
+
+export interface BillItemDiagnosis {
+  id: string;
+  billItemId: string;
+  icd10Code?: string;
+  icd11Code?: string;
+  diagnosisType: 'primary' | 'secondary' | 'differential';
+  createdAt: string;
+}
+
+export interface ServiceCodeMapping {
+  id: string;
+  servicePriceId: string;
+  icd10Code?: string;
+  icd11Code?: string;
+  cpt4Code?: string;
+  shaCode?: string;
+  mappingType: 'diagnosis' | 'procedure' | 'service';
+  isPrimary: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ICDCodeSearchResult {
+  codeType: 'ICD-10' | 'ICD-11';
+  code: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServiceMappingView {
+  id: string;
+  serviceName: string;
+  serviceCategory: string;
+  servicePrice: number;
+  icd10Code?: string;
+  icd10Description?: string;
+  icd11Code?: string;
+  icd11Description?: string;
+  cpt4Code?: string;
+  cpt4Description?: string;
+  shaCode?: string;
+  shaServiceName?: string;
+  nhifTariff?: number;
+  mappingType: string;
+  isPrimary: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

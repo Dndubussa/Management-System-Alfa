@@ -1821,6 +1821,296 @@ app.delete('/api/estimates/:id', async (req, res) => {
   }
 });
 
+// ICD-10 Codes endpoints
+app.get('/api/icd10-codes', async (req, res) => {
+  try {
+    const { search, category, limit = 1000 } = req.query;
+    let query = supabase
+      .from('icd10_codes')
+      .select('*')
+      .eq('is_active', true)
+      .order('code');
+
+    if (search) {
+      query = query.or(`code.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+
+    const { data, error } = await query;
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ICD-11 Codes endpoints
+app.get('/api/icd11-codes', async (req, res) => {
+  try {
+    const { search, category, limit = 1000 } = req.query;
+    let query = supabase
+      .from('icd11_codes')
+      .select('*')
+      .eq('is_active', true)
+      .order('code');
+
+    if (search) {
+      query = query.or(`code.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+
+    const { data, error } = await query;
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// CPT-4 Codes endpoints
+app.get('/api/cpt4-codes', async (req, res) => {
+  try {
+    const { search, category, limit = 1000 } = req.query;
+    let query = supabase
+      .from('cpt4_codes')
+      .select('*')
+      .eq('is_active', true)
+      .order('code');
+
+    if (search) {
+      query = query.or(`code.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+
+    const { data, error } = await query;
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Tanzania Service Codes endpoints
+app.get('/api/tanzania-service-codes', async (req, res) => {
+  try {
+    const { search, category, limit = 1000 } = req.query;
+    let query = supabase
+      .from('tanzania_service_codes')
+      .select('*')
+      .eq('is_active', true)
+      .order('sha_code');
+
+    if (search) {
+      query = query.or(`sha_code.ilike.%${search}%,service_name.ilike.%${search}%,category.ilike.%${search}%`);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+
+    const { data, error } = await query;
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Medical Record Diagnoses endpoints
+app.get('/api/medical-record-diagnoses/:recordId', async (req, res) => {
+  try {
+    const { recordId } = req.params;
+    const { data, error } = await supabase
+      .from('medical_record_diagnoses')
+      .select(`
+        *,
+        icd10_codes!icd10_code(code, description),
+        icd11_codes!icd11_code(code, description)
+      `)
+      .eq('medical_record_id', recordId)
+      .order('diagnosis_type', { ascending: true });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/medical-record-diagnoses', async (req, res) => {
+  try {
+    const diagnosisData = {
+      medical_record_id: req.body.medicalRecordId,
+      icd10_code: req.body.icd10Code,
+      icd11_code: req.body.icd11Code,
+      diagnosis_type: req.body.diagnosisType || 'primary',
+      diagnosis_date: req.body.diagnosisDate || new Date().toISOString(),
+      notes: req.body.notes,
+      created_by: req.body.createdBy
+    };
+
+    const { data, error } = await supabase
+      .from('medical_record_diagnoses')
+      .insert([diagnosisData])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Prescription Diagnoses endpoints
+app.get('/api/prescription-diagnoses/:prescriptionId', async (req, res) => {
+  try {
+    const { prescriptionId } = req.params;
+    const { data, error } = await supabase
+      .from('prescription_diagnoses')
+      .select(`
+        *,
+        icd10_codes!icd10_code(code, description),
+        icd11_codes!icd11_code(code, description)
+      `)
+      .eq('prescription_id', prescriptionId)
+      .order('diagnosis_type', { ascending: true });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/prescription-diagnoses', async (req, res) => {
+  try {
+    const diagnosisData = {
+      prescription_id: req.body.prescriptionId,
+      icd10_code: req.body.icd10Code,
+      icd11_code: req.body.icd11Code,
+      diagnosis_type: req.body.diagnosisType || 'primary'
+    };
+
+    const { data, error } = await supabase
+      .from('prescription_diagnoses')
+      .insert([diagnosisData])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Bill Item Diagnoses endpoints
+app.get('/api/bill-item-diagnoses/:billItemId', async (req, res) => {
+  try {
+    const { billItemId } = req.params;
+    const { data, error } = await supabase
+      .from('bill_item_diagnoses')
+      .select(`
+        *,
+        icd10_codes!icd10_code(code, description),
+        icd11_codes!icd11_code(code, description)
+      `)
+      .eq('bill_item_id', billItemId)
+      .order('diagnosis_type', { ascending: true });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/bill-item-diagnoses', async (req, res) => {
+  try {
+    const diagnosisData = {
+      bill_item_id: req.body.billItemId,
+      icd10_code: req.body.icd10Code,
+      icd11_code: req.body.icd11Code,
+      diagnosis_type: req.body.diagnosisType || 'primary'
+    };
+
+    const { data, error } = await supabase
+      .from('bill_item_diagnoses')
+      .insert([diagnosisData])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Service Code Mappings endpoints
+app.get('/api/service-code-mappings', async (req, res) => {
+  try {
+    const { servicePriceId, mappingType } = req.query;
+    let query = supabase
+      .from('service_code_mappings')
+      .select(`
+        *,
+        service_prices!service_price_id(service_name, category, price),
+        icd10_codes!icd10_code(code, description),
+        icd11_codes!icd11_code(code, description),
+        cpt4_codes!cpt4_code(code, description),
+        tanzania_service_codes!sha_code(sha_code, service_name, nhif_tariff)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (servicePriceId) {
+      query = query.eq('service_price_id', servicePriceId);
+    }
+
+    if (mappingType) {
+      query = query.eq('mapping_type', mappingType);
+    }
+
+    const { data, error } = await query;
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/service-code-mappings', async (req, res) => {
+  try {
+    const mappingData = {
+      service_price_id: req.body.servicePriceId,
+      icd10_code: req.body.icd10Code,
+      icd11_code: req.body.icd11Code,
+      cpt4_code: req.body.cpt4Code,
+      sha_code: req.body.shaCode,
+      mapping_type: req.body.mappingType || 'diagnosis',
+      is_primary: req.body.isPrimary || false
+    };
+
+    const { data, error } = await supabase
+      .from('service_code_mappings')
+      .insert([mappingData])
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // API health/info root
 app.get('/api', (req, res) => {
   res.json({ status: 'ok', name: 'Alfa Hospital API', version: 1 });

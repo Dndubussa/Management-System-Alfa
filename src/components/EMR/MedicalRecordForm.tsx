@@ -7,7 +7,7 @@ import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
 import { useConsultationBilling } from '../../hooks/useConsultationBilling';
 import { useServiceBilling } from '../../hooks/useServiceBilling';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
-import { ICD10Selector } from '../ICD10/ICD10Selector';
+import { ICDCodeSelector, ICDCodeDisplay } from '../Common/ICDCodeSelector';
 
 interface MedicalRecordFormProps {
   patientId: string;
@@ -40,11 +40,16 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
     status: record?.status || 'active' as const
   });
 
-  const [icd10Codes, setIcd10Codes] = useState(
+  const [icdCodes, setIcdCodes] = useState<ICDCodeSearchResult[]>(
     record?.diagnosisCodes?.map(dc => ({
+      codeType: dc.type === 'ICD-10' ? 'ICD-10' : 'ICD-11',
       code: dc.code,
       description: dc.description,
-      category: dc.type === 'ICD-10' ? 'ICD-10' : 'SNOMED CT'
+      category: '',
+      subcategory: '',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     })) || []
   );
 
@@ -113,10 +118,10 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: icd10Codes.map(code => ({
+      diagnosisCodes: icdCodes.map(code => ({
         code: code.code,
         description: code.description,
-        type: 'ICD-10' as const
+        type: code.codeType as 'ICD-10' | 'ICD-11'
       })),
       treatment: formData.treatment,
       notes: formData.notes,
@@ -289,10 +294,10 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: icd10Codes.map(code => ({
+      diagnosisCodes: icdCodes.map(code => ({
         code: code.code,
         description: code.description,
-        type: 'ICD-10' as const
+        type: code.codeType as 'ICD-10' | 'ICD-11'
       })),
       treatment: formData.treatment,
       notes: formData.notes,
@@ -333,10 +338,10 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: icd10Codes.map(code => ({
+      diagnosisCodes: icdCodes.map(code => ({
         code: code.code,
         description: code.description,
-        type: 'ICD-10' as const
+        type: code.codeType as 'ICD-10' | 'ICD-11'
       })),
       treatment: formData.treatment,
       notes: formData.notes,
@@ -377,10 +382,10 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: icd10Codes.map(code => ({
+      diagnosisCodes: icdCodes.map(code => ({
         code: code.code,
         description: code.description,
-        type: 'ICD-10' as const
+        type: code.codeType as 'ICD-10' | 'ICD-11'
       })),
       treatment: formData.treatment,
       notes: formData.notes,
@@ -421,10 +426,10 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
       visitDate: formData.visitDate,
       chiefComplaint: formData.chiefComplaint,
       diagnosis: formData.diagnosis,
-      diagnosisCodes: icd10Codes.map(code => ({
+      diagnosisCodes: icdCodes.map(code => ({
         code: code.code,
         description: code.description,
-        type: 'ICD-10' as const
+        type: code.codeType as 'ICD-10' | 'ICD-11'
       })),
       treatment: formData.treatment,
       notes: formData.notes,
@@ -583,12 +588,20 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ICD-10 Diagnosis Codes
+                ICD-10/ICD-11 Diagnosis Codes
               </label>
-              <ICD10Selector
-                selectedCodes={icd10Codes}
-                onCodesChange={setIcd10Codes}
-                maxCodes={5}
+              <ICDCodeSelector
+                selectedCodes={icdCodes}
+                onCodeSelect={(code) => {
+                  if (!icdCodes.find(c => c.code === code.code)) {
+                    setIcdCodes([...icdCodes, code]);
+                  }
+                }}
+                onCodeRemove={(code) => {
+                  setIcdCodes(icdCodes.filter(c => c.code !== code));
+                }}
+                multiple={true}
+                codeType="both"
                 className="w-full"
               />
             </div>

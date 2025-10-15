@@ -4,30 +4,39 @@ import { supabase } from '../config/supabase.js';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
-// Basic CSV parser for the provided format
+// Enhanced CSV parser for the provided format
 function parseCsv(content: string): { category: string; service_name: string; price: number; description: string }[] {
 	const lines = content.split(/\r?\n/);
 	let category = '';
 	const items: { category: string; service_name: string; price: number; description: string }[] = [];
+	
 	for (let i = 0; i < lines.length; i++) {
 		const raw = lines[i]?.trim();
 		if (!raw) continue;
-		// Category lines end with a comma (e.g., LABORATORY SERVICES,)
-		if (raw.endsWith(',') && !raw.includes('"')) {
-			category = raw.replace(/,$/, '').trim();
-			continue;
+		
+		// Category lines can end with single comma (e.g., LABORATORY SERVICES,) or double comma (e.g., OPTHALMOLOGY,,)
+		if ((raw.endsWith(',') || raw.endsWith(',,')) && !raw.includes('"') && !raw.includes('Item')) {
+			// Check if this looks like a category header (all caps, contains letters)
+			if (/^[A-Z][A-Z\s/]*[A-Z]/.test(raw)) {
+				category = raw.replace(/,,?$/, '').trim();
+				console.log(`Found category: ${category}`);
+				continue;
+			}
 		}
-		// Skip header rows like "Item,Price"
-		if (/^item\s*,\s*price/i.test(raw)) continue;
-		// Data rows: name,price
-		const match = raw.match(/^"?(.+?)"?\s*,\s*"?([0-9,]+)"?$/);
+		
+		// Skip header rows like "Item,Price" or "Item,,Price"
+		if (/^item\s*,+\s*price/i.test(raw)) continue;
+		
+		// Data rows: name,price or name,,price
+		// Handle both formats: "SERVICE NAME","30,000" and SERVICE NAME,,"30,000"
+		const match = raw.match(/^"?(.+?)"?\s*,+\s*"?([0-9,]+)"?$/);
 		if (match) {
 			const name = match[1].trim();
 			const priceStr = match[2].replace(/,/g, '').trim();
 			const priceNum = Number(priceStr);
-			if (!Number.isNaN(priceNum)) {
+			if (!Number.isNaN(priceNum) && name && category) {
 				items.push({
-					category: category || 'Uncategorized',
+					category: category,
 					service_name: name,
 					price: priceNum,
 					description: ''
@@ -102,13 +111,31 @@ async function run() {
 
 function mapCategory(raw: string): 'consultation' | 'lab-test' | 'medication' | 'procedure' | 'radiology' | 'physiotherapy' | 'psychiatry' | 'ophthalmology' {
 	const s = raw.toLowerCase();
-	if (s.includes('lab')) return 'lab-test';
-	if (s.includes('pharmacy') || s.includes('pharmaceutical')) return 'medication';
-	if (s.includes('procedure') || s.includes('surgical') || s.includes('surgery')) return 'procedure';
-	if (s.includes('radiology') || s.includes('scan') || s.includes('x-ray')) return 'radiology';
-	if (s.includes('physiotherapy') || s.includes('therapy')) return 'physiotherapy';
-	if (s.includes('psychiatry') || s.includes('counselling')) return 'psychiatry';
-	if (s.includes('ophthalmology') || s.includes('eye')) return 'ophthalmology';
+	
+	// Laboratory services
+	if (s.includes('laboratory') || s.includes('lab')) return 'lab-test';
+	
+	// Medications and pharmacy
+	if (s.includes('pharmacy') || s.includes('pharmaceutical') || s.includes('medication')) return 'medication';
+	
+	// Procedures and surgeries
+	if (s.includes('procedure') || s.includes('surgical') || s.includes('surgery') || 
+	    s.includes('extraction') || s.includes('dental') || s.includes('operation')) return 'procedure';
+	
+	// Radiology and imaging
+	if (s.includes('radiology') || s.includes('scan') || s.includes('x-ray') || 
+	    s.includes('ultrasound') || s.includes('ct') || s.includes('mri')) return 'radiology';
+	
+	// Physiotherapy and therapy
+	if (s.includes('physiotherapy') || s.includes('therapy') || s.includes('rehabilitation')) return 'physiotherapy';
+	
+	// Psychiatry and counselling
+	if (s.includes('psychiatry') || s.includes('counselling') || s.includes('mental health')) return 'psychiatry';
+	
+	// Ophthalmology and eye care
+	if (s.includes('ophthalmology') || s.includes('eye') || s.includes('optical') || s.includes('vision') || s.includes('opthalmology')) return 'ophthalmology';
+	
+	// Default to consultation for general services
 	return 'consultation';
 }
 
