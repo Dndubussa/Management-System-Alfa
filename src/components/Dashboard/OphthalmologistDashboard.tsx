@@ -90,10 +90,27 @@ export function OphthalmologistDashboard() {
     }
   }, [appointments, prescriptions, labOrders, user, today]);
 
-  // Get doctor's patients
-  const doctorPatients = patients.filter(patient => 
-    medicalRecords.some(record => record.doctorId === user?.id && record.patientId === patient.id)
-  );
+  // Get doctor's patients (only those with both appointments AND medical records with this doctor)
+  const doctorPatients = patients.filter(patient => {
+    const hasAppointment = appointments.some(appointment => 
+      appointment.doctorId === user?.id && appointment.patientId === patient.id
+    );
+    const hasMedicalRecord = medicalRecords.some(record => 
+      record.doctorId === user?.id && record.patientId === patient.id
+    );
+    
+    // Debug logging
+    if (patient.firstName === 'Esther' || patient.lastName === 'Leornard Mviombo') {
+      console.log('🔍 OphthalmologistDashboard - Checking patient:', patient.firstName, patient.lastName);
+      console.log('🔍 User ID:', user?.id);
+      console.log('🔍 Has appointment:', hasAppointment);
+      console.log('🔍 Has medical record:', hasMedicalRecord);
+      console.log('🔍 Total appointments:', appointments.length);
+      console.log('🔍 Total medical records:', medicalRecords.length);
+    }
+    
+    return hasAppointment && hasMedicalRecord;
+  });
 
   // Get doctor's prescriptions
   const doctorPrescriptions = prescriptions.filter(p => p.doctorId === user?.id);

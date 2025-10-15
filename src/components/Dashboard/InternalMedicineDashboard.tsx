@@ -26,10 +26,22 @@ export function InternalMedicineDashboard() {
     l.status === 'completed' && l.results
   );
 
-  // Get chronic disease patients
+  // Get chronic disease patients (only those with both appointments AND medical records with this doctor)
   const chronicDiseasePatients = patients.filter(patient => {
+    // First check if patient has appointments with this doctor
+    const hasAppointmentWithDoctor = appointments.some(appointment => 
+      appointment.doctorId === user?.id && appointment.patientId === patient.id
+    );
+    
+    // Then check if patient has medical records with this doctor
+    const hasMedicalRecordWithDoctor = doctorRecords.some(record => 
+      record.patientId === patient.id
+    );
+    
+    if (!hasAppointmentWithDoctor || !hasMedicalRecordWithDoctor) return false;
+    
+    // Finally check if patient has chronic conditions in their records
     const patientRecords = doctorRecords.filter(record => record.patientId === patient.id);
-    // Check if patient has chronic conditions in their records
     return patientRecords.some(record => 
       record.diagnosis.toLowerCase().includes('diabetes') ||
       record.diagnosis.toLowerCase().includes('hypertension') ||

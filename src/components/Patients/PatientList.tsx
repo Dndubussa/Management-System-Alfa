@@ -3,6 +3,7 @@ import { Search, Plus, Eye, CreditCard as Edit } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Patient } from '../../types';
+import { hasRestrictedPatientVisibility, canCreatePatients, canEditPatients } from '../../utils/roleUtils';
 
 interface PatientListProps {
   onViewPatient: (patient: Patient) => void;
@@ -12,13 +13,47 @@ interface PatientListProps {
 
 export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: PatientListProps) {
   const { user } = useAuth();
-  const { patients } = useHospital();
+  const { patients, appointments, medicalRecords } = useHospital();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredPatients = patients.filter(patient =>
-    `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.phone.includes(searchTerm)
-  );
+  // Filter patients based on user role
+  const getFilteredPatients = () => {
+    let basePatients = patients;
+
+    // If user is a medical specialist, only show patients who have both appointments AND medical records with this specialist
+    if (hasRestrictedPatientVisibility(user?.role)) {
+      console.log('🔍 Doctor filtering - User:', user);
+      console.log('🔍 Total patients:', patients.length);
+      console.log('🔍 Total appointments:', appointments.length);
+      console.log('🔍 Total medical records:', medicalRecords.length);
+      
+      const doctorAppointmentPatientIds = appointments
+        .filter(appointment => appointment.doctorId === user.id)
+        .map(appointment => appointment.patientId);
+      
+      const doctorMedicalRecordPatientIds = medicalRecords
+        .filter(record => record.doctorId === user.id)
+        .map(record => record.patientId);
+      
+      console.log('🔍 Doctor appointment patient IDs:', doctorAppointmentPatientIds);
+      console.log('🔍 Doctor medical record patient IDs:', doctorMedicalRecordPatientIds);
+      
+      basePatients = patients.filter(patient => 
+        doctorAppointmentPatientIds.includes(patient.id) && 
+        doctorMedicalRecordPatientIds.includes(patient.id)
+      );
+      
+      console.log('🔍 Filtered patients for doctor:', basePatients.length);
+    }
+
+    // Apply search filter
+    return basePatients.filter(patient =>
+      `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.phone.includes(searchTerm)
+    );
+  };
+
+  const filteredPatients = getFilteredPatients();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -41,9 +76,11 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Patient Directory</h2>
-          {/* Only receptionists can add new patients */}
-          {user?.role === 'receptionist' && (
+          <h2 className="text-xl font-semibold text-gray-900">
+            {hasRestrictedPatientVisibility(user?.role) ? 'My Patients' : 'Patient Directory'}
+          </h2>
+          {/* Only authorized roles can add new patients */}
+          {canCreatePatients(user?.role) && (
             <button
               onClick={onNewPatient}
               className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2"
@@ -58,7 +95,7 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search patients by name or phone..."
+            placeholder={hasRestrictedPatientVisibility(user?.role) ? "Search my patients by name or phone..." : "Search patients by name or phone..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -94,7 +131,9 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
             {filteredPatients.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                  {searchTerm ? 'No patients found matching your search.' : 'No patients registered yet.'}
+                  {searchTerm ? 'No patients found matching your search.' : 
+                   hasRestrictedPatientVisibility(user?.role) ? 'No patients have been scheduled to see you and have medical records with you yet.' : 
+                   'No patients registered yet.'}
                 </td>
               </tr>
             ) : (
@@ -133,8 +172,8 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      {/* Only receptionists can edit patients */}
-                      {user?.role === 'receptionist' && (
+                      {/* Only authorized roles can edit patients */}
+                      {canEditPatients(user?.role) && (
                         <button
                           onClick={() => onEditPatient(patient)}
                           className="text-green-600 hover:text-green-900 transition-colors"

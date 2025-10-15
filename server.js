@@ -2063,14 +2063,7 @@ app.get('/api/service-code-mappings', async (req, res) => {
     const { servicePriceId, mappingType } = req.query;
     let query = supabase
       .from('service_code_mappings')
-      .select(`
-        *,
-        service_prices!service_price_id(service_name, category, price),
-        icd10_codes!icd10_code(code, description),
-        icd11_codes!icd11_code(code, description),
-        cpt4_codes!cpt4_code(code, description),
-        tanzania_service_codes!sha_code(sha_code, service_name, nhif_tariff)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (servicePriceId) {
@@ -2082,7 +2075,84 @@ app.get('/api/service-code-mappings', async (req, res) => {
     }
 
     const { data, error } = await query;
-    handleSupabaseResponse(data, error, res);
+    
+    if (error) {
+      handleSupabaseResponse(data, error, res);
+      return;
+    }
+
+    // Manually join the related data since foreign keys might not exist yet
+    if (data && data.length > 0) {
+      const enrichedData = await Promise.all(data.map(async (mapping) => {
+        const enriched = { ...mapping };
+        
+        // Get service price info
+        if (mapping.service_price_id) {
+          const { data: serviceData } = await supabase
+            .from('service_prices')
+            .select('service_name, category, price')
+            .eq('id', mapping.service_price_id)
+            .single();
+          if (serviceData) {
+            enriched.service_prices = serviceData;
+          }
+        }
+        
+        // Get ICD-10 info
+        if (mapping.icd10_code) {
+          const { data: icd10Data } = await supabase
+            .from('icd10_codes')
+            .select('code, description')
+            .eq('code', mapping.icd10_code)
+            .single();
+          if (icd10Data) {
+            enriched.icd10_codes = icd10Data;
+          }
+        }
+        
+        // Get ICD-11 info
+        if (mapping.icd11_code) {
+          const { data: icd11Data } = await supabase
+            .from('icd11_codes')
+            .select('code, description')
+            .eq('code', mapping.icd11_code)
+            .single();
+          if (icd11Data) {
+            enriched.icd11_codes = icd11Data;
+          }
+        }
+        
+        // Get CPT-4 info
+        if (mapping.cpt4_code) {
+          const { data: cpt4Data } = await supabase
+            .from('cpt4_codes')
+            .select('code, description')
+            .eq('code', mapping.cpt4_code)
+            .single();
+          if (cpt4Data) {
+            enriched.cpt4_codes = cpt4Data;
+          }
+        }
+        
+        // Get Tanzania service code info
+        if (mapping.sha_code) {
+          const { data: shaData } = await supabase
+            .from('tanzania_service_codes')
+            .select('sha_code, service_name, nhif_tariff')
+            .eq('sha_code', mapping.sha_code)
+            .single();
+          if (shaData) {
+            enriched.tanzania_service_codes = shaData;
+          }
+        }
+        
+        return enriched;
+      }));
+      
+      res.json(enrichedData);
+    } else {
+      res.json(data);
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
