@@ -8,9 +8,11 @@
 -- Example: Add your actual medications and supplies
 -- Replace the examples below with your real data
 
-insert into inventory_items (name, category, current_stock, min_stock, max_stock, unit, expiry_date, supplier, cost, selling_price, description, location) values
--- Add your medications here (examples):
--- ('Your Medication Name', 'category', current_stock, min_stock, max_stock, 'unit', 'expiry_date'::date, 'supplier', cost, selling_price, 'description', 'location'),
+-- Add your inventory items here (examples):
+-- Uncomment and modify the lines below to add your real inventory:
+
+-- insert into inventory_items (name, category, current_stock, min_stock, max_stock, unit, expiry_date, supplier, cost, selling_price, description, location) values
+-- ('Your Medication Name', 'category', 100, 10, 200, 'unit', '2025-12-31'::date, 'supplier', 2.50, 5.00, 'description', 'location'),
 -- ('Another Medication', 'antibiotics', 100, 10, 200, 'tablets', '2025-12-31'::date, 'Your Supplier', 2.50, 5.00, 'Description', 'Pharmacy A'),
 
 -- Add your medical supplies here (examples):
@@ -30,9 +32,11 @@ insert into inventory_items (name, category, current_stock, min_stock, max_stock
 -- Example: Add your actual medications with batch tracking
 -- Replace the examples below with your real medication data
 
-insert into medication_inventory (medication_name, generic_name, dosage_form, strength, manufacturer, batch_number, expiry_date, current_stock, min_stock, max_stock, unit_cost, selling_price, supplier, storage_conditions, controlled_substance, prescription_required) values
 -- Add your medications here (examples):
--- ('Your Medication Name', 'Generic Name', 'tablet', 'strength', 'Manufacturer', 'BATCH001', '2025-12-31'::date, current_stock, min_stock, max_stock, unit_cost, selling_price, 'Supplier', 'storage_conditions', false, true),
+-- Uncomment and modify the lines below to add your real medications:
+
+-- insert into medication_inventory (medication_name, generic_name, dosage_form, strength, manufacturer, batch_number, expiry_date, current_stock, min_stock, max_stock, unit_cost, selling_price, supplier, storage_conditions, controlled_substance, prescription_required) values
+-- ('Your Medication Name', 'Generic Name', 'tablet', 'strength', 'Manufacturer', 'BATCH001', '2025-12-31'::date, 100, 10, 200, 2.50, 5.00, 'Your Supplier', 'Room temperature', false, true),
 -- ('Paracetamol', 'Acetaminophen', 'tablet', '500mg', 'Your Pharma', 'PAR2024001', '2025-12-31'::date, 1000, 100, 2000, 0.50, 1.00, 'Your Supplier', 'Room temperature', false, false),
 -- ('Amoxicillin', 'Amoxicillin', 'capsule', '250mg', 'Antibiotic Co', 'AMX2024001', '2025-06-30'::date, 500, 50, 1000, 2.00, 4.00, 'Pharma Supplier', 'Room temperature', false, true),
 -- ('Insulin', 'Insulin Glargine', 'injection', '100 units/ml', 'Diabetic Care', 'INS2024001', '2025-03-15'::date, 50, 10, 100, 25.00, 50.00, 'Medical Supply', 'Refrigerated 2-8°C', false, true);
