@@ -77,6 +77,40 @@ function mapPatientFromDb(row: any): Patient {
   };
 }
 
+// Helper function to get all records with pagination
+async function getAllRecords(
+  tableName: string, 
+  orderBy: string = 'id', 
+  ascending: boolean = true
+): Promise<any[]> {
+  let allData: any[] = [];
+  let from = 0;
+  const batchSize = 1000;
+  let hasMore = true;
+  
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .order(orderBy, { ascending })
+      .range(from, from + batchSize - 1);
+    
+    if (error) {
+      throw error;
+    }
+    
+    if (data && data.length > 0) {
+      allData = [...allData, ...data];
+      from += batchSize;
+      hasMore = data.length === batchSize;
+    } else {
+      hasMore = false;
+    }
+  }
+  
+  return allData;
+}
+
 // Helper function to convert camelCase to snake_case
 function toSnakeCase(obj: any): any {
   if (Array.isArray(obj)) {
@@ -96,18 +130,15 @@ export const supabaseService = {
   // Patients
   getPatients: async (): Promise<Patient[]> => {
     console.log('🔍 Supabase: Getting patients...');
-    const { data, error } = await supabase
-      .from('patients')
-      .select('*')
-      .order('created_at', { ascending: false });
     
-    if (error) {
+    try {
+      const allData = await getAllRecords('patients', 'created_at', false);
+      console.log('✅ Supabase: Got patients:', allData.length);
+      return allData.map(mapPatientFromDb);
+    } catch (error) {
       console.error('❌ Supabase: Error getting patients:', error);
       throw error;
     }
-    
-    console.log('✅ Supabase: Got patients:', data?.length || 0);
-    return data.map(mapPatientFromDb);
   },
 
   getPatient: async (id: string): Promise<Patient> => {
@@ -175,13 +206,12 @@ export const supabaseService = {
 
   // Medical Records
   getMedicalRecords: async (): Promise<MedicalRecord[]> => {
-    const { data, error } = await supabase
-      .from('medical_records')
-      .select('*')
-      .order('visit_date', { ascending: false });
-    
-    if (error) throw error;
-    return toCamelCase(data) as MedicalRecord[];
+    try {
+      const allData = await getAllRecords('medical_records', 'visit_date', false);
+      return toCamelCase(allData) as MedicalRecord[];
+    } catch (error) {
+      throw error;
+    }
   },
 
   getMedicalRecord: async (id: string): Promise<MedicalRecord> => {
@@ -292,13 +322,12 @@ export const supabaseService = {
 
   // Appointments
   getAppointments: async (): Promise<Appointment[]> => {
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('*')
-      .order('date_time', { ascending: false });
-    
-    if (error) throw error;
-    return toCamelCase(data) as Appointment[];
+    try {
+      const allData = await getAllRecords('appointments', 'date_time', false);
+      return toCamelCase(allData) as Appointment[];
+    } catch (error) {
+      throw error;
+    }
   },
 
   getAppointment: async (id: string): Promise<Appointment> => {
@@ -456,18 +485,15 @@ export const supabaseService = {
   // Service Prices
   getServicePrices: async (): Promise<ServicePrice[]> => {
     console.log('🔍 Supabase: Getting service prices...');
-    const { data, error } = await supabase
-      .from('service_prices')
-      .select('*')
-      .order('service_name', { ascending: true });
     
-    if (error) {
+    try {
+      const allData = await getAllRecords('service_prices', 'service_name', true);
+      console.log('✅ Supabase: Got service prices:', allData.length);
+      return toCamelCase(allData) as ServicePrice[];
+    } catch (error) {
       console.error('❌ Supabase: Error getting service prices:', error);
       throw error;
     }
-    
-    console.log('✅ Supabase: Got service prices:', data?.length || 0);
-    return toCamelCase(data) as ServicePrice[];
   },
 
   getServicePrice: async (id: string): Promise<ServicePrice> => {
