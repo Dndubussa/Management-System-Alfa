@@ -21,6 +21,8 @@ import {
   OTReport
 } from '../types';
 
+// Create a single Supabase instance to avoid multiple GoTrueClient instances
+let supabaseInstance: any = null;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 
@@ -28,7 +30,11 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+if (!supabaseInstance) {
+  supabaseInstance = createClient(supabaseUrl, supabaseKey);
+}
+
+const supabase = supabaseInstance;
 
 // Helper function to convert snake_case to camelCase
 function toCamelCase(obj: any): any {
@@ -43,6 +49,32 @@ function toCamelCase(obj: any): any {
     return converted;
   }
   return obj;
+}
+
+// Patient mapping function to ensure proper structure
+function mapPatientFromDb(row: any): Patient {
+  const c = toCamelCase(row);
+  return {
+    id: c.id,
+    mrn: c.mrn,
+    firstName: c.firstName,
+    lastName: c.lastName,
+    dateOfBirth: c.dateOfBirth,
+    gender: c.gender,
+    phone: c.phone,
+    address: c.address,
+    emergencyContact: {
+      name: c.emergencyContactName || '',
+      phone: c.emergencyContactPhone || '',
+      relationship: c.emergencyContactRelationship || '',
+    },
+    insuranceInfo: {
+      provider: c.insuranceProvider || '',
+      membershipNumber: c.insuranceMembershipNumber || '',
+    },
+    createdAt: c.createdAt,
+    updatedAt: c.updatedAt,
+  };
 }
 
 // Helper function to convert camelCase to snake_case
@@ -75,7 +107,7 @@ export const supabaseService = {
     }
     
     console.log('✅ Supabase: Got patients:', data?.length || 0);
-    return toCamelCase(data) as Patient[];
+    return data.map(mapPatientFromDb);
   },
 
   getPatient: async (id: string): Promise<Patient> => {
@@ -86,7 +118,7 @@ export const supabaseService = {
       .single();
     
     if (error) throw error;
-    return toCamelCase(data) as Patient;
+    return mapPatientFromDb(data);
   },
 
   createPatient: async (patient: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>): Promise<Patient> => {
@@ -112,7 +144,7 @@ export const supabaseService = {
       .single();
     
     if (error) throw error;
-    return toCamelCase(data) as Patient;
+    return mapPatientFromDb(data);
   },
 
   updatePatient: async (id: string, patient: Partial<Patient>): Promise<Patient> => {
@@ -129,7 +161,7 @@ export const supabaseService = {
       .single();
     
     if (error) throw error;
-    return toCamelCase(data) as Patient;
+    return mapPatientFromDb(data);
   },
 
   deletePatient: async (id: string): Promise<void> => {

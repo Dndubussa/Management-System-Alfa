@@ -7,9 +7,16 @@ import { createClient } from '@supabase/supabase-js';
 const isProduction = import.meta.env.PROD;
 const useSupabase = isProduction || import.meta.env.VITE_USE_SUPABASE === 'true';
 
+// Create a single Supabase instance to avoid multiple GoTrueClient instances
+let supabaseInstance: any = null;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
-const supabase = useSupabase && supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+if (useSupabase && supabaseUrl && supabaseKey && !supabaseInstance) {
+  supabaseInstance = createClient(supabaseUrl, supabaseKey);
+}
+
+const supabase = supabaseInstance;
 
 interface AuthContextType {
   user: User | null;
