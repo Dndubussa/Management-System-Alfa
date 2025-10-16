@@ -63,12 +63,18 @@ function toSnakeCase(obj: any): any {
 export const supabaseService = {
   // Patients
   getPatients: async (): Promise<Patient[]> => {
+    console.log('🔍 Supabase: Getting patients...');
     const { data, error } = await supabase
       .from('patients')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase: Error getting patients:', error);
+      throw error;
+    }
+    
+    console.log('✅ Supabase: Got patients:', data?.length || 0);
     return toCamelCase(data) as Patient[];
   },
 
@@ -417,12 +423,18 @@ export const supabaseService = {
 
   // Service Prices
   getServicePrices: async (): Promise<ServicePrice[]> => {
+    console.log('🔍 Supabase: Getting service prices...');
     const { data, error } = await supabase
       .from('service_prices')
       .select('*')
       .order('service_name', { ascending: true });
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase: Error getting service prices:', error);
+      throw error;
+    }
+    
+    console.log('✅ Supabase: Got service prices:', data?.length || 0);
     return toCamelCase(data) as ServicePrice[];
   },
 

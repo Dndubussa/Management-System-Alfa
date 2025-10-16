@@ -48,6 +48,7 @@ import { OTReports } from './components/OT/OTReports';
 
 // Insurance Officer Components
 import { InsuranceOfficerDashboard } from './components/Insurance/InsuranceOfficerDashboard';
+import { DataDebugger } from './components/Debug/DataDebugger';
 import { InsuranceProviders } from './components/Insurance/InsuranceProviders';
 import { InsuranceReports } from './components/Insurance/InsuranceReports';
 import { InsuranceVerification } from './components/Insurance/InsuranceVerification';
@@ -455,6 +456,7 @@ function AppContent() {
           </Routes>
         </main>
       </div>
+      <DataDebugger />
     </div>
   );
 }

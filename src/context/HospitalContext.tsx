@@ -129,6 +129,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         // Load all data in parallel with individual error handling
         console.log('Starting to load data from API...');
         
+        // Load data with individual error handling - don't fail entire load if one table fails
         const [
           patientsData,
           medicalRecordsData,
@@ -146,21 +147,21 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           otSlotsData,
           otResourcesData
         ] = await Promise.all([
-          service.getPatients().catch(err => { console.error('Error loading patients:', err); throw err; }),
-          service.getMedicalRecords().catch(err => { console.error('Error loading medical records:', err); throw err; }),
-          service.getPrescriptions().catch(err => { console.error('Error loading prescriptions:', err); throw err; }),
-          service.getLabOrders().catch(err => { console.error('Error loading lab orders:', err); throw err; }),
-          service.getAppointments().catch(err => { console.error('Error loading appointments:', err); throw err; }),
-          service.getNotifications().catch(err => { console.error('Error loading notifications:', err); throw err; }),
-          service.getServicePrices().catch(err => { console.error('Error loading service prices:', err); throw err; }),
-          service.getBills().catch(err => { console.error('Error loading bills:', err); throw err; }),
-          service.getDepartments().catch(err => { console.error('Error loading departments:', err); throw err; }),
-          service.getReferrals().catch(err => { console.error('Error loading referrals:', err); throw err; }),
-          service.getUsers().catch(err => { console.error('Error loading users:', err); throw err; }),
-          service.getInsuranceClaims().catch(err => { console.error('Error loading insurance claims:', err); throw err; }),
-          service.getSurgeryRequests().catch(err => { console.error('Error loading surgery requests:', err); throw err; }),
-          service.getOTSlots().catch(err => { console.error('Error loading OT slots:', err); throw err; }),
-          service.getOTResources().catch(err => { console.error('Error loading OT resources:', err); throw err; })
+          service.getPatients().catch(err => { console.error('Error loading patients:', err); return []; }),
+          service.getMedicalRecords().catch(err => { console.error('Error loading medical records:', err); return []; }),
+          service.getPrescriptions().catch(err => { console.error('Error loading prescriptions:', err); return []; }),
+          service.getLabOrders().catch(err => { console.error('Error loading lab orders:', err); return []; }),
+          service.getAppointments().catch(err => { console.error('Error loading appointments:', err); return []; }),
+          service.getNotifications().catch(err => { console.error('Error loading notifications:', err); return []; }),
+          service.getServicePrices().catch(err => { console.error('Error loading service prices:', err); return []; }),
+          service.getBills().catch(err => { console.error('Error loading bills:', err); return []; }),
+          service.getDepartments().catch(err => { console.error('Error loading departments:', err); return []; }),
+          service.getReferrals().catch(err => { console.error('Error loading referrals:', err); return []; }),
+          service.getUsers().catch(err => { console.error('Error loading users:', err); return []; }),
+          service.getInsuranceClaims().catch(err => { console.error('Error loading insurance claims:', err); return []; }),
+          service.getSurgeryRequests().catch(err => { console.error('Error loading surgery requests:', err); return []; }),
+          service.getOTSlots().catch(err => { console.error('Error loading OT slots:', err); return []; }),
+          service.getOTResources().catch(err => { console.error('Error loading OT resources:', err); return []; })
         ]);
         
         console.log('Data loaded successfully:', {
