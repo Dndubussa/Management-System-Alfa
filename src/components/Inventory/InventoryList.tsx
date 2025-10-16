@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Package, Search, AlertTriangle, Plus, CreditCard as Edit } from 'lucide-react';
+import { useHospital } from '../../context/HospitalContext';
 
 interface InventoryItem {
   id: string;
@@ -9,21 +10,26 @@ interface InventoryItem {
   minStock: number;
   maxStock: number;
   unit: string;
-  expiryDate: string;
+  expiryDate?: string;
   supplier: string;
   cost: number;
+  sellingPrice: number;
+  description?: string;
+  barcode?: string;
+  location?: string;
+  status: 'active' | 'inactive' | 'discontinued';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function InventoryList() {
+  const { inventoryItems, loading, error } = useHospital();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
 
-  // Inventory data - will be fetched from Supabase when table is implemented
-  const [inventory] = useState<InventoryItem[]>([]);
+  const categories = ['All', 'antibiotics', 'pain-relief', 'diabetes', 'cardiovascular', 'respiratory', 'gastrointestinal', 'neurological', 'dermatological', 'equipment', 'surgical-supplies', 'medical-devices', 'consumables', 'wound-care', 'surgical', 'diagnostic', 'protective', 'vitamins'];
 
-  const categories = ['All', 'Antibiotics', 'Pain Relief', 'Diabetes', 'Equipment'];
-
-  const filteredInventory = inventory.filter(item => {
+  const filteredInventory = inventoryItems.filter(item => {
     const matchesSearch = searchTerm === '' || 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.supplier.toLowerCase().includes(searchTerm.toLowerCase());
@@ -43,11 +49,13 @@ export function InventoryList() {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
   };
 
-  const isExpiringSoon = (expiryDate: string) => {
+  const isExpiringSoon = (expiryDate?: string) => {
+    if (!expiryDate) return false;
     const expiry = new Date(expiryDate);
     const today = new Date();
     const diffTime = expiry.getTime() - today.getTime();
@@ -157,17 +165,39 @@ export function InventoryList() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredInventory.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+                    <p className="text-gray-500">Loading inventory...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center">
+                    <AlertTriangle className="w-12 h-12 text-red-300 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Inventory</h3>
+                    <p className="text-gray-500 mb-2">{error}</p>
+                    <p className="text-sm text-gray-400">
+                      Please check your database connection and try again.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredInventory.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center">
                     <Package className="w-12 h-12 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Inventory Management</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Inventory Items Found</h3>
                     <p className="text-gray-500 mb-2">
-                      This feature requires the inventory table to be implemented in the database.
+                      {searchTerm || categoryFilter !== '' ? 'No items match your search criteria.' : 'No inventory items have been added yet.'}
                     </p>
                     <p className="text-sm text-gray-400">
-                      Once implemented, you'll be able to manage medical supplies, medications, and equipment inventory.
+                      Add new inventory items to start tracking your medical supplies and medications.
                     </p>
                   </div>
                 </td>

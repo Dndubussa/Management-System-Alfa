@@ -29,6 +29,50 @@ const isProduction = import.meta.env.PROD;
 const useSupabase = isProduction || import.meta.env.VITE_USE_SUPABASE === 'true';
 const service = useSupabase ? supabaseService : api;
 
+// Inventory types
+interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number;
+  unit: string;
+  expiryDate?: string;
+  supplier: string;
+  cost: number;
+  sellingPrice: number;
+  description?: string;
+  barcode?: string;
+  location?: string;
+  status: 'active' | 'inactive' | 'discontinued';
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MedicationInventory {
+  id: string;
+  medicationName: string;
+  genericName?: string;
+  dosageForm: 'tablet' | 'capsule' | 'syrup' | 'injection' | 'cream' | 'drops' | 'inhaler' | 'patch' | 'suppository';
+  strength: string;
+  manufacturer: string;
+  batchNumber: string;
+  expiryDate: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number;
+  unitCost: number;
+  sellingPrice: number;
+  supplier: string;
+  storageConditions?: string;
+  controlledSubstance: boolean;
+  prescriptionRequired: boolean;
+  status: 'active' | 'inactive' | 'recalled' | 'expired';
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface HospitalContextType {
   patients: Patient[];
   medicalRecords: MedicalRecord[];
@@ -49,6 +93,8 @@ interface HospitalContextType {
   otChecklists: OTChecklist[];
   surgeryProgress: SurgeryProgress[];
   otReports: OTReport[];
+  inventoryItems: InventoryItem[];
+  medicationInventory: MedicationInventory[];
   addPatient: (patient: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updatePatient: (id: string, patient: Partial<Patient>) => Promise<void>;
   addMedicalRecord: (record: Omit<MedicalRecord, 'id'>) => Promise<void>;
@@ -116,6 +162,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   const [otChecklists, setOTChecklists] = useState<OTChecklist[]>([]);
   const [surgeryProgress, setSurgeryProgress] = useState<SurgeryProgress[]>([]);
   const [otReports, setOTReports] = useState<OTReport[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [medicationInventory, setMedicationInventory] = useState<MedicationInventory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,7 +193,9 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           insuranceClaimsData,
           surgeryRequestsData,
           otSlotsData,
-          otResourcesData
+          otResourcesData,
+          inventoryItemsData,
+          medicationInventoryData
         ] = await Promise.all([
           service.getPatients().catch(err => { console.error('Error loading patients:', err); return []; }),
           service.getMedicalRecords().catch(err => { console.error('Error loading medical records:', err); return []; }),
@@ -161,7 +211,9 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           service.getInsuranceClaims().catch(err => { console.error('Error loading insurance claims:', err); return []; }),
           service.getSurgeryRequests().catch(err => { console.error('Error loading surgery requests:', err); return []; }),
           service.getOTSlots().catch(err => { console.error('Error loading OT slots:', err); return []; }),
-          service.getOTResources().catch(err => { console.error('Error loading OT resources:', err); return []; })
+          service.getOTResources().catch(err => { console.error('Error loading OT resources:', err); return []; }),
+          service.getInventoryItems().catch(err => { console.error('Error loading inventory items:', err); return []; }),
+          service.getMedicationInventory().catch(err => { console.error('Error loading medication inventory:', err); return []; })
         ]);
         
         console.log('Data loaded successfully:', {
@@ -179,7 +231,9 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           insuranceClaims: insuranceClaimsData.length,
           surgeryRequests: surgeryRequestsData.length,
           otSlots: otSlotsData.length,
-          otResources: otResourcesData.length
+          otResources: otResourcesData.length,
+          inventoryItems: inventoryItemsData.length,
+          medicationInventory: medicationInventoryData.length
         });
         
         setPatients(patientsData);
@@ -197,6 +251,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         setSurgeryRequests(surgeryRequestsData);
         setOTSlots(otSlotsData);
         setOTResources(otResourcesData);
+        setInventoryItems(inventoryItemsData);
+        setMedicationInventory(medicationInventoryData);
       } catch (err) {
         console.error('Error loading data:', err);
         console.error('Error details:', {
@@ -285,6 +341,59 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       setPrescriptions(prev => prev.map(prescription =>
         prescription.id === id ? updatedPrescription : prescription
       ));
+
+      // Handle inventory deduction when prescription is dispensed
+      if (status === 'dispensed') {
+        const prescription = prescriptions.find(p => p.id === id);
+        if (prescription) {
+          // Find matching medication in inventory
+          const medication = medicationInventory.find(med => 
+            med.medicationName.toLowerCase() === prescription.medication.toLowerCase() &&
+            med.status === 'active'
+          );
+
+          if (medication) {
+            try {
+              // Calculate quantity to deduct (assuming 1 prescription = 1 unit for now)
+              const quantityToDeduct = 1;
+              
+              // Check if we have enough stock
+              if (medication.currentStock >= quantityToDeduct) {
+                // Create medication transaction record
+                await service.createMedicationTransaction({
+                  medicationInventoryId: medication.id,
+                  transactionType: 'dispensed',
+                  quantity: quantityToDeduct,
+                  unitCost: medication.unitCost,
+                  totalCost: medication.unitCost * quantityToDeduct,
+                  prescriptionId: prescription.id,
+                  notes: `Dispensed for prescription ${prescription.id}`,
+                  performedBy: prescription.doctorId // Using doctor ID as performer
+                });
+
+                // Update medication inventory stock
+                await service.updateMedicationInventoryItem(medication.id, {
+                  currentStock: medication.currentStock - quantityToDeduct
+                });
+
+                // Refresh medication inventory
+                const updatedMedicationInventory = await service.getMedicationInventory();
+                setMedicationInventory(updatedMedicationInventory);
+
+                console.log(`✅ Dispensed ${quantityToDeduct} ${medication.medicationName} for prescription ${prescription.id}`);
+              } else {
+                console.warn(`⚠️ Insufficient stock for ${medication.medicationName}. Required: ${quantityToDeduct}, Available: ${medication.currentStock}`);
+                // You might want to show a warning to the user here
+              }
+            } catch (inventoryError) {
+              console.error('Error updating medication inventory:', inventoryError);
+              // Don't fail the prescription update if inventory update fails
+            }
+          } else {
+            console.warn(`⚠️ Medication ${prescription.medication} not found in inventory`);
+          }
+        }
+      }
 
       // Automatically generate bill for prescriptions if autobilling is enabled
       if (autobillingConfig.enabled && autobillingConfig.autoGenerateForPrescriptions && status === 'dispensed') {
@@ -1060,6 +1169,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       otChecklists,
       surgeryProgress,
       otReports,
+      inventoryItems,
+      medicationInventory,
       addPatient,
       updatePatient,
       addMedicalRecord,

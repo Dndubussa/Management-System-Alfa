@@ -21,6 +21,77 @@ import {
   OTReport
 } from '../types';
 
+// Inventory types
+interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number;
+  unit: string;
+  expiryDate?: string;
+  supplier: string;
+  cost: number;
+  sellingPrice: number;
+  description?: string;
+  barcode?: string;
+  location?: string;
+  status: 'active' | 'inactive' | 'discontinued';
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface InventoryTransaction {
+  id: string;
+  inventoryItemId: string;
+  transactionType: 'in' | 'out' | 'adjustment' | 'expired' | 'damaged' | 'returned';
+  quantity: number;
+  unitCost?: number;
+  totalCost?: number;
+  referenceType?: string;
+  referenceId?: string;
+  notes?: string;
+  performedBy: string;
+  createdAt: string;
+}
+
+interface MedicationInventory {
+  id: string;
+  medicationName: string;
+  genericName?: string;
+  dosageForm: 'tablet' | 'capsule' | 'syrup' | 'injection' | 'cream' | 'drops' | 'inhaler' | 'patch' | 'suppository';
+  strength: string;
+  manufacturer: string;
+  batchNumber: string;
+  expiryDate: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number;
+  unitCost: number;
+  sellingPrice: number;
+  supplier: string;
+  storageConditions?: string;
+  controlledSubstance: boolean;
+  prescriptionRequired: boolean;
+  status: 'active' | 'inactive' | 'recalled' | 'expired';
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MedicationTransaction {
+  id: string;
+  medicationInventoryId: string;
+  transactionType: 'dispensed' | 'received' | 'adjustment' | 'expired' | 'damaged' | 'returned';
+  quantity: number;
+  unitCost?: number;
+  totalCost?: number;
+  prescriptionId?: string;
+  notes?: string;
+  performedBy: string;
+  createdAt: string;
+}
+
 // Create a single Supabase instance to avoid multiple GoTrueClient instances
 let supabaseInstance: any = null;
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -1038,5 +1109,225 @@ export const supabaseService = {
     
     if (error) throw error;
     return toCamelCase(data) as OTReport;
+  },
+
+  // ==============================================
+  // INVENTORY MANAGEMENT METHODS
+  // ==============================================
+
+  // Inventory Items
+  getInventoryItems: async (): Promise<InventoryItem[]> => {
+    console.log('🔍 Supabase: Getting inventory items...');
+    
+    try {
+      const allData = await getAllRecords('inventory_items', 'name', true);
+      console.log('✅ Supabase: Got inventory items:', allData.length);
+      return toCamelCase(allData) as InventoryItem[];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting inventory items:', error);
+      throw error;
+    }
+  },
+
+  getInventoryItem: async (id: string): Promise<InventoryItem> => {
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    return toCamelCase(data) as InventoryItem;
+  },
+
+  createInventoryItem: async (item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<InventoryItem> => {
+    const itemData = {
+      ...toSnakeCase(item),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .insert(itemData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return toCamelCase(data) as InventoryItem;
+  },
+
+  updateInventoryItem: async (id: string, item: Partial<InventoryItem>): Promise<InventoryItem> => {
+    const itemData = {
+      ...toSnakeCase(item),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .update(itemData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return toCamelCase(data) as InventoryItem;
+  },
+
+  deleteInventoryItem: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('inventory_items')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
+  // Inventory Transactions
+  getInventoryTransactions: async (): Promise<InventoryTransaction[]> => {
+    try {
+      const allData = await getAllRecords('inventory_transactions', 'created_at', false);
+      return toCamelCase(allData) as InventoryTransaction[];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  createInventoryTransaction: async (transaction: Omit<InventoryTransaction, 'id' | 'createdAt'>): Promise<InventoryTransaction> => {
+    const transactionData = {
+      ...toSnakeCase(transaction),
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('inventory_transactions')
+      .insert(transactionData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return toCamelCase(data) as InventoryTransaction;
+  },
+
+  // Medication Inventory
+  getMedicationInventory: async (): Promise<MedicationInventory[]> => {
+    console.log('🔍 Supabase: Getting medication inventory...');
+    
+    try {
+      const allData = await getAllRecords('medication_inventory', 'medication_name', true);
+      console.log('✅ Supabase: Got medication inventory:', allData.length);
+      return toCamelCase(allData) as MedicationInventory[];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting medication inventory:', error);
+      throw error;
+    }
+  },
+
+  getMedicationInventoryItem: async (id: string): Promise<MedicationInventory> => {
+    const { data, error } = await supabase
+      .from('medication_inventory')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    return toCamelCase(data) as MedicationInventory;
+  },
+
+  createMedicationInventoryItem: async (item: Omit<MedicationInventory, 'id' | 'createdAt' | 'updatedAt'>): Promise<MedicationInventory> => {
+    const itemData = {
+      ...toSnakeCase(item),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('medication_inventory')
+      .insert(itemData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return toCamelCase(data) as MedicationInventory;
+  },
+
+  updateMedicationInventoryItem: async (id: string, item: Partial<MedicationInventory>): Promise<MedicationInventory> => {
+    const itemData = {
+      ...toSnakeCase(item),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('medication_inventory')
+      .update(itemData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return toCamelCase(data) as MedicationInventory;
+  },
+
+  // Medication Transactions
+  getMedicationTransactions: async (): Promise<MedicationTransaction[]> => {
+    try {
+      const allData = await getAllRecords('medication_transactions', 'created_at', false);
+      return toCamelCase(allData) as MedicationTransaction[];
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  createMedicationTransaction: async (transaction: Omit<MedicationTransaction, 'id' | 'createdAt'>): Promise<MedicationTransaction> => {
+    const transactionData = {
+      ...toSnakeCase(transaction),
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('medication_transactions')
+      .insert(transactionData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return toCamelCase(data) as MedicationTransaction;
+  },
+
+  // Inventory Management Functions
+  updateInventoryStock: async (
+    itemId: string,
+    transactionType: 'in' | 'out' | 'adjustment',
+    quantity: number,
+    unitCost?: number,
+    referenceType?: string,
+    referenceId?: string,
+    notes?: string,
+    performedById?: string
+  ): Promise<void> => {
+    const { error } = await supabase.rpc('update_inventory_stock', {
+      item_id: itemId,
+      transaction_type: transactionType,
+      quantity: quantity,
+      unit_cost: unitCost,
+      reference_type: referenceType,
+      reference_id: referenceId,
+      notes: notes,
+      performed_by_id: performedById
+    });
+
+    if (error) throw error;
+  },
+
+  getLowStockItems: async (): Promise<any[]> => {
+    const { data, error } = await supabase.rpc('get_low_stock_items');
+    if (error) throw error;
+    return data || [];
+  },
+
+  getExpiringItems: async (): Promise<any[]> => {
+    const { data, error } = await supabase.rpc('get_expiring_items');
+    if (error) throw error;
+    return data || [];
   }
 };
