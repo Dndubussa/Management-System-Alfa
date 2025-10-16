@@ -1,11 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { api } from '../services/api';
+import { createClient } from '@supabase/supabase-js';
+
+// Determine which service to use based on environment
+const isProduction = import.meta.env.PROD;
+const useSupabase = isProduction || import.meta.env.VITE_USE_SUPABASE === 'true';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+const supabase = useSupabase && supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -28,41 +37,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:3001/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      if (useSupabase && supabase) {
+        // Use Supabase authentication
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Login failed:', errorData.error);
-        setIsLoading(false);
-        return false;
-      }
+        if (authError) {
+          console.error('Supabase login failed:', authError.message);
+          setIsLoading(false);
+          return false;
+        }
 
-      const data = await response.json();
-      
-      if (data.success && data.user) {
-        setUser(data.user);
-        localStorage.setItem('hospital_user', JSON.stringify(data.user));
-        localStorage.setItem('auth_token', data.token);
-        setIsLoading(false);
-        return true;
+        if (authData.user) {
+          // Get user details from users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+          if (userError) {
+            console.error('Failed to fetch user details:', userError.message);
+            setIsLoading(false);
+            return false;
+          }
+
+          if (userData) {
+            const user: User = {
+              id: userData.id,
+              name: userData.name,
+              email: userData.email,
+              role: userData.role,
+              department: userData.department
+            };
+
+            setUser(user);
+            localStorage.setItem('hospital_user', JSON.stringify(user));
+            setIsLoading(false);
+            return true;
+          }
+        }
+      } else {
+        // Use local API
+        const response = await fetch('http://localhost:3001/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Login failed:', errorData.error);
+          setIsLoading(false);
+          return false;
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.user) {
+          setUser(data.user);
+          localStorage.setItem('hospital_user', JSON.stringify(data.user));
+          localStorage.setItem('auth_token', data.token);
+          setIsLoading(false);
+          return true;
+        }
       }
-      
-      setIsLoading(false);
-      return false;
     } catch (error) {
       console.error('Login error:', error);
       setIsLoading(false);
       return false;
     }
+    
+    setIsLoading(false);
+    return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (useSupabase && supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
     localStorage.removeItem('hospital_user');
     localStorage.removeItem('auth_token');

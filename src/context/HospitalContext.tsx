@@ -22,6 +22,12 @@ import {
   OTReport
 } from '../types';
 import { api } from '../services/api';
+import { supabaseService } from '../services/supabaseService';
+
+// Determine which service to use based on environment
+const isProduction = import.meta.env.PROD;
+const useSupabase = isProduction || import.meta.env.VITE_USE_SUPABASE === 'true';
+const service = useSupabase ? supabaseService : api;
 
 interface HospitalContextType {
   patients: Patient[];
@@ -140,21 +146,21 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           otSlotsData,
           otResourcesData
         ] = await Promise.all([
-          api.getPatients().catch(err => { console.error('Error loading patients:', err); throw err; }),
-          api.getMedicalRecords().catch(err => { console.error('Error loading medical records:', err); throw err; }),
-          api.getPrescriptions().catch(err => { console.error('Error loading prescriptions:', err); throw err; }),
-          api.getLabOrders().catch(err => { console.error('Error loading lab orders:', err); throw err; }),
-          api.getAppointments().catch(err => { console.error('Error loading appointments:', err); throw err; }),
-          api.getNotifications().catch(err => { console.error('Error loading notifications:', err); throw err; }),
-          api.getServicePrices().catch(err => { console.error('Error loading service prices:', err); throw err; }),
-          api.getBills().catch(err => { console.error('Error loading bills:', err); throw err; }),
-          api.getDepartments().catch(err => { console.error('Error loading departments:', err); throw err; }),
-          api.getReferrals().catch(err => { console.error('Error loading referrals:', err); throw err; }),
-          api.getUsers().catch(err => { console.error('Error loading users:', err); throw err; }),
-          api.getInsuranceClaims().catch(err => { console.error('Error loading insurance claims:', err); throw err; }),
-          api.getSurgeryRequests().catch(err => { console.error('Error loading surgery requests:', err); throw err; }),
-          api.getOTSlots().catch(err => { console.error('Error loading OT slots:', err); throw err; }),
-          api.getOTResources().catch(err => { console.error('Error loading OT resources:', err); throw err; })
+          service.getPatients().catch(err => { console.error('Error loading patients:', err); throw err; }),
+          service.getMedicalRecords().catch(err => { console.error('Error loading medical records:', err); throw err; }),
+          service.getPrescriptions().catch(err => { console.error('Error loading prescriptions:', err); throw err; }),
+          service.getLabOrders().catch(err => { console.error('Error loading lab orders:', err); throw err; }),
+          service.getAppointments().catch(err => { console.error('Error loading appointments:', err); throw err; }),
+          service.getNotifications().catch(err => { console.error('Error loading notifications:', err); throw err; }),
+          service.getServicePrices().catch(err => { console.error('Error loading service prices:', err); throw err; }),
+          service.getBills().catch(err => { console.error('Error loading bills:', err); throw err; }),
+          service.getDepartments().catch(err => { console.error('Error loading departments:', err); throw err; }),
+          service.getReferrals().catch(err => { console.error('Error loading referrals:', err); throw err; }),
+          service.getUsers().catch(err => { console.error('Error loading users:', err); throw err; }),
+          service.getInsuranceClaims().catch(err => { console.error('Error loading insurance claims:', err); throw err; }),
+          service.getSurgeryRequests().catch(err => { console.error('Error loading surgery requests:', err); throw err; }),
+          service.getOTSlots().catch(err => { console.error('Error loading OT slots:', err); throw err; }),
+          service.getOTResources().catch(err => { console.error('Error loading OT resources:', err); throw err; })
         ]);
         
         console.log('Data loaded successfully:', {
@@ -220,7 +226,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         updatedAt: new Date().toISOString()
       };
       
-      const newPatient = await api.createPatient(newPatientData);
+      const newPatient = await service.createPatient(newPatientData);
       setPatients(prev => [...prev, newPatient]);
     } catch (err) {
       console.error('Error creating patient:', err);
@@ -231,7 +237,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updatePatient = async (id: string, updates: Partial<Patient>) => {
     try {
-      const updatedPatient = await api.updatePatient(id, {
+      const updatedPatient = await service.updatePatient(id, {
         ...updates,
         updatedAt: new Date().toISOString()
       });
@@ -247,7 +253,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addMedicalRecord = async (recordData: Omit<MedicalRecord, 'id'>) => {
     try {
-      const newRecord = await api.createMedicalRecord(recordData);
+      const newRecord = await service.createMedicalRecord(recordData);
       setMedicalRecords(prev => [...prev, newRecord]);
 
       // Add prescriptions and lab orders to their respective arrays
@@ -274,7 +280,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updatePrescriptionStatus = async (id: string, status: Prescription['status']) => {
     try {
-      const updatedPrescription = await api.updatePrescriptionStatus(id, status);
+      const updatedPrescription = await service.updatePrescriptionStatus(id, status);
       setPrescriptions(prev => prev.map(prescription =>
         prescription.id === id ? updatedPrescription : prescription
       ));
@@ -302,7 +308,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateLabOrderStatus = async (id: string, status: LabOrder['status'], results?: string) => {
     try {
-      const updatedLabOrder = await api.updateLabOrderStatus(id, status, results);
+      const updatedLabOrder = await service.updateLabOrderStatus(id, status, results);
       setLabOrders(prev => prev.map(order =>
         order.id === id 
           ? { 
@@ -352,7 +358,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addNotification = async (notificationData: Omit<Notification, 'id' | 'createdAt'>) => {
     try {
-      const newNotification = await api.createNotification(notificationData);
+      const newNotification = await service.createNotification(notificationData);
       setNotifications(prev => [newNotification, ...prev]);
     } catch (err) {
       console.error('Error creating notification:', err);
@@ -388,7 +394,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   // New function to mark notification as read for a specific user
   const markNotificationRead = async (id: string, userId: string) => {
     try {
-      await api.markNotificationRead(id, userId);
+      await service.markNotificationRead(id, userId);
       setNotifications(prev => prev.map(notification => {
         if (notification.id === id) {
           // Track read status per user
@@ -555,7 +561,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   // Add referrals functions
   const addReferral = async (referralData: Omit<Referral, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const newReferral = await api.createReferral(referralData);
+      const newReferral = await service.createReferral(referralData);
       setReferrals(prev => [...prev, newReferral]);
       
       // Create notification for the referring doctor
@@ -578,7 +584,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateReferralStatus = async (id: string, status: Referral['status']) => {
     try {
-      const updatedReferral = await api.updateReferralStatus(id, status);
+      const updatedReferral = await service.updateReferralStatus(id, status);
       setReferrals(prev => prev.map(referral =>
         referral.id === id 
           ? { 
@@ -613,7 +619,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   // User management functions
   const addUser = async (userData: Omit<User, 'id'>) => {
     try {
-      const newUser = await api.createUser(userData);
+      const newUser = await service.createUser(userData);
       setUsers(prev => [...prev, newUser]);
     } catch (err) {
       console.error('Error creating user:', err);
@@ -624,7 +630,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = async (id: string, updates: Partial<User>) => {
     try {
-      const updatedUser = await api.updateUser(id, updates);
+      const updatedUser = await service.updateUser(id, updates);
       setUsers(prev => prev.map(user => 
         user.id === id ? updatedUser : user
       ));
@@ -637,7 +643,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const removeUser = async (id: string) => {
     try {
-      await api.deleteUser(id);
+      await service.deleteUser(id);
       setUsers(prev => prev.filter(user => user.id !== id));
     } catch (err) {
       console.error('Error removing user:', err);
@@ -648,7 +654,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addAppointment = async (appointmentData: Omit<Appointment, 'id'>) => {
     try {
-      const newAppointment = await api.createAppointment(appointmentData);
+      const newAppointment = await service.createAppointment(appointmentData);
       setAppointments(prev => [...prev, newAppointment]);
 
       // Automatically generate bill if autobilling is enabled for appointments
@@ -668,7 +674,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   // Add this new function to update appointment status
   const updateAppointmentStatus = async (id: string, status: Appointment['status']) => {
     try {
-      const updatedAppointment = await api.updateAppointmentStatus(id, status);
+      const updatedAppointment = await service.updateAppointmentStatus(id, status);
       setAppointments(prev => prev.map(appointment =>
         appointment.id === id ? updatedAppointment : appointment
       ));
@@ -718,7 +724,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateBillStatus = async (id: string, status: Bill['status'], paymentMethod?: string) => {
     try {
-      const updatedBill = await api.updateBillStatus(id, status, paymentMethod);
+      const updatedBill = await service.updateBillStatus(id, status, paymentMethod);
       setBills(prev => prev.map(bill =>
         bill.id === id 
           ? { 
@@ -771,7 +777,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   // Insurance claim functions
   const submitInsuranceClaim = async (claimData: Omit<InsuranceClaim, 'id' | 'submissionDate' | 'status'>) => {
     try {
-      const newClaim = await api.createInsuranceClaim(claimData);
+      const newClaim = await service.createInsuranceClaim(claimData);
       setInsuranceClaims(prev => [...prev, newClaim]);
       
       // Create notification for billing
@@ -791,7 +797,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateInsuranceClaimStatus = async (id: string, status: InsuranceClaim['status'], rejectionReason?: string) => {
     try {
-      const updatedClaim = await api.updateInsuranceClaimStatus(id, status, rejectionReason);
+      const updatedClaim = await service.updateInsuranceClaimStatus(id, status, rejectionReason);
       setInsuranceClaims(prev => prev.map(claim =>
         claim.id === id 
           ? { 
@@ -827,7 +833,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   // OT Coordinator functions
   const addSurgeryRequest = async (requestData: Omit<SurgeryRequest, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const newRequest = await api.createSurgeryRequest(requestData);
+      const newRequest = await service.createSurgeryRequest(requestData);
       setSurgeryRequests(prev => [...prev, newRequest]);
       
       // Create notification for OT Coordinator
@@ -847,7 +853,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateSurgeryRequest = async (id: string, updates: Partial<SurgeryRequest>) => {
     try {
-      const updatedRequest = await api.updateSurgeryRequest(id, updates);
+      const updatedRequest = await service.updateSurgeryRequest(id, updates);
       setSurgeryRequests(prev => prev.map(request =>
         request.id === id 
           ? updatedRequest
@@ -903,7 +909,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addOTSlot = async (slotData: Omit<OTSlot, 'id'>) => {
     try {
-      const newSlot = await api.createOTSlot(slotData);
+      const newSlot = await service.createOTSlot(slotData);
       setOTSlots(prev => [...prev, newSlot]);
     } catch (err) {
       console.error('Error creating OT slot:', err);
@@ -914,7 +920,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateOTSlot = async (id: string, updates: Partial<OTSlot>) => {
     try {
-      const updatedSlot = await api.updateOTSlot(id, updates);
+      const updatedSlot = await service.updateOTSlot(id, updates);
       setOTSlots(prev => prev.map(slot =>
         slot.id === id ? updatedSlot : slot
       ));
@@ -927,7 +933,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addOTResource = async (resourceData: Omit<OTResource, 'id'>) => {
     try {
-      const newResource = await api.createOTResource(resourceData);
+      const newResource = await service.createOTResource(resourceData);
       setOTResources(prev => [...prev, newResource]);
     } catch (err) {
       console.error('Error creating OT resource:', err);
@@ -938,7 +944,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateOTResource = async (id: string, updates: Partial<OTResource>) => {
     try {
-      const updatedResource = await api.updateOTResource(id, updates);
+      const updatedResource = await service.updateOTResource(id, updates);
       setOTResources(prev => prev.map(resource =>
         resource.id === id ? updatedResource : resource
       ));
@@ -951,7 +957,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addOTChecklist = async (checklistData: Omit<OTChecklist, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const newChecklist = await api.createOTChecklist(checklistData);
+      const newChecklist = await service.createOTChecklist(checklistData);
       setOTChecklists(prev => [...prev, newChecklist]);
     } catch (err) {
       console.error('Error creating OT checklist:', err);
@@ -962,7 +968,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const updateOTChecklist = async (id: string, updates: Partial<OTChecklist>) => {
     try {
-      const updatedChecklist = await api.updateOTChecklist(id, updates);
+      const updatedChecklist = await service.updateOTChecklist(id, updates);
       setOTChecklists(prev => prev.map(checklist =>
         checklist.id === id 
           ? updatedChecklist
@@ -977,7 +983,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addSurgeryProgress = async (progressData: Omit<SurgeryProgress, 'id' | 'timestamp'>) => {
     try {
-      const newProgress = await api.createSurgeryProgress(progressData);
+      const newProgress = await service.createSurgeryProgress(progressData);
       setSurgeryProgress(prev => [...prev, newProgress]);
     } catch (err) {
       console.error('Error creating surgery progress:', err);
@@ -988,7 +994,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addOTReport = async (reportData: Omit<OTReport, 'id' | 'createdAt'>) => {
     try {
-      const newReport = await api.createOTReport(reportData);
+      const newReport = await service.createOTReport(reportData);
       setOTReports(prev => [...prev, newReport]);
     } catch (err) {
       console.error('Error creating OT report:', err);
