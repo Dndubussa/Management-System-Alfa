@@ -23,8 +23,12 @@ export function getSupabaseServiceClient() {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Missing Supabase service role key');
+    // In production (Vercel), use the anon key instead of service role key for security
+    const isProduction = import.meta.env.PROD;
+    const keyToUse = isProduction ? import.meta.env.VITE_SUPABASE_KEY : supabaseServiceKey;
+    
+    if (!supabaseUrl || !keyToUse) {
+      throw new Error(`Missing Supabase ${isProduction ? 'anon' : 'service role'} key`);
     }
     
     // Suppress the multiple GoTrueClient warning for service role client
@@ -36,7 +40,7 @@ export function getSupabaseServiceClient() {
       originalWarn.apply(console, args);
     };
     
-    supabaseServiceInstance = createClient(supabaseUrl, supabaseServiceKey, {
+    supabaseServiceInstance = createClient(supabaseUrl, keyToUse, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
