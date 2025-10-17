@@ -442,6 +442,74 @@ export const api = {
     method: 'PUT',
     body: JSON.stringify(toSnakeCaseKeys(updates)),
   })),
+
+  // Inventory Items (placeholder methods for local API)
+  getInventoryItems: async () => {
+    console.log('⚠️ Local API: getInventoryItems not implemented, returning empty array');
+    return [];
+  },
+  getInventoryItem: async (id: string) => {
+    console.log('⚠️ Local API: getInventoryItem not implemented');
+    throw new Error('Inventory items not available in local API');
+  },
+  createInventoryItem: async (item: any) => {
+    console.log('⚠️ Local API: createInventoryItem not implemented');
+    throw new Error('Inventory items not available in local API');
+  },
+  updateInventoryItem: async (id: string, updates: any) => {
+    console.log('⚠️ Local API: updateInventoryItem not implemented');
+    throw new Error('Inventory items not available in local API');
+  },
+  deleteInventoryItem: async (id: string) => {
+    console.log('⚠️ Local API: deleteInventoryItem not implemented');
+    throw new Error('Inventory items not available in local API');
+  },
+  getInventoryTransactions: async () => {
+    console.log('⚠️ Local API: getInventoryTransactions not implemented, returning empty array');
+    return [];
+  },
+  createInventoryTransaction: async (transaction: any) => {
+    console.log('⚠️ Local API: createInventoryTransaction not implemented');
+    throw new Error('Inventory transactions not available in local API');
+  },
+
+  // Medication Inventory (placeholder methods for local API)
+  getMedicationInventory: async () => {
+    console.log('⚠️ Local API: getMedicationInventory not implemented, returning empty array');
+    return [];
+  },
+  getMedicationInventoryItem: async (id: string) => {
+    console.log('⚠️ Local API: getMedicationInventoryItem not implemented');
+    throw new Error('Medication inventory not available in local API');
+  },
+  createMedicationInventoryItem: async (item: any) => {
+    console.log('⚠️ Local API: createMedicationInventoryItem not implemented');
+    throw new Error('Medication inventory not available in local API');
+  },
+  updateMedicationInventoryItem: async (id: string, updates: any) => {
+    console.log('⚠️ Local API: updateMedicationInventoryItem not implemented');
+    throw new Error('Medication inventory not available in local API');
+  },
+  getMedicationTransactions: async () => {
+    console.log('⚠️ Local API: getMedicationTransactions not implemented, returning empty array');
+    return [];
+  },
+  createMedicationTransaction: async (transaction: any) => {
+    console.log('⚠️ Local API: createMedicationTransaction not implemented');
+    throw new Error('Medication transactions not available in local API');
+  },
+  updateInventoryStock: async (id: string, stock: number) => {
+    console.log('⚠️ Local API: updateInventoryStock not implemented');
+    throw new Error('Inventory stock updates not available in local API');
+  },
+  getLowStockItems: async () => {
+    console.log('⚠️ Local API: getLowStockItems not implemented, returning empty array');
+    return [];
+  },
+  getExpiringItems: async () => {
+    console.log('⚠️ Local API: getExpiringItems not implemented, returning empty array');
+    return [];
+  },
 };
 
 // Type definitions (imported from types)

@@ -42,6 +42,84 @@ interface InventoryItem {
   updatedAt: string;
 }
 
+// Audit Trail types
+interface AuditLog {
+  id: string;
+  tableName: string;
+  recordId: string;
+  operation: 'INSERT' | 'UPDATE' | 'DELETE' | 'SELECT' | 'LOGIN' | 'LOGOUT' | 'EXPORT' | 'PRINT';
+  oldValues?: any;
+  newValues?: any;
+  userId?: string;
+  userName?: string;
+  userRole?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  sessionId?: string;
+  timestamp: string;
+  reason?: string;
+  notes?: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  department?: string;
+  patientId?: string;
+  createdAt: string;
+}
+
+interface PatientAccessLog {
+  id: string;
+  patientId: string;
+  patientName: string;
+  accessedBy: string;
+  accessedByName: string;
+  accessedByRole: string;
+  accessType: 'VIEW' | 'EDIT' | 'CREATE' | 'DELETE' | 'EXPORT' | 'PRINT';
+  dataAccessed: string[];
+  purpose?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  sessionId?: string;
+  timestamp: string;
+  durationSeconds?: number;
+  notes?: string;
+}
+
+interface PrescriptionAuditLog {
+  id: string;
+  prescriptionId: string;
+  patientId: string;
+  doctorId: string;
+  action: 'CREATED' | 'MODIFIED' | 'DISPENSED' | 'CANCELLED' | 'VIEWED' | 'PRINTED' | 'EXPORTED';
+  oldStatus?: string;
+  newStatus?: string;
+  medicationName: string;
+  dosage?: string;
+  quantity?: number;
+  notes?: string;
+  performedBy: string;
+  performedByName: string;
+  performedByRole: string;
+  ipAddress?: string;
+  timestamp: string;
+  reason?: string;
+  complianceNotes?: string;
+}
+
+interface ComplianceViolation {
+  violationType: string;
+  severity: string;
+  userName: string;
+  userRole: string;
+  timestamp: string;
+  details: string;
+  patientName?: string;
+}
+
+interface AuditStatistics {
+  metricName: string;
+  metricValue: number;
+  description: string;
+}
+
 interface InventoryTransaction {
   id: string;
   inventoryItemId: string;
@@ -200,11 +278,8 @@ function toSnakeCase(obj: any): any {
 export const supabaseService = {
   // Patients
   getPatients: async (): Promise<Patient[]> => {
-    console.log('🔍 Supabase: Getting patients...');
-    
     try {
       const allData = await getAllRecords('patients', 'created_at', false);
-      console.log('✅ Supabase: Got patients:', allData.length);
       return allData.map(mapPatientFromDb);
     } catch (error) {
       console.error('❌ Supabase: Error getting patients:', error);
@@ -555,11 +630,8 @@ export const supabaseService = {
 
   // Service Prices
   getServicePrices: async (): Promise<ServicePrice[]> => {
-    console.log('🔍 Supabase: Getting service prices...');
-    
     try {
       const allData = await getAllRecords('service_prices', 'service_name', true);
-      console.log('✅ Supabase: Got service prices:', allData.length);
       return toCamelCase(allData) as ServicePrice[];
     } catch (error) {
       console.error('❌ Supabase: Error getting service prices:', error);
@@ -1117,11 +1189,8 @@ export const supabaseService = {
 
   // Inventory Items
   getInventoryItems: async (): Promise<InventoryItem[]> => {
-    console.log('🔍 Supabase: Getting inventory items...');
-    
     try {
       const allData = await getAllRecords('inventory_items', 'name', true);
-      console.log('✅ Supabase: Got inventory items:', allData.length);
       return toCamelCase(allData) as InventoryItem[];
     } catch (error) {
       console.error('❌ Supabase: Error getting inventory items:', error);
@@ -1211,11 +1280,8 @@ export const supabaseService = {
 
   // Medication Inventory
   getMedicationInventory: async (): Promise<MedicationInventory[]> => {
-    console.log('🔍 Supabase: Getting medication inventory...');
-    
     try {
       const allData = await getAllRecords('medication_inventory', 'medication_name', true);
-      console.log('✅ Supabase: Got medication inventory:', allData.length);
       return toCamelCase(allData) as MedicationInventory[];
     } catch (error) {
       console.error('❌ Supabase: Error getting medication inventory:', error);
@@ -1329,5 +1395,351 @@ export const supabaseService = {
     const { data, error } = await supabase.rpc('get_expiring_items');
     if (error) throw error;
     return data || [];
+  },
+
+  // ==============================================
+  // AUDIT TRAIL METHODS
+  // ==============================================
+
+  // Get audit logs with filtering
+  getAuditLogs: async (filters?: {
+    startDate?: string;
+    endDate?: string;
+    userId?: string;
+    tableName?: string;
+    operation?: string;
+    severity?: string;
+    limit?: number;
+  }): Promise<AuditLog[]> => {
+    console.log('🔍 Supabase: Getting audit logs...');
+    
+    try {
+      let query = supabase
+        .from('audit_logs')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (filters?.startDate) {
+        query = query.gte('timestamp', filters.startDate);
+      }
+      if (filters?.endDate) {
+        query = query.lte('timestamp', filters.endDate);
+      }
+      if (filters?.userId) {
+        query = query.eq('user_id', filters.userId);
+      }
+      if (filters?.tableName) {
+        query = query.eq('table_name', filters.tableName);
+      }
+      if (filters?.operation) {
+        query = query.eq('operation', filters.operation);
+      }
+      if (filters?.severity) {
+        query = query.eq('severity', filters.severity);
+      }
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Got audit logs:', data?.length || 0);
+      return toCamelCase(data || []) as AuditLog[];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting audit logs:', error);
+      throw error;
+    }
+  },
+
+  // Get patient access logs
+  getPatientAccessLogs: async (filters?: {
+    startDate?: string;
+    endDate?: string;
+    patientId?: string;
+    accessedBy?: string;
+    accessType?: string;
+    limit?: number;
+  }): Promise<PatientAccessLog[]> => {
+    console.log('🔍 Supabase: Getting patient access logs...');
+    
+    try {
+      let query = supabase
+        .from('patient_access_logs')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (filters?.startDate) {
+        query = query.gte('timestamp', filters.startDate);
+      }
+      if (filters?.endDate) {
+        query = query.lte('timestamp', filters.endDate);
+      }
+      if (filters?.patientId) {
+        query = query.eq('patient_id', filters.patientId);
+      }
+      if (filters?.accessedBy) {
+        query = query.eq('accessed_by', filters.accessedBy);
+      }
+      if (filters?.accessType) {
+        query = query.eq('access_type', filters.accessType);
+      }
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Got patient access logs:', data?.length || 0);
+      return toCamelCase(data || []) as PatientAccessLog[];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting patient access logs:', error);
+      throw error;
+    }
+  },
+
+  // Get prescription audit logs
+  getPrescriptionAuditLogs: async (filters?: {
+    startDate?: string;
+    endDate?: string;
+    prescriptionId?: string;
+    patientId?: string;
+    doctorId?: string;
+    action?: string;
+    limit?: number;
+  }): Promise<PrescriptionAuditLog[]> => {
+    console.log('🔍 Supabase: Getting prescription audit logs...');
+    
+    try {
+      let query = supabase
+        .from('prescription_audit_logs')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (filters?.startDate) {
+        query = query.gte('timestamp', filters.startDate);
+      }
+      if (filters?.endDate) {
+        query = query.lte('timestamp', filters.endDate);
+      }
+      if (filters?.prescriptionId) {
+        query = query.eq('prescription_id', filters.prescriptionId);
+      }
+      if (filters?.patientId) {
+        query = query.eq('patient_id', filters.patientId);
+      }
+      if (filters?.doctorId) {
+        query = query.eq('doctor_id', filters.doctorId);
+      }
+      if (filters?.action) {
+        query = query.eq('action', filters.action);
+      }
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Got prescription audit logs:', data?.length || 0);
+      return toCamelCase(data || []) as PrescriptionAuditLog[];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting prescription audit logs:', error);
+      throw error;
+    }
+  },
+
+  // Get compliance violations
+  getComplianceViolations: async (filters?: {
+    startDate?: string;
+    endDate?: string;
+    severity?: string;
+  }): Promise<ComplianceViolation[]> => {
+    console.log('🔍 Supabase: Getting compliance violations...');
+    
+    try {
+      const { data, error } = await supabase.rpc('get_compliance_violations', {
+        p_start_date: filters?.startDate || null,
+        p_end_date: filters?.endDate || null
+      });
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Got compliance violations:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting compliance violations:', error);
+      throw error;
+    }
+  },
+
+  // Get audit trail statistics
+  getAuditStatistics: async (days: number = 30): Promise<AuditStatistics[]> => {
+    console.log('🔍 Supabase: Getting audit statistics...');
+    
+    try {
+      const { data, error } = await supabase.rpc('get_audit_trail_statistics', {
+        p_days: days
+      });
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Got audit statistics:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting audit statistics:', error);
+      throw error;
+    }
+  },
+
+  // Get complete patient audit trail
+  getPatientAuditTrail: async (patientId: string, filters?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any[]> => {
+    console.log('🔍 Supabase: Getting patient audit trail...');
+    
+    try {
+      const { data, error } = await supabase.rpc('get_patient_complete_audit_trail', {
+        p_patient_id: patientId,
+        p_start_date: filters?.startDate || null,
+        p_end_date: filters?.endDate || null
+      });
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Got patient audit trail:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting patient audit trail:', error);
+      throw error;
+    }
+  },
+
+  // Get user activity summary
+  getUserActivitySummary: async (userId: string, days: number = 30): Promise<any[]> => {
+    console.log('🔍 Supabase: Getting user activity summary...');
+    
+    try {
+      const { data, error } = await supabase.rpc('get_user_activity_summary', {
+        p_user_id: userId,
+        p_days: days
+      });
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Got user activity summary:', data?.length || 0);
+      return data || [];
+    } catch (error) {
+      console.error('❌ Supabase: Error getting user activity summary:', error);
+      throw error;
+    }
+  },
+
+  // Export audit trail for compliance
+  exportAuditTrail: async (filters: {
+    startDate: string;
+    endDate: string;
+    auditType?: string;
+  }): Promise<any> => {
+    console.log('🔍 Supabase: Exporting audit trail...');
+    
+    try {
+      const { data, error } = await supabase.rpc('export_audit_trail_for_compliance', {
+        p_start_date: filters.startDate,
+        p_end_date: filters.endDate,
+        p_audit_type: filters.auditType || 'ALL'
+      });
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Exported audit trail');
+      return data;
+    } catch (error) {
+      console.error('❌ Supabase: Error exporting audit trail:', error);
+      throw error;
+    }
+  },
+
+  // Log patient data access
+  logPatientAccess: async (accessData: {
+    patientId: string;
+    accessType: string;
+    dataAccessed: string[];
+    purpose?: string;
+    notes?: string;
+  }): Promise<void> => {
+    console.log('🔍 Supabase: Logging patient access...');
+    
+    try {
+      const { error } = await supabase.rpc('log_patient_data_access', {
+        p_patient_id: accessData.patientId,
+        p_access_type: accessData.accessType,
+        p_data_fields: accessData.dataAccessed,
+        p_purpose: accessData.purpose || 'Treatment'
+      });
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Logged patient access');
+    } catch (error) {
+      console.error('❌ Supabase: Error logging patient access:', error);
+      throw error;
+    }
+  },
+
+  // Log user authentication
+  logUserAuth: async (authData: {
+    userId?: string;
+    username?: string;
+    action: 'LOGIN' | 'LOGOUT' | 'LOGIN_FAILED';
+    success: boolean;
+    failureReason?: string;
+  }): Promise<void> => {
+    console.log('🔍 Supabase: Logging user authentication...');
+    
+    try {
+      const { error } = await supabase.rpc('log_user_login', {
+        p_user_id: authData.userId || null,
+        p_success: authData.success,
+        p_failure_reason: authData.failureReason || null
+      });
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Logged user authentication');
+    } catch (error) {
+      console.error('❌ Supabase: Error logging user authentication:', error);
+      throw error;
+    }
+  },
+
+  // Log inventory transaction
+  logInventoryTransaction: async (transactionData: {
+    itemId?: string;
+    medicationId?: string;
+    transactionType: string;
+    quantity: number;
+    itemName: string;
+    batchNumber?: string;
+    prescriptionId?: string;
+    patientId?: string;
+    reason?: string;
+  }): Promise<void> => {
+    console.log('🔍 Supabase: Logging inventory transaction...');
+    
+    try {
+      const { error } = await supabase.rpc('log_inventory_transaction', {
+        p_item_id: transactionData.itemId || null,
+        p_medication_id: transactionData.medicationId || null,
+        p_transaction_type: transactionData.transactionType,
+        p_quantity: transactionData.quantity,
+        p_item_name: transactionData.itemName,
+        p_batch_number: transactionData.batchNumber || null,
+        p_prescription_id: transactionData.prescriptionId || null,
+        p_patient_id: transactionData.patientId || null,
+        p_reason: transactionData.reason || null
+      });
+      
+      if (error) throw error;
+      console.log('✅ Supabase: Logged inventory transaction');
+    } catch (error) {
+      console.error('❌ Supabase: Error logging inventory transaction:', error);
+      throw error;
+    }
   }
 };

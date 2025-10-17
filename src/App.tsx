@@ -48,7 +48,6 @@ import { OTReports } from './components/OT/OTReports';
 
 // Insurance Officer Components
 import { InsuranceOfficerDashboard } from './components/Insurance/InsuranceOfficerDashboard';
-import { DataDebugger } from './components/Debug/DataDebugger';
 import { InsuranceProviders } from './components/Insurance/InsuranceProviders';
 import { InsuranceReports } from './components/Insurance/InsuranceReports';
 import { InsuranceVerification } from './components/Insurance/InsuranceVerification';
@@ -210,7 +209,24 @@ function OphthalmologyEMRRoute() {
 
 function AppContent() {
   const { user } = useAuth();
-  const { generateBill, addNotification } = useHospital();
+  
+  // Add error boundary for useHospital
+  let hospitalContext;
+  try {
+    hospitalContext = useHospital();
+  } catch (error) {
+    console.error('Hospital context error:', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h2>
+          <p className="text-gray-600">Please refresh the page if this persists.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const { generateBill, addNotification } = hospitalContext;
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -456,7 +472,6 @@ function AppContent() {
           </Routes>
         </main>
       </div>
-      <DataDebugger />
     </div>
   );
 }

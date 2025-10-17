@@ -21,7 +21,8 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
     emergencyContactPhone: patient?.emergencyContact?.phone || '',
     emergencyContactRelationship: patient?.emergencyContact?.relationship || '',
     insuranceProvider: patient?.insuranceInfo?.provider || '',
-    insuranceMembershipNumber: patient?.insuranceInfo?.membershipNumber || ''
+    insuranceMembershipNumber: patient?.insuranceInfo?.membershipNumber || '',
+    cashAmount: '' // New field for cash payments
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,6 +59,9 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
       if (!formData.phone.trim()) {
         throw new Error('Phone number is required');
       }
+      if (formData.insuranceProvider === 'Cash' && (!formData.cashAmount || Number(formData.cashAmount) <= 0)) {
+        throw new Error('Cash amount is required and must be greater than 0');
+      }
 
       // Convert age back to date of birth for the API
       const currentYear = new Date().getFullYear();
@@ -88,7 +92,8 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
         },
         insuranceInfo: {
           provider: formData.insuranceProvider.trim(),
-          membershipNumber: formData.insuranceMembershipNumber.trim()
+          membershipNumber: formData.insuranceProvider === 'Cash' ? '' : formData.insuranceMembershipNumber.trim(),
+          cashAmount: formData.insuranceProvider === 'Cash' ? formData.cashAmount : ''
         }
       };
 
@@ -348,24 +353,45 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                   <option value="Madison">Madison Health Insurance</option>
                   <option value="Takaful">Takaful Health Insurance</option>
                   <option value="GA Insurance">GA Insurance Health</option>
+                  <option value="Cash">Cash Payment</option>
                   <option value="Direct">Direct Payment (Cash)</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
 
-              {/* Insurance Membership Number */}
+              {/* Conditional Field: Membership Number or Cash Amount */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Membership Number
-                </label>
-                <input
-                  type="text"
-                  name="insuranceMembershipNumber"
-                  value={formData.insuranceMembershipNumber}
-                  onChange={handleChange}
-                  placeholder="Enter insurance membership number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
-                />
+                {formData.insuranceProvider === 'Cash' ? (
+                  <>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cash Amount (TZS)
+                    </label>
+                    <input
+                      type="number"
+                      name="cashAmount"
+                      value={formData.cashAmount}
+                      onChange={handleChange}
+                      placeholder="Enter cash amount"
+                      min="0"
+                      step="100"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Membership Number
+                    </label>
+                    <input
+                      type="text"
+                      name="insuranceMembershipNumber"
+                      value={formData.insuranceMembershipNumber}
+                      onChange={handleChange}
+                      placeholder="Enter insurance membership number"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
+                    />
+                  </>
+                )}
               </div>
             </div>
 
@@ -381,12 +407,21 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                   <div className="text-sm text-blue-800">
                     <p className="font-medium">Insurance Information</p>
                     <p className="mt-1">
-                      {formData.insuranceProvider === 'Direct' 
+                      {formData.insuranceProvider === 'Cash' || formData.insuranceProvider === 'Direct'
                         ? 'Patient will pay directly (cash payment)'
                         : `Insurance claims will be processed through ${formData.insuranceProvider}`
                       }
                     </p>
-                    {formData.insuranceMembershipNumber && (
+                    {formData.insuranceProvider === 'Cash' && formData.cashAmount && (
+                      <p className="mt-1 text-green-700 font-medium">
+                        Cash Amount: {new Intl.NumberFormat('sw-TZ', {
+                          style: 'currency',
+                          currency: 'TZS',
+                          minimumFractionDigits: 0
+                        }).format(Number(formData.cashAmount))}
+                      </p>
+                    )}
+                    {formData.insuranceMembershipNumber && formData.insuranceProvider !== 'Cash' && (
                       <p className="mt-1">
                         Membership Number: <span className="font-mono">{formData.insuranceMembershipNumber}</span>
                       </p>

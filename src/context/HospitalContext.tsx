@@ -26,8 +26,21 @@ import { supabaseService } from '../services/supabaseService';
 
 // Determine which service to use based on environment
 const isProduction = import.meta.env.PROD;
-const useSupabase = isProduction || import.meta.env.VITE_USE_SUPABASE === 'true';
+const hasSupabaseUrl = !!import.meta.env.VITE_SUPABASE_URL;
+const forceSupabase = import.meta.env.VITE_USE_SUPABASE === 'true';
+const useSupabase = isProduction || forceSupabase || hasSupabaseUrl;
 const service = useSupabase ? supabaseService : api;
+
+// Service selection logging (can be removed in production)
+if (import.meta.env.DEV) {
+  console.log('🔍 Service selection:', {
+    isProduction,
+    useSupabase,
+    hasSupabaseUrl,
+    forceSupabase,
+    serviceType: useSupabase ? 'Supabase' : 'Local API'
+  });
+}
 
 // Inventory types
 interface InventoryItem {
@@ -175,7 +188,6 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         setError(null);
         
         // Load all data in parallel with individual error handling
-        console.log('Starting to load data from API...');
         
         // Load data with individual error handling - don't fail entire load if one table fails
         const [
@@ -216,25 +228,6 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           service.getMedicationInventory().catch(err => { console.error('Error loading medication inventory:', err); return []; })
         ]);
         
-        console.log('Data loaded successfully:', {
-          patients: patientsData.length,
-          medicalRecords: medicalRecordsData.length,
-          prescriptions: prescriptionsData.length,
-          labOrders: labOrdersData.length,
-          appointments: appointmentsData.length,
-          notifications: notificationsData.length,
-          servicePrices: servicePricesData.length,
-          bills: billsData.length,
-          departments: departmentsData.length,
-          referrals: referralsData.length,
-          users: usersData.length,
-          insuranceClaims: insuranceClaimsData.length,
-          surgeryRequests: surgeryRequestsData.length,
-          otSlots: otSlotsData.length,
-          otResources: otResourcesData.length,
-          inventoryItems: inventoryItemsData.length,
-          medicationInventory: medicationInventoryData.length
-        });
         
         setPatients(patientsData);
         setMedicalRecords(medicalRecordsData);

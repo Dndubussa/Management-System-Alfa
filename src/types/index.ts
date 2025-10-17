@@ -23,6 +23,7 @@ export interface Patient {
   insuranceInfo: {
     provider: string;
     membershipNumber: string;
+    cashAmount?: string; // Optional field for cash payments
   };
   createdAt: string;
   updatedAt: string;
