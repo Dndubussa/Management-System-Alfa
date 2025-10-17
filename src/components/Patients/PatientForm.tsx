@@ -59,7 +59,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
       if (!formData.phone.trim()) {
         throw new Error('Phone number is required');
       }
-      if (formData.insuranceProvider === 'Cash' && (!formData.cashAmount || Number(formData.cashAmount) <= 0)) {
+      if (formData.insuranceProvider === 'Direct' && (!formData.cashAmount || Number(formData.cashAmount) <= 0)) {
         throw new Error('Cash amount is required and must be greater than 0');
       }
 
@@ -92,8 +92,8 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
         },
         insuranceInfo: {
           provider: formData.insuranceProvider.trim(),
-          membershipNumber: formData.insuranceProvider === 'Cash' ? '' : formData.insuranceMembershipNumber.trim(),
-          cashAmount: formData.insuranceProvider === 'Cash' ? formData.cashAmount : ''
+          membershipNumber: formData.insuranceProvider === 'Direct' ? '' : formData.insuranceMembershipNumber.trim(),
+          cashAmount: formData.insuranceProvider === 'Direct' ? formData.cashAmount : ''
         }
       };
 
@@ -353,7 +353,6 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                   <option value="Madison">Madison Health Insurance</option>
                   <option value="Takaful">Takaful Health Insurance</option>
                   <option value="GA Insurance">GA Insurance Health</option>
-                  <option value="Cash">Cash Payment</option>
                   <option value="Direct">Direct Payment (Cash)</option>
                   <option value="Other">Other</option>
                 </select>
@@ -361,7 +360,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
 
               {/* Conditional Field: Membership Number or Cash Amount */}
               <div>
-                {formData.insuranceProvider === 'Cash' ? (
+                {formData.insuranceProvider === 'Direct' ? (
                   <>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Cash Amount (TZS)
@@ -407,12 +406,12 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                   <div className="text-sm text-blue-800">
                     <p className="font-medium">Insurance Information</p>
                     <p className="mt-1">
-                      {formData.insuranceProvider === 'Cash' || formData.insuranceProvider === 'Direct'
+                      {formData.insuranceProvider === 'Direct'
                         ? 'Patient will pay directly (cash payment)'
                         : `Insurance claims will be processed through ${formData.insuranceProvider}`
                       }
                     </p>
-                    {formData.insuranceProvider === 'Cash' && formData.cashAmount && (
+                    {formData.insuranceProvider === 'Direct' && formData.cashAmount && (
                       <p className="mt-1 text-green-700 font-medium">
                         Cash Amount: {new Intl.NumberFormat('sw-TZ', {
                           style: 'currency',
@@ -421,7 +420,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                         }).format(Number(formData.cashAmount))}
                       </p>
                     )}
-                    {formData.insuranceMembershipNumber && formData.insuranceProvider !== 'Cash' && (
+                    {formData.insuranceMembershipNumber && formData.insuranceProvider !== 'Direct' && (
                       <p className="mt-1">
                         Membership Number: <span className="font-mono">{formData.insuranceMembershipNumber}</span>
                       </p>

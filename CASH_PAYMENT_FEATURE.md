@@ -13,17 +13,17 @@ Added cash payment option to patient registration form with amount field instead
 - ✅ **Updated TypeScript interface** to include optional `cashAmount` field
 
 #### **Insurance Provider Dropdown**
-- ✅ **Added "Cash Payment" option** to insurance provider dropdown
-- ✅ **Positioned before "Direct Payment"** for better UX
+- ✅ **Uses existing "Direct Payment (Cash)" option** for cash payments
+- ✅ **Triggers cash amount field** when selected
 
 #### **Conditional Field Display**
-- ✅ **Shows cash amount field** when "Cash" is selected
+- ✅ **Shows cash amount field** when "Direct Payment (Cash)" is selected
 - ✅ **Shows membership number field** for all other insurance providers
 - ✅ **Number input with TZS currency** formatting
 - ✅ **Min value of 0, step of 100** for better UX
 
 #### **Form Validation**
-- ✅ **Validates cash amount** when Cash is selected
+- ✅ **Validates cash amount** when "Direct Payment (Cash)" is selected
 - ✅ **Ensures amount is greater than 0**
 - ✅ **Required field validation** for cash payments
 
@@ -61,7 +61,7 @@ Added cash payment option to patient registration form with amount field instead
 ## 🎯 **Form Behavior**
 
 ### **Cash Payment Flow:**
-1. **Select "Cash Payment"** from insurance provider dropdown
+1. **Select "Direct Payment (Cash)"** from insurance provider dropdown
 2. **Enter cash amount** in TZS (Tanzanian Shillings)
 3. **Form validates** amount is greater than 0
 4. **Shows formatted amount** in information section
