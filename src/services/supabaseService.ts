@@ -651,10 +651,19 @@ export const supabaseService = {
     
     if (fetchError) throw fetchError;
 
-    // Update is_read field
-    const isRead = typeof currentData.is_read === 'boolean' 
-      ? { [userId]: true } 
-      : { ...currentData.is_read, [userId]: true };
+    // Update is_read field - handle both boolean and JSON object cases
+    let isRead: { [userId: string]: boolean };
+    
+    if (typeof currentData.is_read === 'boolean') {
+      // If it's a boolean, convert to object format
+      isRead = { [userId]: true };
+    } else if (currentData.is_read === null || currentData.is_read === undefined) {
+      // If it's null/undefined, create new object
+      isRead = { [userId]: true };
+    } else {
+      // If it's already an object, merge with new user
+      isRead = { ...currentData.is_read, [userId]: true };
+    }
 
     const { data, error } = await supabase
       .from('notifications')

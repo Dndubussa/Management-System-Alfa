@@ -32,9 +32,13 @@ export function Header() {
     }
   };
 
-  const handleNotificationClick = (notificationId: string) => {
+  const handleNotificationClick = async (notificationId: string) => {
     if (user) {
-      markNotificationRead(notificationId, user.id);
+      try {
+        await markNotificationRead(notificationId, user.id);
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
     }
   };
 

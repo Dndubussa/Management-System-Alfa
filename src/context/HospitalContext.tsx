@@ -470,7 +470,10 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     if (typeof notification.isRead === 'boolean') {
       return notification.isRead;
     }
-    return notification.isRead[userId] ?? false;
+    if (notification.isRead && typeof notification.isRead === 'object') {
+      return notification.isRead[userId] ?? false;
+    }
+    return false;
   };
 
   // New function to mark notification as read for a specific user
@@ -480,9 +483,15 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       setNotifications(prev => prev.map(notification => {
         if (notification.id === id) {
           // Track read status per user
-          const isRead = typeof notification.isRead === 'boolean' 
-            ? { [userId]: true } 
-            : { ...notification.isRead, [userId]: true };
+          let isRead: { [userId: string]: boolean };
+          
+          if (typeof notification.isRead === 'boolean') {
+            isRead = { [userId]: true };
+          } else if (notification.isRead && typeof notification.isRead === 'object') {
+            isRead = { ...notification.isRead, [userId]: true };
+          } else {
+            isRead = { [userId]: true };
+          }
             
           return { ...notification, isRead };
         }

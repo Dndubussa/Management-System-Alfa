@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Plus, Eye, CreditCard as Edit } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Plus, MoreVertical, Eye, Edit } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Patient } from '../../types';
@@ -15,6 +15,8 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
   const { user } = useAuth();
   const { patients, appointments, medicalRecords } = useHospital();
   const [searchTerm, setSearchTerm] = useState('');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Filter patients based on user role
   const getFilteredPatients = () => {
@@ -71,6 +73,34 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
     
     return age;
   };
+
+  const handleDropdownToggle = (patientId: string) => {
+    setOpenDropdown(openDropdown === patientId ? null : patientId);
+  };
+
+  const handleViewPatient = (patient: Patient) => {
+    setOpenDropdown(null);
+    onViewPatient(patient);
+  };
+
+  const handleEditPatient = (patient: Patient) => {
+    setOpenDropdown(null);
+    onEditPatient(patient);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -172,23 +202,38 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                     {formatDate(patient.createdAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
+                    <div className="relative" ref={dropdownRef}>
                       <button
-                        onClick={() => onViewPatient(patient)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors"
-                        title="View Details"
+                        onClick={() => handleDropdownToggle(patient.id)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                        title="Actions"
                       >
-                        <Eye className="w-4 h-4" />
+                        <MoreVertical className="w-4 h-4" />
                       </button>
-                      {/* Only authorized roles can edit patients */}
-                      {canEditPatients(user?.role) && (
-                        <button
-                          onClick={() => onEditPatient(patient)}
-                          className="text-green-600 hover:text-green-900 transition-colors"
-                          title="Edit Patient"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                      
+                      {/* Dropdown Menu */}
+                      {openDropdown === patient.id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                          <div className="py-1">
+                            <button
+                              onClick={() => handleViewPatient(patient)}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <Eye className="w-4 h-4 mr-3" />
+                              View Details
+                            </button>
+                            {/* Only authorized roles can edit patients */}
+                            {canEditPatients(user?.role) && (
+                              <button
+                                onClick={() => handleEditPatient(patient)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                <Edit className="w-4 h-4 mr-3" />
+                                Edit Patient
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </td>
