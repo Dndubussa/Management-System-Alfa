@@ -203,8 +203,7 @@ app.get('/api/patients/:id', async (req, res) => {
 
 app.post('/api/patients', async (req, res) => {
   try {
-    // Generate MRN (Medical Record Number)
-    const currentYear = new Date().getFullYear();
+    // Generate MRN using P001 format
     const { data: lastPatient } = await supabase
       .from('patients')
       .select('mrn')
@@ -214,13 +213,20 @@ app.post('/api/patients', async (req, res) => {
 
     let nextNumber = 1;
     if (lastPatient && lastPatient.mrn) {
-      const match = lastPatient.mrn.match(/ALFA-(\d{4})-(\d+)/);
-      if (match && match[1] === currentYear.toString()) {
-        nextNumber = parseInt(match[2]) + 1;
+      // Check for new P001 format first
+      const newFormatMatch = lastPatient.mrn.match(/P(\d+)/);
+      if (newFormatMatch) {
+        nextNumber = parseInt(newFormatMatch[1]) + 1;
+      } else {
+        // Check for old ALFA-YYYY-XXXXX format
+        const oldFormatMatch = lastPatient.mrn.match(/ALFA-\d{4}-(\d+)/);
+        if (oldFormatMatch) {
+          nextNumber = parseInt(oldFormatMatch[1]) + 1;
+        }
       }
     }
 
-    const mrn = `ALFA-${currentYear}-${nextNumber.toString().padStart(5, '0')}`;
+    const mrn = `P${String(nextNumber).padStart(3, '0')}`;
 
     // Use the snake_case data from the API service (already mapped)
     const patientData = {

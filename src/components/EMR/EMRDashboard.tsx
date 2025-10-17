@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { FileText, Plus, Search, Filter, TestTube, AlertCircle, Heart, Download } from 'lucide-react';
+import { FileText, Plus, Search, Filter, TestTube, AlertCircle, Heart, Download, Shield } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { MedicalRecord, Patient } from '../../types';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
+import { canViewMedicalRecords, canEditMedicalRecords, hasRestrictedPatientVisibility } from '../../utils/roleUtils';
 
 interface EMRDashboardProps {
   onCreateRecord: (patientId: string) => void;
@@ -15,17 +16,35 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
   const { patients, medicalRecords, labOrders } = useHospital();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Check if user has access to medical records
+  if (!canViewMedicalRecords(user?.role)) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Restricted</h2>
+          <p className="text-gray-600">
+            Medical records are only accessible to doctors and medical specialists.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Your role: {user?.role || 'Unknown'}
+          </p>
+        </div>
+      </div>
+    );
+  }
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState('');
   const [newRecordPatient, setNewRecordPatient] = useState(''); // Separate state for new record dropdown
 
   // Filter records based on user role
-  const userRecords = (user?.role === 'doctor' || user?.role === 'ophthalmologist')
+  const userRecords = hasRestrictedPatientVisibility(user?.role)
     ? medicalRecords.filter(record => record.doctorId === user.id)
     : medicalRecords;
 
   // Get completed lab orders for this doctor
-  const completedLabOrders = (user?.role === 'doctor' || user?.role === 'ophthalmologist')
+  const completedLabOrders = hasRestrictedPatientVisibility(user?.role)
     ? labOrders.filter(order => order.doctorId === user.id && order.status === 'completed' && order.results)
     : [];
   const filteredRecords = userRecords.filter(record => {
@@ -145,7 +164,7 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
             Electronic Medical Records
           </h2>
           <div className="flex space-x-3">
-            {(user?.role === 'doctor' || user?.role === 'ophthalmologist') && (
+            {canEditMedicalRecords(user?.role) && (
               <>
                 <select
                   value={newRecordPatient}

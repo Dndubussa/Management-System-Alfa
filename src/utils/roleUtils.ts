@@ -55,3 +55,44 @@ export const canEditPatients = (userRole: string | undefined): boolean => {
   if (!userRole) return false;
   return getPatientEditRoles().includes(userRole);
 };
+
+/**
+ * Define which roles can view medical records
+ * Only doctors and medical specialists should have access
+ */
+export const getMedicalRecordAccessRoles = (): string[] => [
+  'doctor',
+  'ophthalmologist',
+  'radiologist',
+  'admin', // Admin should have access for oversight
+  // Add other medical specialist roles here as needed
+  // 'cardiologist', 'neurologist', 'pediatrician', 'dermatologist', etc.
+];
+
+/**
+ * Check if a user role can view medical records
+ */
+export const canViewMedicalRecords = (userRole: string | undefined): boolean => {
+  if (!userRole) return false;
+  return getMedicalRecordAccessRoles().includes(userRole);
+};
+
+/**
+ * Define which roles can create/edit medical records
+ * Only doctors and medical specialists should be able to create/edit records
+ */
+export const getMedicalRecordEditRoles = (): string[] => [
+  'doctor',
+  'ophthalmologist',
+  'radiologist',
+  'admin', // Admin should have access for oversight
+  // Add other medical specialist roles here as needed
+];
+
+/**
+ * Check if a user role can create/edit medical records
+ */
+export const canEditMedicalRecords = (userRole: string | undefined): boolean => {
+  if (!userRole) return false;
+  return getMedicalRecordEditRoles().includes(userRole);
+};

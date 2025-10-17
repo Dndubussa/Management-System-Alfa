@@ -1,5 +1,5 @@
 // Supabase service for production deployment
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseServiceClient } from '../lib/supabase';
 import { 
   Patient, 
   MedicalRecord, 
@@ -170,20 +170,8 @@ interface MedicationTransaction {
   createdAt: string;
 }
 
-// Create a single Supabase instance to avoid multiple GoTrueClient instances
-let supabaseInstance: any = null;
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-if (!supabaseInstance) {
-  supabaseInstance = createClient(supabaseUrl, supabaseKey);
-}
-
-const supabase = supabaseInstance;
+// Using Supabase service role client for database operations
+const supabase = getSupabaseServiceClient();
 
 // Helper function to convert snake_case to camelCase
 function toCamelCase(obj: any): any {
@@ -299,13 +287,30 @@ export const supabaseService = {
   },
 
   createPatient: async (patient: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>): Promise<Patient> => {
-    // Generate MRN
-    const currentYear = new Date().getFullYear();
-    const { count } = await supabase
+    // Generate MRN using P001 format
+    const { data: lastPatient } = await supabase
       .from('patients')
-      .select('*', { count: 'exact', head: true });
+      .select('mrn')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    let nextNumber = 1;
+    if (lastPatient && lastPatient.mrn) {
+      // Check for new P001 format first
+      const newFormatMatch = lastPatient.mrn.match(/P(\d+)/);
+      if (newFormatMatch) {
+        nextNumber = parseInt(newFormatMatch[1]) + 1;
+      } else {
+        // Check for old ALFA-YYYY-XXXXX format
+        const oldFormatMatch = lastPatient.mrn.match(/ALFA-\d{4}-(\d+)/);
+        if (oldFormatMatch) {
+          nextNumber = parseInt(oldFormatMatch[1]) + 1;
+        }
+      }
+    }
     
-    const mrn = `ALFA-${currentYear}-${String((count || 0) + 1).padStart(5, '0')}`;
+    const mrn = `P${String(nextNumber).padStart(3, '0')}`;
     
     const patientData = {
       ...toSnakeCase(patient),
@@ -325,10 +330,36 @@ export const supabaseService = {
   },
 
   updatePatient: async (id: string, patient: Partial<Patient>): Promise<Patient> => {
+    // Handle nested objects separately to avoid conversion issues
+    const { insuranceInfo, emergencyContact, ...patientWithoutNested } = patient;
+    
     const patientData = {
-      ...toSnakeCase(patient),
+      ...toSnakeCase(patientWithoutNested),
       updated_at: new Date().toISOString()
     };
+
+    // Add insurance fields separately
+    if (insuranceInfo) {
+      patientData.insurance_provider = insuranceInfo.provider || '';
+      patientData.insurance_membership_number = insuranceInfo.membershipNumber || '';
+      patientData.cash_amount = insuranceInfo.cashAmount || '';
+    }
+
+    // Add emergency contact fields separately
+    if (emergencyContact) {
+      patientData.emergency_contact_name = emergencyContact.name || '';
+      patientData.emergency_contact_phone = emergencyContact.phone || '';
+      patientData.emergency_contact_relationship = emergencyContact.relationship || '';
+    }
+
+    // Remove undefined values to avoid validation errors
+    Object.keys(patientData).forEach(key => {
+      if (patientData[key] === undefined) {
+        delete patientData[key];
+      }
+    });
+
+    console.log('Patient data being sent to Supabase:', patientData);
 
     const { data, error } = await supabase
       .from('patients')
@@ -337,7 +368,15 @@ export const supabaseService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error details:', {
+        error,
+        patientData,
+        id,
+        originalPatient: patient
+      });
+      throw error;
+    }
     return mapPatientFromDb(data);
   },
 

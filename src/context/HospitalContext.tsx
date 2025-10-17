@@ -31,16 +31,7 @@ const forceSupabase = import.meta.env.VITE_USE_SUPABASE === 'true';
 const useSupabase = isProduction || forceSupabase || hasSupabaseUrl;
 const service = useSupabase ? supabaseService : api;
 
-// Service selection logging (can be removed in production)
-if (import.meta.env.DEV) {
-  console.log('🔍 Service selection:', {
-    isProduction,
-    useSupabase,
-    hasSupabaseUrl,
-    forceSupabase,
-    serviceType: useSupabase ? 'Supabase' : 'Local API'
-  });
-}
+// Service selection logic
 
 // Inventory types
 interface InventoryItem {
@@ -264,19 +255,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addPatient = async (patientData: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>) => {
     try {
-      // Generate MRN: ALFA-YYYY-XXXXX (where XXXXX is a 5-digit sequential number)
-      const currentYear = new Date().getFullYear();
-      const patientCount = patients.length + 1;
-      const mrn = `ALFA-${currentYear}-${String(patientCount).padStart(5, '0')}`;
-      
-      const newPatientData = {
-        ...patientData,
-        mrn,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      const newPatient = await service.createPatient(newPatientData);
+      // MRN generation is now handled by the service layer
+      const newPatient = await service.createPatient(patientData);
       setPatients(prev => [...prev, newPatient]);
     } catch (err) {
       console.error('Error creating patient:', err);
@@ -373,7 +353,6 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
                 const updatedMedicationInventory = await service.getMedicationInventory();
                 setMedicationInventory(updatedMedicationInventory);
 
-                console.log(`✅ Dispensed ${quantityToDeduct} ${medication.medicationName} for prescription ${prescription.id}`);
               } else {
                 console.warn(`⚠️ Insufficient stock for ${medication.medicationName}. Required: ${quantityToDeduct}, Available: ${medication.currentStock}`);
                 // You might want to show a warning to the user here

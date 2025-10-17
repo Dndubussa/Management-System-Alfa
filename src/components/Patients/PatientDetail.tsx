@@ -1,8 +1,10 @@
 import React from 'react';
 import { useHospital } from '../../context/HospitalContext';
+import { useAuth } from '../../context/AuthContext';
 import { Patient, MedicalRecord, Appointment } from '../../types';
 import { ArrowLeft, Calendar, Phone, Mail, MapPin, User, Heart, Stethoscope, FileText, Clock, Download, Shield } from 'lucide-react';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
+import { canViewMedicalRecords } from '../../utils/roleUtils';
 
 interface PatientDetailProps {
   patient: Patient;
@@ -12,6 +14,7 @@ interface PatientDetailProps {
 
 export function PatientDetail({ patient, onBack, onEdit }: PatientDetailProps) {
   const { medicalRecords, appointments } = useHospital();
+  const { user } = useAuth();
 
   // Filter medical records and appointments for this patient
   const patientRecords = medicalRecords.filter(record => record.patientId === patient.id);
@@ -133,7 +136,8 @@ export function PatientDetail({ patient, onBack, onEdit }: PatientDetailProps) {
               <h1 className="text-2xl font-bold text-gray-900">
                 {patient.firstName} {patient.lastName}
               </h1>
-              <p className="text-gray-600">Patient ID: {patient.id}</p>
+              <p className="text-gray-600">MRN: {patient.mrn}</p>
+              <p className="text-gray-500 text-sm">Patient ID: {patient.id}</p>
               <div className="flex items-center mt-2 text-sm text-gray-500">
                 <Heart className="w-4 h-4 mr-1" />
                 <span className="capitalize">{patient.gender}</span>
@@ -186,47 +190,49 @@ export function PatientDetail({ patient, onBack, onEdit }: PatientDetailProps) {
         </div>
       </div>
 
-      {/* Medical Records */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <FileText className="w-5 h-5 mr-2" />
-            Medical Records ({patientRecords.length})
-          </h2>
-        </div>
-        {patientRecords.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            No medical records found for this patient.
+      {/* Medical Records - Only visible to doctors and medical specialists */}
+      {canViewMedicalRecords(user?.role) && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              <FileText className="w-5 h-5 mr-2" />
+              Medical Records ({patientRecords.length})
+            </h2>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {patientRecords.map(record => (
-              <div key={record.id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between">
-                  <h3 className="font-medium text-gray-900">Visit on {formatDate(record.visitDate)}</h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                    {record.status}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  <span className="font-medium">Chief Complaint:</span> {record.chiefComplaint}
-                </p>
-                <p className="mt-1 text-sm text-gray-600">
-                  <span className="font-medium">Diagnosis:</span> {record.diagnosis}
-                </p>
-                <p className="mt-1 text-sm text-gray-600">
-                  <span className="font-medium">Treatment:</span> {record.treatment}
-                </p>
-                {record.notes && (
-                  <p className="mt-1 text-sm text-gray-600">
-                    <span className="font-medium">Notes:</span> {record.notes}
+          {patientRecords.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              No medical records found for this patient.
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {patientRecords.map(record => (
+                <div key={record.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex justify-between">
+                    <h3 className="font-medium text-gray-900">Visit on {formatDate(record.visitDate)}</h3>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                      {record.status}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-600">
+                    <span className="font-medium">Chief Complaint:</span> {record.chiefComplaint}
                   </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                  <p className="mt-1 text-sm text-gray-600">
+                    <span className="font-medium">Diagnosis:</span> {record.diagnosis}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    <span className="font-medium">Treatment:</span> {record.treatment}
+                  </p>
+                  {record.notes && (
+                    <p className="mt-1 text-sm text-gray-600">
+                      <span className="font-medium">Notes:</span> {record.notes}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Appointments */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">

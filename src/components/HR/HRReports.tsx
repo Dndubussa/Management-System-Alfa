@@ -74,11 +74,13 @@ const HRReports: React.FC = () => {
   const generateReport = () => {
     if (!selectedReport) return;
 
-    // Simulate report data generation - replace with actual API calls
-    const mockData = generateMockReportData(selectedReport);
-    setReportData(mockData);
+    // TODO: Replace with actual API calls to fetch real HR data
+    // For now, show empty state since we're removing mock data
+    setReportData(null);
+    alert('HR Reports feature is under development. Real data integration coming soon.');
   };
 
+  // Mock data generation removed - will be replaced with real API calls
   const generateMockReportData = (reportType: string) => {
     switch (reportType) {
       case 'staffing-levels':

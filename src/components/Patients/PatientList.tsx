@@ -111,6 +111,9 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                 Patient Info
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                MRN
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Contact
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -130,7 +133,7 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredPatients.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                   {searchTerm ? 'No patients found matching your search.' : 
                    hasRestrictedPatientVisibility(user?.role) ? 'No patients have been scheduled to see you and have medical records with you yet.' : 
                    'No patients registered yet.'}
@@ -144,7 +147,12 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                       <div className="text-sm font-medium text-gray-900">
                         {patient.firstName} {patient.lastName}
                       </div>
-                      <div className="text-sm text-gray-500">ID: {patient.id}</div>
+                      <div className="text-xs text-gray-400">ID: {patient.id}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-blue-600">
+                      {patient.mrn}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -1,22 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { api } from '../services/api';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 // Determine which service to use based on environment
 const isProduction = import.meta.env.PROD;
 const useSupabase = isProduction || import.meta.env.VITE_USE_SUPABASE === 'true';
-
-// Create a single Supabase instance to avoid multiple GoTrueClient instances
-let supabaseInstance: any = null;
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
-
-if (useSupabase && supabaseUrl && supabaseKey && !supabaseInstance) {
-  supabaseInstance = createClient(supabaseUrl, supabaseKey);
-}
-
-const supabase = supabaseInstance;
 
 interface AuthContextType {
   user: User | null;

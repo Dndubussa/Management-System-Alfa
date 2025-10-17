@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { HospitalProvider, useHospital } from './context/HospitalContext';
@@ -7,6 +7,7 @@ import { UserVerification } from './components/Login/UserVerification';
 import { UserValidation } from './components/Login/UserValidation';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
+import TestConnection from './components/TestConnection';
 import { DashboardStats } from './components/Dashboard/DashboardStats';
 import { PatientList } from './components/Patients/PatientList';
 import { PatientForm } from './components/Patients/PatientForm';
@@ -381,9 +382,10 @@ function AppContent() {
             {/* Common Routes */}
             <Route path="/" element={<DashboardRoute />} />
             <Route path="/patients" element={<PatientList onViewPatient={handleViewPatient} onEditPatient={handleEditPatient} onNewPatient={handleNewPatient} />} />
-            <Route path="/patient-detail" element={selectedPatient ? <PatientDetail patient={selectedPatient} onBack={() => navigate('/patients')} onEdit={() => handleEditPatient(selectedPatient)} /> : <div>Patient not selected</div>} />
-            <Route path="/patient-edit" element={selectedPatient ? <PatientForm patient={selectedPatient} onSave={handleSavePatient} onCancel={() => navigate('/patients')} /> : <div>Patient not selected</div>} />
+            <Route path="/patient-detail" element={selectedPatient ? <PatientDetail patient={selectedPatient} onBack={() => navigate('/patients')} onEdit={() => handleEditPatient(selectedPatient)} /> : <PatientNotSelectedRoute />} />
+            <Route path="/patient-edit" element={selectedPatient ? <PatientForm patient={selectedPatient} onSave={handleSavePatient} onCancel={() => navigate('/patients')} /> : <PatientNotSelectedRoute />} />
             <Route path="/registration" element={<PatientForm onSave={handleSavePatient} onCancel={() => navigate('/patients')} />} />
+            <Route path="/test-connection" element={<TestConnection />} />
             <Route path="/appointments" element={<AppointmentList onNewAppointment={handleNewAppointment} onEditAppointment={handleEditAppointment} />} />
             <Route path="/appointment/new" element={<AppointmentForm appointment={undefined} onSave={handleSaveAppointment} onCancel={() => navigate('/appointments')} />} />
             <Route path="/appointment-edit" element={selectedAppointment ? <AppointmentForm appointment={selectedAppointment} onSave={handleSaveAppointment} onCancel={() => navigate('/appointments')} /> : <div>Appointment not selected</div>} />
@@ -471,6 +473,24 @@ function AppContent() {
             <Route path="*" element={<div>Page not found</div>} />
           </Routes>
         </main>
+      </div>
+    </div>
+  );
+}
+
+function PatientNotSelectedRoute() {
+  const navigate = useNavigate();
+  
+  // Redirect to main dashboard if no patient is selected
+  React.useEffect(() => {
+    navigate('/', { replace: true });
+  }, [navigate]);
+  
+  return (
+    <div className="flex items-center justify-center min-h-64">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting to dashboard...</p>
       </div>
     </div>
   );

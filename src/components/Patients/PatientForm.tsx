@@ -97,7 +97,6 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
         }
       };
 
-      console.log('Submitting patient data:', patientData);
 
       if (patient) {
         await updatePatient(patient.id, patientData);
