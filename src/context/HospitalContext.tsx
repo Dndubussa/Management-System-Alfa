@@ -33,6 +33,16 @@ const forceSupabase = import.meta.env.VITE_USE_SUPABASE === 'true';
 const useSupabase = isProduction || forceSupabase || hasSupabaseUrl;
 const service = useSupabase ? supabaseService : api;
 
+// Debug logging for service selection
+console.log('Service selection debug:', {
+  isProduction,
+  hasSupabaseUrl,
+  forceSupabase,
+  useSupabase,
+  serviceType: useSupabase ? 'supabaseService' : 'api',
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL
+});
+
 // Service selection logic
 
 // Inventory types

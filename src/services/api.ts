@@ -1,5 +1,20 @@
 // API service for connecting to backend
-const API_BASE_URL = (import.meta as any)?.env?.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const getApiBaseUrl = () => {
+  // Check if we have a custom API base URL
+  if ((import.meta as any)?.env?.VITE_API_BASE_URL) {
+    return (import.meta as any).env.VITE_API_BASE_URL;
+  }
+  
+  // In production (Vercel), use the same domain
+  if (import.meta.env.PROD) {
+    return '/api';
+  }
+  
+  // In development, use localhost
+  return 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // -------------- Case conversion utilities --------------
 function isObject(value: unknown): value is Record<string, unknown> {
