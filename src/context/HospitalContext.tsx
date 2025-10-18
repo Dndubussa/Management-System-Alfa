@@ -30,8 +30,7 @@ import { findPatientSafely, getPatientDisplayName } from '../utils/patientUtils'
 const isProduction = import.meta.env.PROD;
 const hasSupabaseUrl = !!import.meta.env.VITE_SUPABASE_URL;
 const forceSupabase = import.meta.env.VITE_USE_SUPABASE === 'true';
-// Force use of API service in production to use Vercel serverless functions
-const useSupabase = !isProduction && (forceSupabase || hasSupabaseUrl);
+const useSupabase = isProduction || forceSupabase || hasSupabaseUrl;
 const service = useSupabase ? supabaseService : api;
 
 // Debug logging for service selection

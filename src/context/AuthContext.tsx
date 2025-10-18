@@ -5,8 +5,7 @@ import { supabase } from '../lib/supabase';
 
 // Determine which service to use based on environment
 const isProduction = import.meta.env.PROD;
-// Force use of API service in production to use Vercel serverless functions
-const useSupabase = !isProduction && import.meta.env.VITE_USE_SUPABASE === 'true';
+const useSupabase = isProduction || import.meta.env.VITE_USE_SUPABASE === 'true';
 
 interface AuthContextType {
   user: User | null;
