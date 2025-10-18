@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Calendar, Users, FileText, Activity, BarChart3, Search, Filter, Eye, Plus, Edit, Play } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function PTDashboard() {
-  const { patients, appointments, medicalRecords } = useHospital();
+  const { patients, appointments, medicalRecords, loading, error } = useHospital();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
@@ -47,6 +48,32 @@ export function PTDashboard() {
       minute: '2-digit'
     });
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="physical-therapist" 
+        department="Physical Therapy" 
+        title="Physical Therapy" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <Activity className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

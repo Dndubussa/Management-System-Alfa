@@ -5,9 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 import { InsuranceClaim } from '../../types';
 import { InsuranceClaimDetails } from './InsuranceClaimDetails';
 import { useNavigate } from 'react-router-dom';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function InsuranceOfficerDashboard() {
-  const { insuranceClaims, patients, bills, updateInsuranceClaimStatus } = useHospital();
+  const { insuranceClaims, patients, bills, updateInsuranceClaimStatus, loading, error } = useHospital();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -79,6 +80,32 @@ export function InsuranceOfficerDashboard() {
       updateInsuranceClaimStatus(claimId, 'rejected', reason);
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="insurance-officer" 
+        department="Insurance" 
+        title="Insurance Officer" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <Shield className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
