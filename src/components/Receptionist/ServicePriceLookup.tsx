@@ -5,11 +5,6 @@ import { ServicePrice, PriceLookupFilter } from '../../types';
 
 export function ServicePriceLookup() {
   const { servicePrices, loading, error } = useHospital();
-  
-  // Debug logging
-  console.log('ServicePriceLookup - servicePrices:', servicePrices);
-  console.log('ServicePriceLookup - loading:', loading);
-  console.log('ServicePriceLookup - error:', error);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [minPrice, setMinPrice] = useState('');

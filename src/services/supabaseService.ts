@@ -560,12 +560,15 @@ export const supabaseService = {
 
   // Appointments
   getAppointments: async (): Promise<Appointment[]> => {
-    try {
+    return await withErrorHandling(async () => {
       const allData = await getAllRecords('appointments', 'date_time', false);
       return toCamelCase(allData) as Appointment[];
-    } catch (error) {
-      throw error;
-    }
+    }, {
+      title: 'Failed to load appointments',
+      component: 'supabaseService',
+      action: 'getAppointments',
+      userAction: 'Load appointments data'
+    }) as Promise<Appointment[]>;
   },
 
   getAppointment: async (id: string): Promise<Appointment> => {
@@ -580,14 +583,41 @@ export const supabaseService = {
   },
 
   createAppointment: async (appointment: Omit<Appointment, 'id'>): Promise<Appointment> => {
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert(toSnakeCase(appointment))
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return toCamelCase(data) as Appointment;
+    return await withErrorHandling(async () => {
+      const appointmentData = toSnakeCase(appointment);
+      
+      // Remove undefined values to avoid validation errors
+      Object.keys(appointmentData).forEach(key => {
+        if (appointmentData[key] === undefined) {
+          delete appointmentData[key];
+        }
+      });
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert(appointmentData)
+        .select()
+        .single();
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'createAppointment',
+          userAction: 'Create new appointment',
+          metadata: { 
+            appointmentData: Object.keys(appointmentData),
+            originalAppointment: appointment
+          }
+        });
+      }
+      
+      return toCamelCase(data) as Appointment;
+    }, {
+      title: 'Failed to create appointment',
+      component: 'supabaseService',
+      action: 'createAppointment',
+      userAction: 'Create new appointment'
+    }) as Promise<Appointment>;
   },
 
   updateAppointmentStatus: async (id: string, status: Appointment['status']): Promise<Appointment> => {
