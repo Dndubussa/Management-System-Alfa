@@ -200,7 +200,12 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           if (currentUser && (currentUser.role === 'doctor' || currentUser.role === 'ophthalmologist' || currentUser.role === 'radiologist' || currentUser.role === 'physical-therapist')) {
             // For doctors and specialists, only load their assigned patients
             console.log('👨‍⚕️ Loading patients for doctor/specialist:', currentUser.id);
-            return service.getPatientsByDoctor(currentUser.id).catch(err => {
+            try {
+              const patients = await service.getPatientsByDoctor(currentUser.id);
+              console.log('✅ Loaded patients for doctor:', patients.length);
+              return patients;
+            } catch (err) {
+              console.error('❌ Error loading patients for doctor:', err);
               addError({
                 type: 'error',
                 title: 'Failed to Load Assigned Patients',
@@ -212,11 +217,16 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
                 metadata: { error: err, userId: currentUser.id }
               });
               return [];
-            });
+            }
           } else {
             // For receptionists, admins, and other roles, load all patients
             console.log('👥 Loading all patients for role:', currentUser?.role || 'unknown');
-            return service.getPatients().catch(err => {
+            try {
+              const patients = await service.getPatients();
+              console.log('✅ Loaded all patients:', patients.length);
+              return patients;
+            } catch (err) {
+              console.error('❌ Error loading all patients:', err);
               addError({
                 type: 'error',
                 title: 'Failed to Load Patients',
@@ -228,11 +238,13 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
                 metadata: { error: err }
               });
               return [];
-            });
+            }
           }
         };
         
         // Load all data in parallel with individual error handling
+        
+        console.log('🔄 Starting data load with service:', useSupabase ? 'supabaseService' : 'api');
         
         // Load data with individual error handling - don't fail entire load if one table fails
         const [
@@ -255,7 +267,11 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           medicationInventoryData
         ] = await Promise.all([
           loadPatients(),
-          service.getMedicalRecords().catch(err => { 
+          service.getMedicalRecords().then(data => {
+            console.log('✅ Loaded medical records:', data.length);
+            return data;
+          }).catch(err => { 
+            console.error('❌ Error loading medical records:', err);
             addError({
               type: 'error',
               title: 'Failed to Load Medical Records',
@@ -294,7 +310,11 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
             });
             return []; 
           }),
-          service.getAppointments().catch(err => { 
+          service.getAppointments().then(data => {
+            console.log('✅ Loaded appointments:', data.length);
+            return data;
+          }).catch(err => { 
+            console.error('❌ Error loading appointments:', err);
             addError({
               type: 'error',
               title: 'Failed to Load Appointments',
@@ -465,6 +485,21 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           })
         ]);
         
+        // Debug: Log loaded data counts
+        console.log('📊 Data loaded successfully:', {
+          patients: patientsData.length,
+          medicalRecords: medicalRecordsData.length,
+          prescriptions: prescriptionsData.length,
+          labOrders: labOrdersData.length,
+          appointments: appointmentsData.length,
+          notifications: notificationsData.length,
+          servicePrices: servicePricesData.length,
+          bills: billsData.length,
+          departments: departmentsData.length,
+          referrals: referralsData.length,
+          users: usersData.length,
+          insuranceClaims: insuranceClaimsData.length
+        });
         
         setPatients(patientsData);
         setMedicalRecords(medicalRecordsData);
