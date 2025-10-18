@@ -3,6 +3,7 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Appointment } from '../../types';
 import { Check, X, Clock, User, ArrowLeft } from 'lucide-react';
+import { findPatientSafely } from '../../utils/patientUtils';
 
 interface AppointmentStatusUpdateProps {
   appointment: Appointment;
@@ -14,7 +15,7 @@ export function AppointmentStatusUpdate({ appointment, onStatusUpdate }: Appoint
   const { user } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const patient = patients.find(p => p.id === appointment.patientId);
+  const patient = findPatientSafely(patients, appointment.patientId);
   
   const handleStatusUpdate = (status: Appointment['status']) => {
     setIsUpdating(true);

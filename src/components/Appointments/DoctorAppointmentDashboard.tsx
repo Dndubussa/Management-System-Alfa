@@ -3,6 +3,7 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { AppointmentStatusUpdate } from './AppointmentStatusUpdate';
 import { Calendar, Clock, User, Info } from 'lucide-react';
+import { findPatientSafely, getPatientDisplayName } from '../../utils/patientUtils';
 
 export function DoctorAppointmentDashboard() {
   const { appointments, patients } = useHospital();
@@ -20,8 +21,7 @@ export function DoctorAppointmentDashboard() {
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
   const getPatientName = (patientId: string) => {
-    const patient = patients.find(p => p.id === patientId);
-    return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
+    return getPatientDisplayName(patients, patientId);
   };
 
   const formatDateTime = (dateTimeString: string) => {

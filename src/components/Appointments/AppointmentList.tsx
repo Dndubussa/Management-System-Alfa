@@ -4,6 +4,7 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Appointment } from '../../types';
 import { AppointmentStatusUpdate } from './AppointmentStatusUpdate';
+import { findPatientSafely, getPatientDisplayName } from '../../utils/patientUtils';
 
 interface AppointmentListProps {
   onNewAppointment: () => void;
@@ -26,7 +27,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
   // For doctors, we still show all appointments including completed ones
   // For receptionists, we show all appointments as well
   const filteredAppointments = userAppointments.filter(appointment => {
-    const patient = patients.find(p => p.id === appointment.patientId);
+    const patient = findPatientSafely(patients, appointment.patientId);
     if (!patient) return false;
 
     const matchesSearch = searchTerm === '' || 
@@ -41,8 +42,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
   });
 
   const getPatientName = (patientId: string) => {
-    const patient = patients.find(p => p.id === patientId);
-    return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
+    return getPatientDisplayName(patients, patientId);
   };
 
   const formatDateTime = (dateTimeString: string) => {
