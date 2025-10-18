@@ -2236,7 +2236,14 @@ app.get('/api', (req, res) => {
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
+// This is essential for SPA routing to work properly
 app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // Serve index.html for all other routes (SPA routing)
   res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
 
