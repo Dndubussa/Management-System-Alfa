@@ -276,6 +276,39 @@ export const supabaseService = {
     }
   },
 
+  getPatientsByDoctor: async (doctorId: string): Promise<Patient[]> => {
+    try {
+      // Get all appointments for this doctor
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select('patient_id')
+        .eq('doctor_id', doctorId);
+      
+      if (appointmentsError) throw appointmentsError;
+      
+      // Get unique patient IDs
+      const patientIds = [...new Set(appointments.map(apt => apt.patient_id))];
+      
+      if (patientIds.length === 0) {
+        return []; // No patients assigned to this doctor
+      }
+      
+      // Get patients for these IDs
+      const { data: patients, error: patientsError } = await supabase
+        .from('patients')
+        .select('*')
+        .in('id', patientIds)
+        .order('created_at', { ascending: false });
+      
+      if (patientsError) throw patientsError;
+      
+      return patients.map(mapPatientFromDb);
+    } catch (error) {
+      console.error('❌ Supabase: Error getting patients by doctor:', error);
+      throw error;
+    }
+  },
+
   getPatient: async (id: string): Promise<Patient> => {
     const { data, error } = await supabase
       .from('patients')

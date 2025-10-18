@@ -24,6 +24,7 @@ import {
 import { api } from '../services/api';
 import { supabaseService } from '../services/supabaseService';
 import { useError } from './ErrorContext';
+import { useAuth } from './AuthContext';
 import { findPatientSafely, getPatientDisplayName } from '../utils/patientUtils';
 
 // Determine which service to use based on environment
@@ -183,15 +184,53 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Get error context
+  // Get error context and auth context
   const { addError } = useError();
+  const { user } = useAuth();
 
   // Load all data from API on component mount
   useEffect(() => {
-    const loadData = async () => {
+    const loadData = async (currentUser?: User) => {
       try {
         setLoading(true);
         setError(null);
+        
+        // Determine which patients to load based on user role
+        const loadPatients = async () => {
+          if (currentUser && (currentUser.role === 'doctor' || currentUser.role === 'ophthalmologist' || currentUser.role === 'radiologist' || currentUser.role === 'physical-therapist')) {
+            // For doctors and specialists, only load their assigned patients
+            console.log('👨‍⚕️ Loading patients for doctor/specialist:', currentUser.id);
+            return service.getPatientsByDoctor(currentUser.id).catch(err => {
+              addError({
+                type: 'error',
+                title: 'Failed to Load Assigned Patients',
+                message: 'Unable to load patients assigned to you',
+                details: err instanceof Error ? err.message : String(err),
+                component: 'HospitalContext',
+                action: 'loadData',
+                userAction: 'Application startup',
+                metadata: { error: err, userId: currentUser.id }
+              });
+              return [];
+            });
+          } else {
+            // For receptionists, admins, and other roles, load all patients
+            console.log('👥 Loading all patients for role:', currentUser?.role || 'unknown');
+            return service.getPatients().catch(err => {
+              addError({
+                type: 'error',
+                title: 'Failed to Load Patients',
+                message: 'Unable to load patients data',
+                details: err instanceof Error ? err.message : String(err),
+                component: 'HospitalContext',
+                action: 'loadData',
+                userAction: 'Application startup',
+                metadata: { error: err }
+              });
+              return [];
+            });
+          }
+        };
         
         // Load all data in parallel with individual error handling
         
@@ -215,19 +254,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           inventoryItemsData,
           medicationInventoryData
         ] = await Promise.all([
-          service.getPatients().catch(err => { 
-            addError({
-              type: 'error',
-              title: 'Failed to Load Patients',
-              message: 'Unable to load patients data',
-              details: err instanceof Error ? err.message : String(err),
-              component: 'HospitalContext',
-              action: 'loadData',
-              userAction: 'Application startup',
-              metadata: { error: err }
-            });
-            return []; 
-          }),
+          loadPatients(),
           service.getMedicalRecords().catch(err => { 
             addError({
               type: 'error',
@@ -466,14 +493,24 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       }
     };
     
-    loadData();
-  }, []);
+    loadData(user);
+  }, [user]);
 
   const addPatient = async (patientData: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>) => {
     try {
       // MRN generation is now handled by the service layer
       const newPatient = await service.createPatient(patientData);
-      setPatients(prev => [...prev, newPatient]);
+      
+      // For doctors/specialists, only add if they can see this patient
+      // For other roles, add to the list
+      if (user && (user.role === 'doctor' || user.role === 'ophthalmologist' || user.role === 'radiologist' || user.role === 'physical-therapist')) {
+        // For doctors, only add if they have appointments with this patient
+        // This will be handled when an appointment is created
+        console.log('👨‍⚕️ Doctor created patient, will be visible when appointment is scheduled');
+      } else {
+        // For receptionists and other roles, add immediately
+        setPatients(prev => [...prev, newPatient]);
+      }
     } catch (err) {
       console.error('Error creating patient:', err);
       setError('Failed to create patient');
@@ -971,6 +1008,17 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       }
       
       setAppointments(prev => [...prev, newAppointment]);
+
+      // For doctors/specialists, refresh patient data to include the new patient
+      if (user && (user.role === 'doctor' || user.role === 'ophthalmologist' || user.role === 'radiologist' || user.role === 'physical-therapist')) {
+        try {
+          const updatedPatients = await service.getPatientsByDoctor(user.id);
+          setPatients(updatedPatients);
+          console.log('👨‍⚕️ Refreshed patient data for doctor after new appointment');
+        } catch (err) {
+          console.error('Error refreshing patient data for doctor:', err);
+        }
+      }
 
       // Automatically generate bill if autobilling is enabled for appointments
       if (autobillingConfig.enabled && autobillingConfig.autoGenerateForAppointments) {
