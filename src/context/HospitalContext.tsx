@@ -24,6 +24,7 @@ import {
 import { api } from '../services/api';
 import { supabaseService } from '../services/supabaseService';
 import { useError } from './ErrorContext';
+import { findPatientSafely, getPatientDisplayName } from '../utils/patientUtils';
 
 // Determine which service to use based on environment
 const isProduction = import.meta.env.PROD;
@@ -629,7 +630,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       if (status === 'completed' && results) {
         const labOrder = labOrders.find(l => l.id === id);
         if (labOrder) {
-          const patient = patients.find(p => p.id === labOrder.patientId);
+          const patient = findPatientSafely(patients, labOrder.patientId);
           addNotification({
             userIds: [labOrder.doctorId],
             type: 'lab-order',
@@ -731,7 +732,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Find the patient
-    const patient = patients.find(p => p.id === patientId);
+    const patient = findPatientSafely(patients, patientId);
     if (!patient) return;
 
     // Create a new bill
@@ -864,7 +865,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       setReferrals(prev => [...prev, newReferral]);
       
       // Create notification for the referring doctor
-      const patient = patients.find(p => p.id === referralData.patientId);
+      const patient = findPatientSafely(patients, referralData.patientId);
       if (patient) {
         addNotification({
           userIds: [referralData.referringDoctorId],
@@ -897,7 +898,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       // Create notification for status update
       const referral = referrals.find(r => r.id === id);
       if (referral) {
-        const patient = patients.find(p => p.id === referral.patientId);
+        const patient = findPatientSafely(patients, referral.patientId);
         if (patient) {
           addNotification({
             userIds: [referral.referringDoctorId],
@@ -982,7 +983,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       if (status === 'completed' || status === 'in-progress' || status === 'cancelled') {
         const appointment = appointments.find(a => a.id === id);
         if (appointment) {
-          const patient = patients.find(p => p.id === appointment.patientId);
+          const patient = findPatientSafely(patients, appointment.patientId);
           const doctor = users.find(u => u.id === appointment.doctorId);
           
           if (patient && doctor) {

@@ -4,6 +4,7 @@ import { useHospital } from '../../context/HospitalContext';
 import { Appointment } from '../../types';
 import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
 import { useConsultationBilling } from '../../hooks/useConsultationBilling';
+import { findPatientSafely } from '../../utils/patientUtils';
 
 interface AppointmentFormProps {
   appointment?: Appointment;
@@ -92,7 +93,7 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
     }
 
     // Send notification to doctor
-    const patient = patients.find(p => p.id === formData.patientId);
+    const patient = findPatientSafely(patients, formData.patientId);
     if (patient) {
       addNotification({
         userIds: [formData.doctorId],

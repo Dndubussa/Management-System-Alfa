@@ -688,13 +688,28 @@ export const supabaseService = {
 
   // Notifications
   getNotifications: async (): Promise<Notification[]> => {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return toCamelCase(data) as Notification[];
+    return await withErrorHandling(async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'getNotifications',
+          userAction: 'Load notifications data',
+          metadata: { table: 'notifications' }
+        });
+      }
+      
+      return toCamelCase(data) as Notification[];
+    }, {
+      title: 'Failed to load notifications',
+      component: 'supabaseService',
+      action: 'getNotifications',
+      userAction: 'Load notifications data'
+    }) as Promise<Notification[]>;
   },
 
   getNotification: async (id: string): Promise<Notification> => {
