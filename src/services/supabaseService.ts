@@ -1,5 +1,5 @@
 // Supabase service for production deployment
-import { getSupabaseServiceClient } from '../lib/supabase';
+import { getSupabaseServiceClient, getSupabaseClient } from '../lib/supabase';
 import { 
   Patient, 
   MedicalRecord, 
@@ -171,8 +171,8 @@ interface MedicationTransaction {
   createdAt: string;
 }
 
-// Using Supabase service role client for database operations
-const supabase = getSupabaseServiceClient();
+// Using Supabase authenticated client for database operations
+const supabase = getSupabaseClient();
 
 // Helper function to convert snake_case to camelCase
 function toCamelCase(obj: any): any {
