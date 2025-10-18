@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { MedicalRecord, Patient } from '../../types';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
 import { canViewMedicalRecords, canEditMedicalRecords, hasRestrictedPatientVisibility } from '../../utils/roleUtils';
+import { findPatientSafely, getPatientDisplayName } from '../../utils/patientUtils';
 
 interface EMRDashboardProps {
   onCreateRecord: (patientId: string) => void;
@@ -48,7 +49,7 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
     ? labOrders.filter(order => order.doctorId === user.id && order.status === 'completed' && order.results)
     : [];
   const filteredRecords = userRecords.filter(record => {
-    const patient = patients.find(p => p.id === record.patientId);
+    const patient = findPatientSafely(patients, record.patientId);
     if (!patient) return false;
 
     const matchesSearch = searchTerm === '' || 
@@ -62,8 +63,7 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
   });
 
   const getPatientName = (patientId: string) => {
-    const patient = patients.find(p => p.id === patientId);
-    return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
+    return getPatientDisplayName(patients, patientId);
   };
 
   const formatDate = (dateString: string) => {
@@ -111,7 +111,7 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
       csvContent += 'Patient,Visit Date,Chief Complaint,Diagnosis,Treatment,Status\n';
       
       recordsToExport.forEach(record => {
-        const patient = patients.find(p => p.id === record.patientId);
+        const patient = findPatientSafely(patients, record.patientId);
         const patientName = patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
         csvContent += `"${patientName}","${formatDate(record.visitDate)}","${record.chiefComplaint}","${record.diagnosis}","${record.treatment}",${record.status}\n`;
       });
@@ -142,7 +142,7 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
       const exportData = {
         exportDate: new Date().toISOString(),
         records: recordsToExport.map(record => {
-          const patient = patients.find(p => p.id === record.patientId);
+          const patient = findPatientSafely(patients, record.patientId);
           return {
             patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient',
             ...record
@@ -230,10 +230,10 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
             </div>
             <div className="mt-3 space-y-2">
               {completedLabOrders.slice(0, 3).map(order => {
-                const patient = patients.find(p => p.id === order.patientId);
+                const patient = findPatientSafely(patients, order.patientId);
                 return (
                   <div key={order.id} className="text-sm text-green-700 bg-green-100 rounded px-3 py-2">
-                    <strong>{order.testName}</strong> for {patient?.firstName} {patient?.lastName} - 
+                    <strong>{order.testName}</strong> for {getPatientDisplayName(patients, order.patientId)} - 
                     <span className="ml-1">Completed {order.completedAt ? new Date(order.completedAt).toLocaleDateString() : 'recently'}</span>
                   </div>
                 );

@@ -1085,7 +1085,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         userIds: ['1'], // This should be the receptionist or billing user ID
         type: 'billing',
         title: 'Insurance Claim Submitted',
-        message: `Insurance claim for patient ${patients.find(p => p.id === claimData.patientId)?.firstName} ${patients.find(p => p.id === claimData.patientId)?.lastName} has been submitted to ${claimData.insuranceProvider}`,
+        message: `Insurance claim for patient ${getPatientDisplayName(patients, claimData.patientId)} has been submitted to ${claimData.insuranceProvider}`,
         isRead: false
       });
     } catch (err) {
@@ -1112,7 +1112,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       // Create notification for status update
       const claim = insuranceClaims.find(c => c.id === id);
       if (claim) {
-        const patient = patients.find(p => p.id === claim.patientId);
+        const patient = findPatientSafely(patients, claim.patientId);
         if (patient) {
           addNotification({
             userIds: ['1'], // This should be the receptionist or billing user ID
@@ -1141,7 +1141,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         userIds: ['10'], // OT Coordinator ID
         type: 'general',
         title: 'New Surgery Request',
-        message: `New surgery request for ${patients.find(p => p.id === requestData.patientId)?.firstName} ${patients.find(p => p.id === requestData.patientId)?.lastName}`,
+        message: `New surgery request for ${getPatientDisplayName(patients, requestData.patientId)}`,
         isRead: false
       });
     } catch (err) {
@@ -1163,7 +1163,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       // Create notification for relevant parties
       const request = surgeryRequests.find(r => r.id === id);
       if (request && updates.status) {
-        const patient = patients.find(p => p.id === request.patientId);
+        const patient = findPatientSafely(patients, request.patientId);
         if (patient) {
           let message = '';
           let title = '';
