@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, X, DollarSign, Calculator } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
+import { useError } from '../../context/ErrorContext';
 import { Appointment } from '../../types';
 import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
 import { useConsultationBilling } from '../../hooks/useConsultationBilling';
@@ -14,6 +15,7 @@ interface AppointmentFormProps {
 
 export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFormProps) {
   const { patients, addNotification, addAppointment, users } = useHospital();
+  const { addError } = useError();
   const { createConsultationBill } = useConsultationBilling();
   const doctors = users.filter(user => user.role === 'doctor' || user.role === 'ophthalmologist');
   
@@ -30,6 +32,16 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
     type: appointment?.type || 'consultation' as const,
     notes: appointment?.notes || ''
   });
+
+  // Update doctorId if doctors are loaded and no doctor is selected
+  useEffect(() => {
+    if (doctors.length > 0 && !formData.doctorId) {
+      setFormData(prev => ({
+        ...prev,
+        doctorId: doctors[0].id
+      }));
+    }
+  }, [doctors, formData.doctorId]);
 
   const [consultationCost, setConsultationCost] = useState<number>(0);
   const [consultationService, setConsultationService] = useState<string>('');
@@ -58,53 +70,81 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const dateTime = `${formData.date}T${formData.time}:00Z`;
-    
-    if (appointment) {
-      // Update existing appointment (in a real app)
-      console.log('Updating appointment:', {
-        ...formData,
-        dateTime,
-        id: appointment.id
-      });
-    } else {
-      // Add new appointment with default duration of 30 minutes and status 'scheduled'
-      const newAppointment = await addAppointment({
-        ...formData,
-        dateTime,
-        duration: 30, // Default duration
-        status: 'scheduled' // Default status for new appointments
-      });
+    try {
+      const dateTime = `${formData.date}T${formData.time}:00Z`;
+      
+      // Validate required fields
+      if (!formData.patientId || !formData.doctorId || !formData.date || !formData.time) {
+        console.error('Missing required fields:', formData);
+        addError({
+          type: 'error',
+          title: 'Missing Required Fields',
+          message: 'Please fill in all required fields before submitting',
+          details: `Missing: ${!formData.patientId ? 'Patient' : ''} ${!formData.doctorId ? 'Doctor' : ''} ${!formData.date ? 'Date' : ''} ${!formData.time ? 'Time' : ''}`.trim(),
+          component: 'AppointmentForm',
+          action: 'handleSubmit',
+          userAction: 'Create new appointment',
+          metadata: { formData }
+        });
+        return;
+      }
+      
+      if (appointment) {
+        // Update existing appointment (in a real app)
+        console.log('Updating appointment:', {
+          ...formData,
+          dateTime,
+          id: appointment.id
+        });
+      } else {
+        // Add new appointment with default duration of 30 minutes and status 'scheduled'
+        console.log('Creating appointment with data:', {
+          ...formData,
+          dateTime,
+          duration: 30,
+          status: 'scheduled'
+        });
+        
+        const newAppointment = await addAppointment({
+          ...formData,
+          dateTime,
+          duration: 30, // Default duration
+          status: 'scheduled' // Default status for new appointments
+        });
 
-      // Create automatic billing for the consultation
-      if (newAppointment && consultationCost > 0) {
-        try {
-          await createConsultationBill(
-            formData.patientId,
-            newAppointment.id,
-            consultationService || `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation`,
-            consultationCost,
-            formData.type
-          );
-        } catch (error) {
-          console.error('Failed to create automatic billing:', error);
+        // Create automatic billing for the consultation
+        if (newAppointment && consultationCost > 0) {
+          try {
+            await createConsultationBill(
+              formData.patientId,
+              newAppointment.id,
+              consultationService || `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)} Consultation`,
+              consultationCost,
+              formData.type
+            );
+          } catch (error) {
+            console.error('Failed to create automatic billing:', error);
+          }
         }
       }
-    }
 
-    // Send notification to doctor
-    const patient = findPatientSafely(patients, formData.patientId);
-    if (patient) {
-      addNotification({
-        userIds: [formData.doctorId],
-        type: 'appointment',
-        title: 'New Appointment Scheduled',
-        message: `Appointment with ${patient.firstName} ${patient.lastName} on ${new Date(dateTime).toLocaleDateString()}`,
-        isRead: false
-      });
-    }
+      // Send notification to doctor
+      const patient = findPatientSafely(patients, formData.patientId);
+      if (patient) {
+        addNotification({
+          userIds: [formData.doctorId],
+          type: 'appointment',
+          title: 'New Appointment Scheduled',
+          message: `Appointment with ${patient.firstName} ${patient.lastName} on ${new Date(dateTime).toLocaleDateString()}`,
+          isRead: false
+        });
+      }
 
-    onSave();
+      onSave();
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      // The error handling system should catch this and display it
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

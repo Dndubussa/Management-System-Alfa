@@ -954,7 +954,11 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   const addAppointment = async (appointmentData: Omit<Appointment, 'id'>) => {
     try {
+      console.log('Creating appointment with data:', appointmentData);
+      
       const newAppointment = await service.createAppointment(appointmentData);
+      console.log('Appointment created successfully:', newAppointment);
+      
       setAppointments(prev => [...prev, newAppointment]);
 
       // Automatically generate bill if autobilling is enabled for appointments
@@ -964,8 +968,20 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           generateBill(appointmentData.patientId, newAppointment.id);
         }, 100);
       }
+      
+      return newAppointment;
     } catch (err) {
       console.error('Error creating appointment:', err);
+      addError({
+        type: 'error',
+        title: 'Failed to Create Appointment',
+        message: 'Unable to create new appointment',
+        details: err instanceof Error ? err.message : String(err),
+        component: 'HospitalContext',
+        action: 'addAppointment',
+        userAction: 'Create new appointment',
+        metadata: { appointmentData, error: err }
+      });
       setError('Failed to create appointment');
       throw err;
     }
