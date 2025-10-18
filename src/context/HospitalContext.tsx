@@ -779,7 +779,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       const record = medicalRecords.find(r => r.id === recordId);
       if (record) {
         // Prescriptions -> try exact/fuzzy medication name in medication category
-        const recordPrescriptions = prescriptions.filter(p => p.recordId === recordId);
+        const recordPrescriptions = prescriptions.filter(p => p && p.recordId === recordId);
         recordPrescriptions.forEach(prescription => {
           let matchedPrice = findBestPriceByName(prescription.medication, 'medication');
           if (!matchedPrice) matchedPrice = findBestPriceByName(prescription.medication);
@@ -799,7 +799,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         });
 
         // Lab orders -> fuzzy match testName within lab-test category
-        const recordLabOrders = labOrders.filter(lo => lo.recordId === recordId);
+        const recordLabOrders = labOrders.filter(lo => lo && lo.recordId === recordId);
         recordLabOrders.forEach(labOrder => {
           let labTestPrice = findBestPriceByName(labOrder.testName, 'lab-test');
           if (!labTestPrice) labTestPrice = findBestPriceByName(labOrder.testName);
@@ -833,7 +833,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     patients.forEach(patient => {
       // Check for unbilled appointments
       const unbilledAppointments = appointments.filter(a => 
-        a.patientId === patient.id && 
+        a && a.patientId === patient.id && 
         a.status === 'completed' &&
         !bills.some(bill => bill.items.some(item => item.serviceId === a.id)) &&
         autobillingConfig.autoGenerateForAppointments
@@ -841,7 +841,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       
       // Check for unbilled medical records
       const unbilledRecords = medicalRecords.filter(r => 
-        r.patientId === patient.id && 
+        r && r.patientId === patient.id && 
         !bills.some(bill => bill.items.some(item => item.serviceId === r.id)) &&
         autobillingConfig.autoGenerateForMedicalRecords
       );
@@ -944,7 +944,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   const removeUser = async (id: string) => {
     try {
       await service.deleteUser(id);
-      setUsers(prev => prev.filter(user => user.id !== id));
+      setUsers(prev => prev.filter(user => user && user.id !== id));
     } catch (err) {
       console.error('Error removing user:', err);
       setError('Failed to remove user');
@@ -1343,7 +1343,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
 
   function findBestPriceByName(name: string, category?: ServicePrice['category']): ServicePrice | undefined {
     const normName = normalizeName(name);
-    const candidates = category ? servicePrices.filter(sp => sp.category === category) : servicePrices;
+    const candidates = category ? servicePrices.filter(sp => sp && sp.category === category) : servicePrices;
     let best: { item: ServicePrice; score: number } | null = null;
     for (const sp of candidates) {
       const score = scoreMatch(normalizeName(sp.serviceName), normName);

@@ -11,14 +11,14 @@ export function DashboardStats() {
   const getStatsForRole = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayAppointments = appointments.filter(apt => 
-      apt.dateTime.startsWith(today) && apt.status !== 'cancelled'
+      apt && apt.dateTime && apt.dateTime.startsWith(today) && apt.status !== 'cancelled'
     );
 
     switch (user?.role) {
       case 'receptionist':
         // Calculate insurance claim statistics
-        const pendingClaims = insuranceClaims.filter(c => c.status === 'submitted');
-        const approvedClaims = insuranceClaims.filter(c => c.status === 'approved');
+        const pendingClaims = insuranceClaims.filter(c => c && c.status === 'submitted');
+        const approvedClaims = insuranceClaims.filter(c => c && c.status === 'approved');
         
         return [
           {
