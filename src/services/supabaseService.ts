@@ -312,12 +312,36 @@ export const supabaseService = {
     
     const mrn = `P${String(nextNumber).padStart(3, '0')}`;
     
+    // Handle nested objects separately to avoid conversion issues
+    const { insuranceInfo, emergencyContact, ...patientWithoutNested } = patient;
+    
     const patientData = {
-      ...toSnakeCase(patient),
+      ...toSnakeCase(patientWithoutNested),
       mrn,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+
+    // Add insurance fields separately
+    if (insuranceInfo) {
+      patientData.insurance_provider = insuranceInfo.provider || '';
+      patientData.insurance_membership_number = insuranceInfo.membershipNumber || '';
+      patientData.cash_amount = insuranceInfo.cashAmount || '';
+    }
+
+    // Add emergency contact fields separately
+    if (emergencyContact) {
+      patientData.emergency_contact_name = emergencyContact.name || '';
+      patientData.emergency_contact_phone = emergencyContact.phone || '';
+      patientData.emergency_contact_relationship = emergencyContact.relationship || '';
+    }
+
+    // Remove undefined values to avoid validation errors
+    Object.keys(patientData).forEach(key => {
+      if (patientData[key] === undefined) {
+        delete patientData[key];
+      }
+    });
 
     const { data, error } = await supabase
       .from('patients')
