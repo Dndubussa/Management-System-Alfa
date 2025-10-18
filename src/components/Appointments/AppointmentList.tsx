@@ -31,7 +31,8 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
     if (!patient) return false;
 
     const matchesSearch = searchTerm === '' || 
-      `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+      `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (patient.mrn && patient.mrn.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus = statusFilter === '' || appointment.status === statusFilter;
     
@@ -98,7 +99,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by patient name..."
+              placeholder="Search by patient name or MRN..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -142,6 +143,9 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                   Patient
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  MRN
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date & Time
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -161,7 +165,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                     {searchTerm || statusFilter || dateFilter 
                       ? 'No appointments found matching your criteria.' 
                       : 'No appointments scheduled.'}
@@ -183,6 +187,14 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                             </div>
                             <div className="text-sm text-gray-500">ID: {appointment.patientId}</div>
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-blue-600">
+                          {(() => {
+                            const patient = findPatientSafely(patients, appointment.patientId);
+                            return patient?.mrn || 'N/A';
+                          })()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

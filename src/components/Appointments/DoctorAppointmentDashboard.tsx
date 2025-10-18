@@ -88,7 +88,15 @@ export function DoctorAppointmentDashboard() {
                             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-2">
                               <User className="w-4 h-4 text-gray-600" />
                             </div>
-                            <h3 className="font-medium text-gray-900">{patientName}</h3>
+                            <div>
+                              <h3 className="font-medium text-gray-900">{patientName}</h3>
+                              <div className="text-xs text-blue-600 font-medium">
+                                {(() => {
+                                  const patient = findPatientSafely(patients, appointment.patientId);
+                                  return patient?.mrn || 'N/A';
+                                })()}
+                              </div>
+                            </div>
                           </div>
                           <div className="mt-2 text-sm text-gray-500">
                             <div className="flex items-center">
