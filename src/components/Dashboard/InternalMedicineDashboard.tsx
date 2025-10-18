@@ -4,14 +4,32 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 
 export function InternalMedicineDashboard() {
-  const { patients, appointments, medicalRecords, prescriptions, labOrders, bills } = useHospital();
+  const { patients, appointments, medicalRecords, prescriptions, labOrders, bills, loading, error } = useHospital();
   const { user } = useAuth();
 
-  // Filter data for the current doctor
-  const doctorAppointments = appointments.filter(apt => apt.doctorId === user?.id);
-  const doctorRecords = medicalRecords.filter(record => record.doctorId === user?.id);
-  const doctorPrescriptions = prescriptions.filter(p => p.doctorId === user?.id);
-  const doctorLabOrders = labOrders.filter(order => order.doctorId === user?.id);
+  // Debug logging for data loading
+  console.log('🏥 Internal Medicine Dashboard - Data Status:', {
+    user: user?.name,
+    role: user?.role,
+    patientsCount: patients.length,
+    appointmentsCount: appointments.length,
+    medicalRecordsCount: medicalRecords.length,
+    prescriptionsCount: prescriptions.length,
+    labOrdersCount: labOrders.length
+  });
+
+  // Filter data for the current doctor with null safety
+  const doctorAppointments = appointments?.filter(apt => apt?.doctorId === user?.id) || [];
+  const doctorRecords = medicalRecords?.filter(record => record?.doctorId === user?.id) || [];
+  const doctorPrescriptions = prescriptions?.filter(p => p?.doctorId === user?.id) || [];
+  const doctorLabOrders = labOrders?.filter(order => order?.doctorId === user?.id) || [];
+
+  console.log('👨‍⚕️ Doctor-specific data:', {
+    doctorAppointments: doctorAppointments.length,
+    doctorRecords: doctorRecords.length,
+    doctorPrescriptions: doctorPrescriptions.length,
+    doctorLabOrders: doctorLabOrders.length
+  });
 
   // Get today's date for filtering
   const today = new Date().toISOString().split('T')[0];
@@ -94,11 +112,78 @@ export function InternalMedicineDashboard() {
     });
   };
 
-  // Get patient name
+  // Get patient name with null safety
   const getPatientName = (patientId: string) => {
-    const patient = patients.find(p => p.id === patientId);
-    return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
+    if (!patientId || !patients || patients.length === 0) {
+      return 'Unknown Patient';
+    }
+    const patient = patients.find(p => p?.id === patientId);
+    return patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown Patient' : 'Unknown Patient';
   };
+
+  // Safe patient lookup
+  const findPatient = (patientId: string) => {
+    if (!patientId || !patients || patients.length === 0) {
+      return null;
+    }
+    return patients.find(p => p?.id === patientId) || null;
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is authenticated and has the right role
+  if (!user) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+            <h3 className="text-sm font-medium text-yellow-800">Authentication Required</h3>
+          </div>
+          <p className="text-sm text-yellow-700 mt-2">Please log in to access the Internal Medicine Dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role !== 'doctor') {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Access Denied</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">This dashboard is only accessible to doctors.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -116,6 +201,10 @@ export function InternalMedicineDashboard() {
             day: 'numeric' 
           })} • Internal Medicine Department
         </p>
+        {/* Data Status Indicator */}
+        <div className="mt-2 text-xs text-gray-500">
+          Data loaded: {patients.length} patients, {appointments.length} appointments, {medicalRecords.length} records
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -153,10 +242,10 @@ export function InternalMedicineDashboard() {
           </div>
           <div className="mt-3 space-y-2">
             {completedLabOrders.slice(0, 3).map(order => {
-              const patient = patients.find(p => p.id === order.patientId);
+              const patient = findPatient(order.patientId);
               return (
                 <div key={order.id} className="text-sm text-green-700 bg-green-100 rounded px-3 py-2">
-                  <strong>{order.testName}</strong> for {patient?.firstName} {patient?.lastName} - 
+                  <strong>{order.testName || 'Lab Test'}</strong> for {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'} - 
                   <span className="ml-1">Completed {order.completedAt ? new Date(order.completedAt).toLocaleDateString() : 'recently'}</span>
                 </div>
               );
@@ -185,7 +274,7 @@ export function InternalMedicineDashboard() {
         ) : (
           <div className="divide-y divide-gray-200">
             {todayAppointments.map(appointment => {
-              const patient = patients.find(p => p.id === appointment.patientId);
+              const patient = findPatient(appointment.patientId);
               return (
                 <div key={appointment.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex justify-between">
