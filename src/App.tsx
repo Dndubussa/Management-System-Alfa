@@ -5,6 +5,7 @@ import { HospitalProvider, useHospital } from './context/HospitalContext';
 import { ErrorProvider } from './context/ErrorContext';
 import { ErrorDisplay, ErrorSummary } from './components/ErrorHandling/ErrorDisplay';
 import { ErrorBoundary } from './components/ErrorHandling/ErrorBoundary';
+import { DataLoadingDiagnostics } from './components/Diagnostics/DataLoadingDiagnostics';
 import { LoginForm } from './components/Login/LoginForm';
 import { UserVerification } from './components/Login/UserVerification';
 import { UserValidation } from './components/Login/UserValidation';
@@ -389,6 +390,7 @@ function AppContent() {
             <Route path="/patient-edit" element={selectedPatient ? <PatientForm patient={selectedPatient} onSave={handleSavePatient} onCancel={() => navigate('/patients')} /> : <PatientNotSelectedRoute />} />
             <Route path="/registration" element={<PatientForm onSave={handleSavePatient} onCancel={() => navigate('/patients')} />} />
             <Route path="/test-connection" element={<TestConnection />} />
+            <Route path="/diagnostics" element={<DataLoadingDiagnostics />} />
             <Route path="/appointments" element={<AppointmentList onNewAppointment={handleNewAppointment} onEditAppointment={handleEditAppointment} />} />
             <Route path="/appointment/new" element={<AppointmentForm appointment={undefined} onSave={handleSaveAppointment} onCancel={() => navigate('/appointments')} />} />
             <Route path="/appointment-edit" element={selectedAppointment ? <AppointmentForm appointment={selectedAppointment} onSave={handleSaveAppointment} onCancel={() => navigate('/appointments')} /> : <div>Appointment not selected</div>} />

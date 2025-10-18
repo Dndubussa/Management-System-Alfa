@@ -23,6 +23,7 @@ import {
 } from '../types';
 import { api } from '../services/api';
 import { supabaseService } from '../services/supabaseService';
+import { useError } from './ErrorContext';
 
 // Determine which service to use based on environment
 const isProduction = import.meta.env.PROD;
@@ -170,6 +171,9 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   const [medicationInventory, setMedicationInventory] = useState<MedicationInventory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get error context
+  const { addError } = useError();
 
   // Load all data from API on component mount
   useEffect(() => {
@@ -200,23 +204,227 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           inventoryItemsData,
           medicationInventoryData
         ] = await Promise.all([
-          service.getPatients().catch(err => { console.error('Error loading patients:', err); return []; }),
-          service.getMedicalRecords().catch(err => { console.error('Error loading medical records:', err); return []; }),
-          service.getPrescriptions().catch(err => { console.error('Error loading prescriptions:', err); return []; }),
-          service.getLabOrders().catch(err => { console.error('Error loading lab orders:', err); return []; }),
-          service.getAppointments().catch(err => { console.error('Error loading appointments:', err); return []; }),
-          service.getNotifications().catch(err => { console.error('Error loading notifications:', err); return []; }),
-          service.getServicePrices().catch(err => { console.error('Error loading service prices:', err); return []; }),
-          service.getBills().catch(err => { console.error('Error loading bills:', err); return []; }),
-          service.getDepartments().catch(err => { console.error('Error loading departments:', err); return []; }),
-          service.getReferrals().catch(err => { console.error('Error loading referrals:', err); return []; }),
-          service.getUsers().catch(err => { console.error('Error loading users:', err); return []; }),
-          service.getInsuranceClaims().catch(err => { console.error('Error loading insurance claims:', err); return []; }),
-          service.getSurgeryRequests().catch(err => { console.error('Error loading surgery requests:', err); return []; }),
-          service.getOTSlots().catch(err => { console.error('Error loading OT slots:', err); return []; }),
-          service.getOTResources().catch(err => { console.error('Error loading OT resources:', err); return []; }),
-          service.getInventoryItems().catch(err => { console.error('Error loading inventory items:', err); return []; }),
-          service.getMedicationInventory().catch(err => { console.error('Error loading medication inventory:', err); return []; })
+          service.getPatients().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Patients',
+              message: 'Unable to load patients data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getMedicalRecords().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Medical Records',
+              message: 'Unable to load medical records data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getPrescriptions().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Prescriptions',
+              message: 'Unable to load prescriptions data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getLabOrders().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Lab Orders',
+              message: 'Unable to load lab orders data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getAppointments().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Appointments',
+              message: 'Unable to load appointments data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getNotifications().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Notifications',
+              message: 'Unable to load notifications data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getServicePrices().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Service Prices',
+              message: 'Unable to load service prices data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getBills().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Bills',
+              message: 'Unable to load bills data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getDepartments().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Departments',
+              message: 'Unable to load departments data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getReferrals().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Referrals',
+              message: 'Unable to load referrals data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getUsers().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Users',
+              message: 'Unable to load users data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getInsuranceClaims().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Insurance Claims',
+              message: 'Unable to load insurance claims data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getSurgeryRequests().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Surgery Requests',
+              message: 'Unable to load surgery requests data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getOTSlots().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load OT Slots',
+              message: 'Unable to load OT slots data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getOTResources().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load OT Resources',
+              message: 'Unable to load OT resources data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getInventoryItems().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Inventory Items',
+              message: 'Unable to load inventory items data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          }),
+          service.getMedicationInventory().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Medication Inventory',
+              message: 'Unable to load medication inventory data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
+          })
         ]);
         
         
