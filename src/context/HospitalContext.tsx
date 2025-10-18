@@ -501,6 +501,10 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
 
     console.log('🔄 Setting up real-time subscriptions for user:', user.role);
+    
+    // Temporarily disable real-time subscriptions to debug the error
+    console.log('⚠️ Real-time subscriptions temporarily disabled for debugging');
+    return;
 
     // Get the Supabase client for real-time subscriptions
     const supabase = service.getSupabaseClient();
