@@ -265,6 +265,9 @@ function toSnakeCase(obj: any): any {
 }
 
 export const supabaseService = {
+  // Get the Supabase client for real-time subscriptions
+  getSupabaseClient: () => supabase,
+  
   // Patients
   getPatients: async (): Promise<Patient[]> => {
     try {

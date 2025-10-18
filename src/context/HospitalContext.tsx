@@ -496,6 +496,204 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     loadData(user);
   }, [user]);
 
+  // Set up real-time subscriptions for automatic updates
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('🔄 Setting up real-time subscriptions for user:', user.role);
+
+    // Get the Supabase client for real-time subscriptions
+    const supabase = service.getSupabaseClient();
+    if (!supabase) {
+      console.log('⚠️ Supabase client not available for real-time subscriptions');
+      return;
+    }
+
+    // Subscribe to appointments changes
+    const appointmentsSubscription = supabase
+      .channel('appointments_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'appointments' 
+        }, 
+        async (payload) => {
+          console.log('📅 Real-time appointment update:', payload);
+          
+          // Reload appointments data
+          try {
+            const updatedAppointments = await service.getAppointments();
+            setAppointments(updatedAppointments);
+            
+            // For doctors, also refresh patient data if they have new appointments
+            if (user.role === 'doctor' || user.role === 'ophthalmologist' || user.role === 'radiologist' || user.role === 'physical-therapist') {
+              const updatedPatients = await service.getPatientsByDoctor(user.id);
+              setPatients(updatedPatients);
+            }
+          } catch (err) {
+            console.error('Error refreshing data after appointment update:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to patients changes
+    const patientsSubscription = supabase
+      .channel('patients_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'patients' 
+        }, 
+        async (payload) => {
+          console.log('👥 Real-time patient update:', payload);
+          
+          // Reload patients data based on user role
+          try {
+            if (user.role === 'doctor' || user.role === 'ophthalmologist' || user.role === 'radiologist' || user.role === 'physical-therapist') {
+              const updatedPatients = await service.getPatientsByDoctor(user.id);
+              setPatients(updatedPatients);
+            } else {
+              const updatedPatients = await service.getPatients();
+              setPatients(updatedPatients);
+            }
+          } catch (err) {
+            console.error('Error refreshing patients after update:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to notifications changes
+    const notificationsSubscription = supabase
+      .channel('notifications_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'notifications' 
+        }, 
+        async (payload) => {
+          console.log('🔔 Real-time notification update:', payload);
+          
+          // Reload notifications data
+          try {
+            const updatedNotifications = await service.getNotifications();
+            setNotifications(updatedNotifications);
+          } catch (err) {
+            console.error('Error refreshing notifications after update:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to medical records changes
+    const medicalRecordsSubscription = supabase
+      .channel('medical_records_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'medical_records' 
+        }, 
+        async (payload) => {
+          console.log('📋 Real-time medical record update:', payload);
+          
+          // Reload medical records data
+          try {
+            const updatedMedicalRecords = await service.getMedicalRecords();
+            setMedicalRecords(updatedMedicalRecords);
+          } catch (err) {
+            console.error('Error refreshing medical records after update:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to prescriptions changes
+    const prescriptionsSubscription = supabase
+      .channel('prescriptions_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'prescriptions' 
+        }, 
+        async (payload) => {
+          console.log('💊 Real-time prescription update:', payload);
+          
+          // Reload prescriptions data
+          try {
+            const updatedPrescriptions = await service.getPrescriptions();
+            setPrescriptions(updatedPrescriptions);
+          } catch (err) {
+            console.error('Error refreshing prescriptions after update:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to lab orders changes
+    const labOrdersSubscription = supabase
+      .channel('lab_orders_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'lab_orders' 
+        }, 
+        async (payload) => {
+          console.log('🧪 Real-time lab order update:', payload);
+          
+          // Reload lab orders data
+          try {
+            const updatedLabOrders = await service.getLabOrders();
+            setLabOrders(updatedLabOrders);
+          } catch (err) {
+            console.error('Error refreshing lab orders after update:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to bills changes
+    const billsSubscription = supabase
+      .channel('bills_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'bills' 
+        }, 
+        async (payload) => {
+          console.log('💰 Real-time bill update:', payload);
+          
+          // Reload bills data
+          try {
+            const updatedBills = await service.getBills();
+            setBills(updatedBills);
+          } catch (err) {
+            console.error('Error refreshing bills after update:', err);
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount or user change
+    return () => {
+      console.log('🧹 Cleaning up real-time subscriptions');
+      appointmentsSubscription.unsubscribe();
+      patientsSubscription.unsubscribe();
+      notificationsSubscription.unsubscribe();
+      medicalRecordsSubscription.unsubscribe();
+      prescriptionsSubscription.unsubscribe();
+      labOrdersSubscription.unsubscribe();
+      billsSubscription.unsubscribe();
+    };
+  }, [user]);
+
   const addPatient = async (patientData: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>) => {
     try {
       // MRN generation is now handled by the service layer

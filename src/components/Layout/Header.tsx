@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, LogOut, User } from 'lucide-react';
+import { Bell, LogOut, User, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useHospital } from '../../context/HospitalContext';
 
@@ -7,6 +7,7 @@ export function Header() {
   const { user, logout } = useAuth();
   const { getUserNotifications, isNotificationRead, markNotificationRead } = useHospital();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(true);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   // Get notifications for the current user
@@ -130,7 +131,17 @@ export function Header() {
                 <User className="w-5 h-5 text-gray-600" />
               </div>
               <div className="text-sm">
-                <p className="font-medium text-gray-900">{user?.name}</p>
+                <div className="flex items-center space-x-2">
+                  <p className="font-medium text-gray-900">{user?.name}</p>
+                  {/* Real-time status indicator */}
+                  <div className="flex items-center space-x-1">
+                    {isRealtimeConnected ? (
+                      <Wifi className="w-3 h-3 text-green-500" title="Real-time updates active" />
+                    ) : (
+                      <WifiOff className="w-3 h-3 text-red-500" title="Real-time updates disconnected" />
+                    )}
+                  </div>
+                </div>
                 <p className={`text-xs font-medium capitalize ${getRoleColor(user?.role || '')}`}>
                   {user?.role} • {user?.department}
                 </p>
