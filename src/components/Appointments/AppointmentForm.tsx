@@ -106,10 +106,13 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
         });
         
         const newAppointment = await addAppointment({
-          ...formData,
+          patientId: formData.patientId,
+          doctorId: formData.doctorId,
           dateTime,
           duration: 30, // Default duration
-          status: 'scheduled' // Default status for new appointments
+          type: formData.type,
+          status: 'scheduled', // Default status for new appointments
+          notes: formData.notes
         });
         
         if (!newAppointment) {

@@ -593,6 +593,8 @@ export const supabaseService = {
         }
       });
 
+      console.log('Creating appointment with data:', appointmentData);
+
       const { data, error } = await supabase
         .from('appointments')
         .insert([appointmentData])
@@ -600,13 +602,16 @@ export const supabaseService = {
         .single();
       
       if (error) {
+        console.error('Supabase error creating appointment:', error);
+        console.error('Appointment data that failed:', appointmentData);
         throw handleSupabaseError(error, {
           component: 'supabaseService',
           action: 'createAppointment',
           userAction: 'Create new appointment',
           metadata: { 
             appointmentData: Object.keys(appointmentData),
-            originalAppointment: appointment
+            originalAppointment: appointment,
+            errorDetails: error
           }
         });
       }
