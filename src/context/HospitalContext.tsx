@@ -1001,7 +1001,10 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   // Add this new function to update appointment status
   const updateAppointmentStatus = async (id: string, status: Appointment['status']) => {
     try {
+      console.log('🔄 Updating appointment status:', { id, status });
       const updatedAppointment = await service.updateAppointmentStatus(id, status);
+      console.log('✅ Appointment status updated successfully:', updatedAppointment);
+      
       setAppointments(prev => prev.map(appointment =>
         appointment.id === id ? updatedAppointment : appointment
       ));
@@ -1031,14 +1034,21 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
                 break;
             }
 
-            // Notify receptionist
-            addNotification({
-              userIds: ['1'], // Assuming receptionist has ID '1'
-              type: 'appointment',
-              title,
-              message,
-              isRead: false
-            });
+            // Notify all receptionists
+            const receptionists = users.filter(u => u.role === 'receptionist').map(u => u.id);
+            console.log('📢 Notifying receptionists:', { receptionists, title, message });
+            if (receptionists.length > 0) {
+              addNotification({
+                userIds: receptionists,
+                type: 'appointment',
+                title,
+                message,
+                isRead: false
+              });
+              console.log('✅ Notification sent to receptionists');
+            } else {
+              console.log('⚠️ No receptionists found to notify');
+            }
           }
         }
       }

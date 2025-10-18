@@ -18,12 +18,20 @@ export function AppointmentStatusUpdate({ appointment, onStatusUpdate }: Appoint
   const patient = findPatientSafely(patients, appointment.patientId);
   
   const handleStatusUpdate = (status: Appointment['status']) => {
+    console.log('🔄 Doctor updating appointment status:', { appointmentId: appointment.id, status });
     setIsUpdating(true);
-    updateAppointmentStatus(appointment.id, status);
-    setTimeout(() => {
-      setIsUpdating(false);
-      onStatusUpdate();
-    }, 500);
+    updateAppointmentStatus(appointment.id, status)
+      .then(() => {
+        console.log('✅ Status update completed successfully');
+        setIsUpdating(false);
+        onStatusUpdate();
+      })
+      .catch((error) => {
+        console.error('❌ Error updating appointment status:', error);
+        setIsUpdating(false);
+        // Still call onStatusUpdate to close the modal
+        onStatusUpdate();
+      });
   };
 
   const getStatusColor = (status: string) => {
@@ -82,7 +90,10 @@ export function AppointmentStatusUpdate({ appointment, onStatusUpdate }: Appoint
 
         {user?.role === 'doctor' && (
           <div className="pt-4 border-t border-gray-200">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Update Status</h4>
+            <h4 className="text-sm font-medium text-gray-900 mb-3">
+              Update Status
+              {isUpdating && <span className="ml-2 text-xs text-blue-600">(Updating...)</span>}
+            </h4>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => handleStatusUpdate('in-progress')}
