@@ -221,6 +221,8 @@ async function getAllRecords(
   orderBy: string = 'id', 
   ascending: boolean = true
 ): Promise<any[]> {
+  console.log(`🔍 getAllRecords: Fetching from table '${tableName}' with order by '${orderBy}'`);
+  
   let allData: any[] = [];
   let from = 0;
   const batchSize = 1000;
@@ -234,8 +236,11 @@ async function getAllRecords(
       .range(from, from + batchSize - 1);
     
     if (error) {
+      console.error(`❌ getAllRecords: Error fetching from ${tableName}:`, error);
       throw error;
     }
+    
+    console.log(`📊 getAllRecords: Batch ${from}-${from + batchSize - 1} from ${tableName}:`, data?.length || 0, 'records');
     
     if (data && data.length > 0) {
       allData = [...allData, ...data];
@@ -246,6 +251,7 @@ async function getAllRecords(
     }
   }
   
+  console.log(`✅ getAllRecords: Total records from ${tableName}:`, allData.length);
   return allData;
 }
 
@@ -271,7 +277,9 @@ export const supabaseService = {
   // Patients
   getPatients: async (): Promise<Patient[]> => {
     try {
+      console.log('🔍 getPatients: Fetching all patients from database');
       const allData = await getAllRecords('patients', 'created_at', false);
+      console.log('📊 getPatients: Found', allData.length, 'patients in database');
       return allData.map(mapPatientFromDb);
     } catch (error) {
       console.error('❌ Supabase: Error getting patients:', error);
@@ -281,18 +289,27 @@ export const supabaseService = {
 
   getPatientsByDoctor: async (doctorId: string): Promise<Patient[]> => {
     try {
+      console.log('🔍 getPatientsByDoctor: Looking for appointments for doctor:', doctorId);
+      
       // Get all appointments for this doctor
       const { data: appointments, error: appointmentsError } = await supabase
         .from('appointments')
         .select('patient_id')
         .eq('doctor_id', doctorId);
       
-      if (appointmentsError) throw appointmentsError;
+      if (appointmentsError) {
+        console.error('❌ Error fetching appointments for doctor:', appointmentsError);
+        throw appointmentsError;
+      }
+      
+      console.log('📅 Found appointments for doctor:', appointments?.length || 0, appointments);
       
       // Get unique patient IDs
-      const patientIds = [...new Set(appointments.map(apt => apt.patient_id))];
+      const patientIds = [...new Set(appointments?.map(apt => apt.patient_id) || [])];
+      console.log('👥 Unique patient IDs from appointments:', patientIds);
       
       if (patientIds.length === 0) {
+        console.log('⚠️ No patients assigned to this doctor via appointments');
         return []; // No patients assigned to this doctor
       }
       
@@ -303,9 +320,14 @@ export const supabaseService = {
         .in('id', patientIds)
         .order('created_at', { ascending: false });
       
-      if (patientsError) throw patientsError;
+      if (patientsError) {
+        console.error('❌ Error fetching patients by IDs:', patientsError);
+        throw patientsError;
+      }
       
-      return patients.map(mapPatientFromDb);
+      console.log('✅ Found patients for doctor:', patients?.length || 0, patients);
+      
+      return patients?.map(mapPatientFromDb) || [];
     } catch (error) {
       console.error('❌ Supabase: Error getting patients by doctor:', error);
       throw error;
@@ -597,7 +619,9 @@ export const supabaseService = {
   // Appointments
   getAppointments: async (): Promise<Appointment[]> => {
     return await withErrorHandling(async () => {
+      console.log('🔍 getAppointments: Fetching all appointments from database');
       const allData = await getAllRecords('appointments', 'date_time', false);
+      console.log('📊 getAppointments: Found', allData.length, 'appointments in database');
       return toCamelCase(allData) as Appointment[];
     }, {
       title: 'Failed to load appointments',
