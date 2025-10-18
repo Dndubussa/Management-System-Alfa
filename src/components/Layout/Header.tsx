@@ -1,18 +1,43 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, LogOut, User, Wifi, WifiOff } from 'lucide-react';
+import { Bell, LogOut, User, Wifi, WifiOff, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useHospital } from '../../context/HospitalContext';
+import { NotificationSound } from '../../utils/notificationSound';
 
 export function Header() {
   const { user, logout } = useAuth();
   const { getUserNotifications, isNotificationRead, markNotificationRead } = useHospital();
   const [showNotifications, setShowNotifications] = useState(false);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(NotificationSound.getEnabled());
+  const [previousNotificationCount, setPreviousNotificationCount] = useState(0);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   // Get notifications for the current user
   const userNotifications = user ? getUserNotifications(user.id, user.department) : [];
   const unreadCount = userNotifications.filter(n => !isNotificationRead(n, user?.id || '')).length;
+
+  // Play notification sound when new notifications arrive
+  useEffect(() => {
+    if (unreadCount > previousNotificationCount && previousNotificationCount > 0) {
+      // New notification arrived
+      const newNotifications = userNotifications.filter(n => !isNotificationRead(n, user?.id || ''));
+      const latestNotification = newNotifications[0];
+      
+      if (latestNotification && soundEnabled) {
+        console.log('🔔 Playing notification sound for:', latestNotification.title);
+        NotificationSound.playNotificationSound(latestNotification.type || 'default');
+      }
+    }
+    setPreviousNotificationCount(unreadCount);
+  }, [unreadCount, userNotifications, user?.id, soundEnabled, previousNotificationCount]);
+
+  // Toggle notification sound
+  const toggleNotificationSound = () => {
+    const newEnabled = !soundEnabled;
+    setSoundEnabled(newEnabled);
+    NotificationSound.setEnabled(newEnabled);
+  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -93,6 +118,19 @@ export function Header() {
                     </span>
                   )}
                 </button>
+
+                {/* Sound Toggle Button */}
+                <button
+                  className="p-2 text-gray-400 hover:text-gray-500 transition-colors"
+                  title={soundEnabled ? "Disable notification sound" : "Enable notification sound"}
+                  onClick={toggleNotificationSound}
+                >
+                  {soundEnabled ? (
+                    <Volume2 className="w-5 h-5" />
+                  ) : (
+                    <VolumeX className="w-5 h-5" />
+                  )}
+                </button>
                 
                 {/* Notification Dropdown */}
                 {showNotifications && (
@@ -118,6 +156,29 @@ export function Header() {
                             </div>
                           </div>
                         ))}
+                      </div>
+                      
+                      {/* Sound Settings */}
+                      <div className="mt-4 pt-3 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            {soundEnabled ? (
+                              <Volume2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <VolumeX className="w-4 h-4 text-gray-400" />
+                            )}
+                            <span className="text-xs text-gray-600">
+                              {soundEnabled ? 'Sound enabled' : 'Sound disabled'}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => NotificationSound.playSimpleBell()}
+                            className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                            disabled={!soundEnabled}
+                          >
+                            Test sound
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
