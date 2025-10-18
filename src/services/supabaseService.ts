@@ -379,7 +379,7 @@ export const supabaseService = {
       component: 'supabaseService',
       action: 'createPatient',
       userAction: 'Register new patient'
-    }) as Promise<Patient>;
+    }) as unknown as Promise<Patient>;
   },
 
   updatePatient: async (id: string, patient: Partial<Patient>): Promise<Patient> => {
@@ -568,7 +568,7 @@ export const supabaseService = {
       component: 'supabaseService',
       action: 'getAppointments',
       userAction: 'Load appointments data'
-    }) as Promise<Appointment[]>;
+    }) as unknown as Promise<Appointment[]>;
   },
 
   getAppointment: async (id: string): Promise<Appointment> => {
@@ -595,7 +595,7 @@ export const supabaseService = {
 
       const { data, error } = await supabase
         .from('appointments')
-        .insert(appointmentData)
+        .insert([appointmentData])
         .select()
         .single();
       
@@ -611,13 +611,18 @@ export const supabaseService = {
         });
       }
       
+      // Check if data is null and throw appropriate error
+      if (!data) {
+        throw new Error('Appointment creation failed - no data returned from database');
+      }
+      
       return toCamelCase(data) as Appointment;
     }, {
       title: 'Failed to create appointment',
       component: 'supabaseService',
       action: 'createAppointment',
       userAction: 'Create new appointment'
-    }) as Promise<Appointment>;
+    }) as unknown as Promise<Appointment>;
   },
 
   updateAppointmentStatus: async (id: string, status: Appointment['status']): Promise<Appointment> => {
@@ -709,7 +714,7 @@ export const supabaseService = {
       component: 'supabaseService',
       action: 'getNotifications',
       userAction: 'Load notifications data'
-    }) as Promise<Notification[]>;
+    }) as unknown as Promise<Notification[]>;
   },
 
   getNotification: async (id: string): Promise<Notification> => {

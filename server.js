@@ -589,9 +589,21 @@ app.post('/api/appointments', async (req, res) => {
       .insert([appointmentData])
       .select()
       .single();
-    handleSupabaseResponse(data, error, res);
+    
+    if (error) {
+      console.error('Supabase error creating appointment:', error);
+      return res.status(400).json({ error: error.message });
+    }
+    
+    // Ensure we return the created appointment data
+    if (data) {
+      return res.status(201).json(data);
+    } else {
+      return res.status(500).json({ error: 'Failed to create appointment - no data returned' });
+    }
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Server error creating appointment:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

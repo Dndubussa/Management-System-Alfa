@@ -266,10 +266,20 @@ export const api = {
   },
   createAppointment: async (appointment: Omit<Appointment, 'id'>) => {
     const body = mapAppointmentToDb(appointment);
-    const row = await apiRequest<any>('/appointments', {
+    const response = await fetch(`${API_BASE_URL}/appointments`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(body),
     });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create appointment');
+    }
+    
+    const row = await response.json();
     return mapAppointmentFromDb(row);
   },
   updateAppointmentStatus: async (id: string, status: Appointment['status']) => {
