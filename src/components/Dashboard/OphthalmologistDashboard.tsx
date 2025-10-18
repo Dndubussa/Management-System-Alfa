@@ -3,6 +3,7 @@ import { Users, FileText, Calendar, TestTube, Pill, Activity, BarChart3, Eye, Ca
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Appointment } from '../../types';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function OphthalmologistDashboard() {
   const { user } = useAuth();
@@ -12,7 +13,9 @@ export function OphthalmologistDashboard() {
     medicalRecords, 
     prescriptions, 
     labOrders,
-    users
+    users,
+    loading,
+    error
   } = useHospital();
   
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
@@ -144,6 +147,32 @@ export function OphthalmologistDashboard() {
       minute: '2-digit'
     });
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="ophthalmologist" 
+        department="Ophthalmology" 
+        title="Ophthalmology" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <Eye className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

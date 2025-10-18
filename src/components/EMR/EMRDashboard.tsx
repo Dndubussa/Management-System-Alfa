@@ -7,6 +7,7 @@ import { MedicalRecord, Patient } from '../../types';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
 import { canViewMedicalRecords, canEditMedicalRecords, hasRestrictedPatientVisibility } from '../../utils/roleUtils';
 import { findPatientSafely, getPatientDisplayName } from '../../utils/patientUtils';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 interface EMRDashboardProps {
   onCreateRecord: (patientId: string) => void;
@@ -14,7 +15,7 @@ interface EMRDashboardProps {
 }
 
 export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps) {
-  const { patients, medicalRecords, labOrders } = useHospital();
+  const { patients, medicalRecords, labOrders, loading, error } = useHospital();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -154,6 +155,32 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
       downloadFile(jsonContent, 'all-medical-records.json', 'application/json');
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="doctor" 
+        department="EMR" 
+        title="Electronic Medical Records" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <FileText className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading EMR Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">

@@ -4,6 +4,7 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Bill, InsuranceClaim } from '../../types';
 import { generateReceiptPDF, generateInvoicePDF } from '../../utils/billingExport';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 interface ReceptionistDashboardProps {
   onViewBill: (bill: Bill) => void;
@@ -11,7 +12,7 @@ interface ReceptionistDashboardProps {
 }
 
 export function ReceptionistDashboard({ onViewBill, onViewClaim }: ReceptionistDashboardProps) {
-  const { bills, patients, insuranceClaims, submitInsuranceClaim } = useHospital();
+  const { bills, patients, insuranceClaims, submitInsuranceClaim, loading, error } = useHospital();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -128,6 +129,32 @@ export function ReceptionistDashboard({ onViewBill, onViewClaim }: ReceptionistD
   const totalClaims = filteredClaims.length;
   const approvedClaims = filteredClaims.filter(c => c.status === 'approved').length;
   const pendingClaims = filteredClaims.filter(c => c.status === 'submitted').length;
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="receptionist" 
+        department="Reception" 
+        title="Receptionist" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <FileText className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

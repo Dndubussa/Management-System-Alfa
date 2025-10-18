@@ -2,6 +2,7 @@ import React from 'react';
 import { Users, Calendar, FileText, TestTube, Pill, Activity, AlertCircle, Heart } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function InternalMedicineDashboard() {
   const { patients, appointments, medicalRecords, prescriptions, labOrders, bills, loading, error } = useHospital();
@@ -132,12 +133,11 @@ export function InternalMedicineDashboard() {
   // Show loading state
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
-        </div>
-      </div>
+      <DashboardLoading 
+        role="doctor" 
+        department="Internal Medicine" 
+        title="Internal Medicine" 
+      />
     );
   }
 

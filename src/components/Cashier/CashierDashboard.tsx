@@ -4,9 +4,10 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Bill } from '../../types';
 import { generateReceiptPDF, generateInvoicePDF } from '../../utils/billingExport';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function CashierDashboard() {
-  const { bills, patients, updateBillStatus } = useHospital();
+  const { bills, patients, updateBillStatus, loading, error } = useHospital();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -103,6 +104,32 @@ export function CashierDashboard() {
   // Insurance claims
   const insuranceBills = filteredBills.filter(bill => bill.paymentMethod === 'insurance');
   const insuranceTotal = insuranceBills.reduce((sum, bill) => sum + bill.total, 0);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="cashier" 
+        department="Billing" 
+        title="Cashier" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <DollarSign className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

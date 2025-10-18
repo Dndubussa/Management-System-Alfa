@@ -4,9 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { AppointmentStatusUpdate } from './AppointmentStatusUpdate';
 import { Calendar, Clock, User, Info } from 'lucide-react';
 import { findPatientSafely, getPatientDisplayName } from '../../utils/patientUtils';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function DoctorAppointmentDashboard() {
-  const { appointments, patients } = useHospital();
+  const { appointments, patients, loading, error } = useHospital();
   const { user } = useAuth();
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
 
@@ -45,6 +46,32 @@ export function DoctorAppointmentDashboard() {
   const handleStatusUpdate = () => {
     setSelectedAppointment(null);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="doctor" 
+        department="Appointments" 
+        title="Doctor Appointments" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <Calendar className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading Appointments</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

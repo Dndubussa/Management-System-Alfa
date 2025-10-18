@@ -11,6 +11,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 interface HRStats {
   totalStaff: number;
@@ -34,22 +35,40 @@ const HRDashboard: React.FC = () => {
     upcomingTraining: 0,
     pendingAppraisals: 0
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     // Simulate data loading - replace with actual API calls
-    setStats({
-      totalStaff: 156,
-      activeStaff: 142,
-      onLeave: 8,
-      pendingRecruitment: 12,
-      expiringLicenses: 5,
-      pendingLeaveRequests: 23,
-      upcomingTraining: 7,
-      pendingAppraisals: 18
-    });
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        setStats({
+          totalStaff: 156,
+          activeStaff: 142,
+          onLeave: 8,
+          pendingRecruitment: 12,
+          expiringLicenses: 5,
+          pendingLeaveRequests: 23,
+          upcomingTraining: 7,
+          pendingAppraisals: 18
+        });
+      } catch (err) {
+        setError('Failed to load HR data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
 
     setRecentActivities([
       {
@@ -154,6 +173,32 @@ const HRDashboard: React.FC = () => {
       </div>
     </div>
   );
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="hr" 
+        department="Human Resources" 
+        title="HR" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <FileText className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
