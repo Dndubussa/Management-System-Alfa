@@ -20,6 +20,7 @@ import {
   SurgeryProgress,
   OTReport
 } from '../types';
+import { handleSupabaseError, handleNetworkError, withErrorHandling } from '../utils/errorHandling';
 
 // Inventory types
 interface InventoryItem {
@@ -287,70 +288,98 @@ export const supabaseService = {
   },
 
   createPatient: async (patient: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>): Promise<Patient> => {
-    // Generate MRN using P001 format
-    const { data: lastPatient } = await supabase
-      .from('patients')
-      .select('mrn')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    return await withErrorHandling(async () => {
+      // Generate MRN using P001 format
+      const { data: lastPatient, error: mrnError } = await supabase
+        .from('patients')
+        .select('mrn')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-    let nextNumber = 1;
-    if (lastPatient && lastPatient.mrn) {
-      // Check for new P001 format first
-      const newFormatMatch = lastPatient.mrn.match(/P(\d+)/);
-      if (newFormatMatch) {
-        nextNumber = parseInt(newFormatMatch[1]) + 1;
-      } else {
-        // Check for old ALFA-YYYY-XXXXX format
-        const oldFormatMatch = lastPatient.mrn.match(/ALFA-\d{4}-(\d+)/);
-        if (oldFormatMatch) {
-          nextNumber = parseInt(oldFormatMatch[1]) + 1;
+      if (mrnError && mrnError.code !== 'PGRST116') {
+        throw handleSupabaseError(mrnError, {
+          component: 'supabaseService',
+          action: 'createPatient - MRN generation',
+          userAction: 'Register new patient',
+          metadata: { step: 'mrn_generation' }
+        });
+      }
+
+      let nextNumber = 1;
+      if (lastPatient && lastPatient.mrn) {
+        // Check for new P001 format first
+        const newFormatMatch = lastPatient.mrn.match(/P(\d+)/);
+        if (newFormatMatch) {
+          nextNumber = parseInt(newFormatMatch[1]) + 1;
+        } else {
+          // Check for old ALFA-YYYY-XXXXX format
+          const oldFormatMatch = lastPatient.mrn.match(/ALFA-\d{4}-(\d+)/);
+          if (oldFormatMatch) {
+            nextNumber = parseInt(oldFormatMatch[1]) + 1;
+          }
         }
       }
-    }
-    
-    const mrn = `P${String(nextNumber).padStart(3, '0')}`;
-    
-    // Handle nested objects separately to avoid conversion issues
-    const { insuranceInfo, emergencyContact, ...patientWithoutNested } = patient;
-    
-    const patientData = {
-      ...toSnakeCase(patientWithoutNested),
-      mrn,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+      
+      const mrn = `P${String(nextNumber).padStart(3, '0')}`;
+      
+      // Handle nested objects separately to avoid conversion issues
+      const { insuranceInfo, emergencyContact, ...patientWithoutNested } = patient;
+      
+      const patientData = {
+        ...toSnakeCase(patientWithoutNested),
+        mrn,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
-    // Add insurance fields separately
-    if (insuranceInfo) {
-      patientData.insurance_provider = insuranceInfo.provider || '';
-      patientData.insurance_membership_number = insuranceInfo.membershipNumber || '';
-      patientData.cash_amount = insuranceInfo.cashAmount || '';
-    }
-
-    // Add emergency contact fields separately
-    if (emergencyContact) {
-      patientData.emergency_contact_name = emergencyContact.name || '';
-      patientData.emergency_contact_phone = emergencyContact.phone || '';
-      patientData.emergency_contact_relationship = emergencyContact.relationship || '';
-    }
-
-    // Remove undefined values to avoid validation errors
-    Object.keys(patientData).forEach(key => {
-      if (patientData[key] === undefined) {
-        delete patientData[key];
+      // Add insurance fields separately
+      if (insuranceInfo) {
+        patientData.insurance_provider = insuranceInfo.provider || '';
+        patientData.insurance_membership_number = insuranceInfo.membershipNumber || '';
+        patientData.cash_amount = insuranceInfo.cashAmount || '';
       }
-    });
 
-    const { data, error } = await supabase
-      .from('patients')
-      .insert(patientData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return mapPatientFromDb(data);
+      // Add emergency contact fields separately
+      if (emergencyContact) {
+        patientData.emergency_contact_name = emergencyContact.name || '';
+        patientData.emergency_contact_phone = emergencyContact.phone || '';
+        patientData.emergency_contact_relationship = emergencyContact.relationship || '';
+      }
+
+      // Remove undefined values to avoid validation errors
+      Object.keys(patientData).forEach(key => {
+        if (patientData[key] === undefined) {
+          delete patientData[key];
+        }
+      });
+
+      const { data, error } = await supabase
+        .from('patients')
+        .insert(patientData)
+        .select()
+        .single();
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'createPatient - insert patient',
+          userAction: 'Register new patient',
+          metadata: { 
+            step: 'patient_insert',
+            patientData: Object.keys(patientData),
+            mrn
+          }
+        });
+      }
+      
+      return mapPatientFromDb(data);
+    }, {
+      title: 'Failed to create patient',
+      component: 'supabaseService',
+      action: 'createPatient',
+      userAction: 'Register new patient'
+    }) as Promise<Patient>;
   },
 
   updatePatient: async (id: string, patient: Partial<Patient>): Promise<Patient> => {

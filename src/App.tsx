@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { HospitalProvider, useHospital } from './context/HospitalContext';
+import { ErrorProvider } from './context/ErrorContext';
+import { ErrorDisplay, ErrorSummary } from './components/ErrorHandling/ErrorDisplay';
+import { ErrorBoundary } from './components/ErrorHandling/ErrorBoundary';
 import { LoginForm } from './components/Login/LoginForm';
 import { UserVerification } from './components/Login/UserVerification';
 import { UserValidation } from './components/Login/UserValidation';
@@ -660,11 +663,16 @@ function DashboardRoute() {
 
 function App() {
   return (
-    <AuthProvider>
-      <HospitalProvider>
-        <AppContent />
-      </HospitalProvider>
-    </AuthProvider>
+    <ErrorProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <HospitalProvider>
+            <AppContent />
+            <ErrorDisplay />
+          </HospitalProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </ErrorProvider>
   );
 }
 
