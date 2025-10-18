@@ -103,21 +103,20 @@ export function Header() {
 
           {/* Top Right - Notifications, User Profile, and Logout */}
           <div className="flex items-center space-x-6">
-            {/* Notifications - Only show when there are notifications */}
-            {userNotifications.length > 0 && (
-              <div className="relative" ref={notificationRef}>
-                <button 
-                  className="p-2 text-gray-400 hover:text-gray-500 transition-colors relative"
-                  title={`${unreadCount} unread notifications`}
-                  onClick={() => setShowNotifications(!showNotifications)}
-                >
-                  <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
+            {/* Notifications - Always show bell, badge only when unread */}
+            <div className="relative" ref={notificationRef}>
+              <button 
+                className="p-2 text-gray-400 hover:text-gray-500 transition-colors relative"
+                title={unreadCount > 0 ? `${unreadCount} unread notifications` : "No unread notifications"}
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
 
                 {/* Sound Toggle Button */}
                 <button
@@ -141,21 +140,38 @@ export function Header() {
                         <span className="text-xs text-gray-500">{unreadCount} unread</span>
                       </div>
                       <div className="max-h-96 overflow-y-auto">
-                        {userNotifications.slice(0, 5).map(notification => (
-                          <div 
-                            key={notification.id} 
-                            className={`mb-2 p-3 rounded text-sm cursor-pointer hover:bg-gray-50 ${
-                              isNotificationRead(notification, user?.id || '') ? 'bg-gray-50' : 'bg-blue-50 border-l-4 border-blue-500'
-                            }`}
-                            onClick={() => handleNotificationClick(notification.id)}
-                          >
-                            <div className="font-medium text-gray-900">{notification.title}</div>
-                            <div className="text-gray-600 mt-1">{notification.message}</div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              {new Date(notification.createdAt).toLocaleString()}
-                            </div>
+                        {userNotifications.length > 0 ? (
+                          <>
+                            {userNotifications.slice(0, 5).map(notification => (
+                              <div 
+                                key={notification.id} 
+                                className={`mb-2 p-3 rounded text-sm cursor-pointer hover:bg-gray-50 ${
+                                  isNotificationRead(notification, user?.id || '') ? 'bg-gray-50' : 'bg-blue-50 border-l-4 border-blue-500'
+                                }`}
+                                onClick={() => handleNotificationClick(notification.id)}
+                              >
+                                <div className="font-medium text-gray-900">{notification.title}</div>
+                                <div className="text-gray-600 mt-1">{notification.message}</div>
+                                <div className="text-xs text-gray-400 mt-1">
+                                  {new Date(notification.createdAt).toLocaleString()}
+                                </div>
+                              </div>
+                            ))}
+                            {userNotifications.length > 5 && (
+                              <div className="text-center py-2">
+                                <button className="text-xs text-blue-600 hover:text-blue-800 transition-colors">
+                                  View all {userNotifications.length} notifications
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No notifications yet</p>
+                            <p className="text-xs mt-1">You'll see notifications here when they arrive</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                       
                       {/* Sound Settings */}
@@ -184,7 +200,6 @@ export function Header() {
                   </div>
                 )}
               </div>
-            )}
 
             {/* User Profile */}
             <div className="flex items-center space-x-3">
