@@ -1,107 +1,156 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config({ path: '.env.local' });
-
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.log('❌ Missing Supabase credentials in .env.local');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Expected table schemas
-const expectedSchemas = {
-  users: ['id', 'name', 'email', 'role', 'department'],
-  patients: ['id', 'mrn', 'first_name', 'last_name', 'date_of_birth', 'gender', 'phone', 'address', 'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship', 'insurance_provider', 'insurance_membership_number', 'created_at', 'updated_at'],
-  medical_records: ['id', 'patient_id', 'doctor_id', 'visit_date', 'chief_complaint', 'diagnosis', 'treatment', 'notes', 'blood_pressure', 'heart_rate', 'temperature', 'weight', 'height', 'status', 'created_at', 'updated_at'],
-  appointments: ['id', 'patient_id', 'doctor_id', 'date_time', 'duration', 'type', 'status', 'notes'],
-  prescriptions: ['id', 'record_id', 'patient_id', 'doctor_id', 'medication', 'dosage', 'frequency', 'duration', 'instructions', 'status', 'created_at'],
-  lab_orders: ['id', 'record_id', 'patient_id', 'doctor_id', 'test_name', 'instructions', 'status', 'results', 'created_at', 'completed_at'],
-  bills: ['id', 'patient_id', 'total_amount', 'status', 'payment_method', 'created_at', 'updated_at']
-};
-
-async function validateTableSchema(tableName, expectedColumns) {
-  try {
-    console.log(`\n🔍 Checking table: ${tableName}`);
-    
-    // Try to get table info by selecting one row
-    const { data, error } = await supabase
-      .from(tableName)
-      .select('*')
-      .limit(1);
-    
-    if (error) {
-      console.log(`❌ ${tableName}: ${error.message}`);
-      return false;
-    }
-    
-    // If we get data, the table exists and is accessible
-    console.log(`✅ ${tableName}: Table exists and is accessible`);
-    
-    // Check if we can get column information by trying to select specific columns
-    const missingColumns = [];
-    for (const column of expectedColumns) {
-      try {
-        const { error: colError } = await supabase
-          .from(tableName)
-          .select(column)
-          .limit(1);
-        
-        if (colError) {
-          missingColumns.push(column);
-        }
-      } catch (err) {
-        missingColumns.push(column);
-      }
-    }
-    
-    if (missingColumns.length > 0) {
-      console.log(`⚠️  ${tableName}: Missing columns: ${missingColumns.join(', ')}`);
-    } else {
-      console.log(`✅ ${tableName}: All expected columns present`);
-    }
-    
-    return missingColumns.length === 0;
-  } catch (err) {
-    console.log(`❌ ${tableName}: ${err.message}`);
-    return false;
-  }
-}
+// Validate database schema
+import { supabase } from './src/config/supabase.js';
 
 async function validateDatabaseSchema() {
   console.log('🔍 Validating database schema...');
   
-  let allValid = true;
+  // List of required tables
+  const requiredTables = [
+    'patients',
+    'medical_records',
+    'appointments',
+    'prescriptions',
+    'lab_orders',
+    'bills',
+    'notifications',
+    'service_prices',
+    'departments',
+    'referrals',
+    'insurance_claims',
+    'surgery_requests',
+    'ot_slots',
+    'ot_resources',
+    'ot_checklists',
+    'surgery_progress',
+    'ot_reports',
+    'users'
+  ];
   
-  for (const [tableName, expectedColumns] of Object.entries(expectedSchemas)) {
-    const isValid = await validateTableSchema(tableName, expectedColumns);
-    if (!isValid) {
-      allValid = false;
+  // Check if all tables exist by trying to access each one
+  console.log('🔍 Checking if all required tables exist...');
+  for (const table of requiredTables) {
+    try {
+      const { error } = await supabase
+        .from(table)
+        .select('count')
+        .limit(1);
+      
+      if (error) {
+        console.error(`❌ Failed to access table '${table}':`, error.message);
+        return false;
+      }
+    } catch (err) {
+      console.error(`❌ Error accessing table '${table}':`, err.message);
+      return false;
     }
   }
   
-  console.log('\n📊 Validation Summary:');
-  if (allValid) {
-    console.log('✅ All tables and columns are properly configured!');
-  } else {
-    console.log('❌ Some tables or columns are missing or misconfigured.');
-    console.log('\n🔧 To fix schema issues:');
-    console.log('1. Run the SQL schema files in your Supabase SQL editor:');
-    console.log('   - supabase_schema.sql');
-    console.log('   - supabase_missing_tables_schema.sql');
-    console.log('   - supabase_hr_schema.sql');
-    console.log('2. Make sure all tables are created with the correct column names');
-    console.log('3. Ensure RLS policies are properly configured');
+  console.log('✅ All required tables exist');
+  
+  // Check appointments table structure by trying to select each required column
+  console.log('🔍 Checking appointments table structure...');
+  const requiredAppointmentColumns = [
+    'id',
+    'patient_id',
+    'doctor_id',
+    'date_time',
+    'duration',
+    'type',
+    'status',
+    'notes'
+  ];
+  
+  try {
+    const { error: appointmentsError } = await supabase
+      .from('appointments')
+      .select(requiredAppointmentColumns.join(','))
+      .limit(1);
+    
+    if (appointmentsError) {
+      console.error('❌ Failed to get appointments table structure:', appointmentsError.message);
+      return false;
+    }
+  } catch (err) {
+    console.error('❌ Error checking appointments table structure:', err.message);
+    return false;
   }
   
-  return allValid;
+  console.log('✅ Appointments table structure is correct');
+  
+  // Check notifications table structure by trying to select each required column
+  console.log('🔍 Checking notifications table structure...');
+  const requiredNotificationColumns = [
+    'id',
+    'user_ids',
+    'type',
+    'title',
+    'message',
+    'is_read',
+    'created_at'
+  ];
+  
+  try {
+    const { error: notificationsError } = await supabase
+      .from('notifications')
+      .select(requiredNotificationColumns.join(','))
+      .limit(1);
+    
+    if (notificationsError) {
+      console.error('❌ Failed to get notifications table structure:', notificationsError.message);
+      return false;
+    }
+  } catch (err) {
+    console.error('❌ Error checking notifications table structure:', err.message);
+    return false;
+  }
+  
+  console.log('✅ Notifications table structure is correct');
+  
+  // Test inserting a sample appointment
+  console.log('🔍 Testing appointment insertion...');
+  const testAppointment = {
+    patient_id: '00000000-0000-0000-0000-000000000000',
+    doctor_id: '00000000-0000-0000-0000-000000000000',
+    date_time: new Date().toISOString(),
+    duration: 30,
+    type: 'consultation',
+    status: 'scheduled',
+    notes: 'Test appointment'
+  };
+  
+  const { data: insertedAppointment, error: insertError } = await supabase
+    .from('appointments')
+    .insert([testAppointment])
+    .select()
+    .single();
+  
+  if (insertError) {
+    console.error('❌ Failed to insert test appointment:', insertError.message);
+    console.error('💡 This might be due to RLS policies. Run fix-rls-policies-complete.sql');
+    return false;
+  }
+  
+  console.log('✅ Appointment insertion successful');
+  
+  // Clean up test appointment
+  const { error: deleteError } = await supabase
+    .from('appointments')
+    .delete()
+    .eq('id', insertedAppointment.id);
+  
+  if (deleteError) {
+    console.warn('⚠️ Failed to clean up test appointment:', deleteError.message);
+  } else {
+    console.log('✅ Test appointment cleaned up');
+  }
+  
+  console.log('🎉 Database schema validation completed successfully!');
+  return true;
 }
 
+// Run the validation
 validateDatabaseSchema().then(success => {
-  process.exit(success ? 0 : 1);
+  if (!success) {
+    process.exit(1);
+  }
 });

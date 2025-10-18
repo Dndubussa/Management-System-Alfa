@@ -135,6 +135,7 @@ function mapMedicalRecordFromDb(row: any): MedicalRecord {
 		visitDate: c.visitDate,
 		chiefComplaint: c.chiefComplaint,
 		diagnosis: c.diagnosis,
+		diagnosisCodes: (c.diagnosisCodes ?? []) as DiagnosisCode[],
 		treatment: c.treatment,
 		notes: c.notes,
 		vitals: {
@@ -266,6 +267,9 @@ export const api = {
   },
   createAppointment: async (appointment: Omit<Appointment, 'id'>) => {
     const body = mapAppointmentToDb(appointment);
+    console.log('Creating appointment with data:', appointment);
+    console.log('Mapped appointment data for database:', body);
+    
     const response = await fetch(`${API_BASE_URL}/appointments`, {
       method: 'POST',
       headers: {
@@ -274,12 +278,38 @@ export const api = {
       body: JSON.stringify(body),
     });
     
+    console.log('Appointment API response status:', response.status);
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to create appointment');
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { error: errorText || 'Failed to create appointment' };
+      }
+      
+      console.error('Appointment creation failed:', errorData);
+      throw new Error(errorData.details || errorData.error || 'Failed to create appointment');
     }
     
-    const row = await response.json();
+    const responseText = await response.text();
+    if (!responseText) {
+      throw new Error('Empty response from server');
+    }
+    
+    let row;
+    try {
+      row = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error('Invalid JSON response from server');
+    }
+    
+    if (!row) {
+      throw new Error('No data returned from server');
+    }
+    
+    console.log('Appointment created successfully:', row);
     return mapAppointmentFromDb(row);
   },
   updateAppointmentStatus: async (id: string, status: Appointment['status']) => {
@@ -522,291 +552,29 @@ export const api = {
   },
 };
 
-// Type definitions (imported from types)
-interface Patient {
-  id: string;
-  mrn: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
-  phone: string;
-  address: string;
-  emergencyContact: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
-  insuranceInfo: {
-    provider: string;
-    membershipNumber: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface MedicalRecord {
-  id: string;
-  patientId: string;
-  doctorId: string;
-  visitDate: string;
-  chiefComplaint: string;
-  diagnosis: string;
-  diagnosisCodes: {
-    code: string;
-    description: string;
-    type: 'ICD-10' | 'SNOMED CT';
-  }[];
-  treatment: string;
-  notes: string;
-  vitals: {
-    bloodPressure: string;
-    heartRate: string;
-    temperature: string;
-    weight: string;
-    height: string;
-  };
-  prescriptions: Prescription[];
-  labOrders: LabOrder[];
-  status: 'active' | 'completed' | 'cancelled';
-}
-
-interface Prescription {
-  id: string;
-  recordId: string;
-  patientId: string;
-  doctorId: string;
-  medication: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  instructions: string;
-  status: 'pending' | 'dispensed' | 'cancelled';
-  createdAt: string;
-}
-
-interface LabOrder {
-  id: string;
-  recordId: string;
-  patientId: string;
-  doctorId: string;
-  testName: string;
-  instructions: string;
-  status: 'ordered' | 'in-progress' | 'completed' | 'cancelled';
-  results?: string;
-  createdAt: string;
-  completedAt?: string;
-}
-
-interface Appointment {
-  id: string;
-  patientId: string;
-  doctorId: string;
-  dateTime: string;
-  duration: number;
-  type: 'consultation' | 'follow-up' | 'emergency';
-  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
-  notes?: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'receptionist' | 'doctor' | 'lab' | 'pharmacy' | 'radiologist' | 'ophthalmologist' | 'admin' | 'ot-coordinator';
-  department: string;
-}
-
-interface Notification {
-  id: string;
-  userIds: string[];
-  type: 'prescription' | 'lab-order' | 'appointment' | 'general' | 'queue' | 'billing';
-  title: string;
-  message: string;
-  isRead: boolean | { [userId: string]: boolean };
-  createdAt: string;
-  department?: string;
-}
-
-interface ServicePrice {
-  id: string;
-  category: 'consultation' | 'lab-test' | 'medication' | 'procedure';
-  serviceName: string;
-  price: number;
-  description: string;
-}
-
-interface Bill {
-  id: string;
-  patientId: string;
-  items: {
-    id: string;
-    serviceId: string;
-    serviceName: string;
-    category: string;
-    unitPrice: number;
-    quantity: number;
-    totalPrice: number;
-  }[];
-  subtotal: number;
-  tax: number;
-  discount: number;
-  total: number;
-  status: 'pending' | 'paid' | 'cancelled';
-  paymentMethod?: string;
-  createdAt: string;
-  paidAt?: string;
-}
-
-interface Department {
-  id: string;
-  name: string;
-  description: string;
-  doctors: string[];
-}
-
-interface Referral {
-  id: string;
-  patientId: string;
-  referringDoctorId: string;
-  specialist: string;
-  reason: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'completed';
-  createdAt: string;
-  updatedAt: string;
-  notes?: string;
-}
-
-interface InsuranceClaim {
-  id: string;
-  billId: string;
-  patientId: string;
-  insuranceProvider: string;
-  membershipNumber: string;
-  claimAmount: number;
-  claimedAmount: number;
-  status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'paid';
-  submissionDate: string;
-  approvalDate?: string;
-  rejectionReason?: string;
-  nhifClaimNumber?: string;
-  notes?: string;
-}
-
-interface SurgeryRequest {
-  id: string;
-  patientId: string;
-  requestingDoctorId: string;
-  surgeryType: string;
-  urgency: 'routine' | 'urgent' | 'emergency';
-  requestedDate: string;
-  status: 'pending' | 'reviewed' | 'scheduled' | 'pre-op' | 'in-progress' | 'post-op' | 'completed' | 'cancelled' | 'postponed';
-  diagnosis: string;
-  notes?: string;
-  emrSummary?: string;
-  labResults?: string;
-  radiologyResults?: string;
-  preOpAssessment?: {
-    asaClassification: string;
-    anesthesiaPlan: string;
-    fastingStatus: string;
-    preOpMedications: string;
-  };
-  requiredResources?: {
-    surgeonIds: string[];
-    anesthesiologistIds: string[];
-    nurseIds: string[];
-    otRoomId: string;
-    equipment: string[];
-    instruments: string[];
-    bloodUnits?: number;
-  };
-  scheduledDate?: string;
-  scheduledTime?: string;
-  assignedStaff?: {
-    leadSurgeonId: string;
-    assistantSurgeons: string[];
-    anesthesiologistId: string;
-    nurseIds: string[];
-  };
-  otRoomId?: string;
-  consentFormSigned?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface OTSlot {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  otRoomId: string;
-  surgeryRequestId?: string;
-  status: 'available' | 'booked' | 'blocked' | 'maintenance';
-  notes?: string;
-}
-
-interface OTResource {
-  id: string;
-  type: 'surgeon' | 'anesthesiologist' | 'nurse' | 'ot-room' | 'equipment' | 'instrument';
-  name: string;
-  specialty?: string;
-  availability: {
-    [date: string]: {
-      startTime: string;
-      endTime: string;
-      status: 'available' | 'busy' | 'unavailable';
-    }[];
-  };
-  notes?: string;
-}
-
-interface OTChecklist {
-  id: string;
-  surgeryRequestId: string;
-  items: {
-    category: string;
-    description: string;
-    checked: boolean;
-    checkedBy?: string;
-    checkedAt?: string;
-  }[];
-  status: 'pending' | 'in-progress' | 'completed';
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface SurgeryProgress {
-  id: string;
-  surgeryRequestId: string;
-  status: 'pre-op' | 'in-progress' | 'closed' | 'post-op' | 'completed';
-  timestamp: string;
-  notes?: string;
-  updatedBy: string;
-}
-
-interface OTReport {
-  id: string;
-  date: string;
-  type: 'daily' | 'weekly' | 'monthly';
-  metrics: {
-    totalSurgeries: number;
-    emergencySurgeries: number;
-    electiveSurgeries: number;
-    cancelledSurgeries: number;
-    postponedSurgeries: number;
-    complications: number;
-    mortality: number;
-  };
-  surgeries: {
-    surgeryRequestId: string;
-    surgeryType: string;
-    status: 'completed' | 'cancelled' | 'postponed';
-    complications?: string;
-    notes?: string;
-  }[];
-  createdAt: string;
-}
+// Import types from the shared types file
+import type { 
+  Patient, 
+  MedicalRecord, 
+  Prescription, 
+  LabOrder, 
+  Appointment, 
+  User, 
+  Notification, 
+  ServicePrice, 
+  Bill, 
+  Department, 
+  Referral, 
+  InsuranceClaim, 
+  SurgeryRequest, 
+  OTSlot, 
+  OTResource, 
+  OTChecklist, 
+  SurgeryProgress, 
+  OTReport,
+  ServiceEstimate,
+  DiagnosisCode
+} from '../types';
 
 // Service Estimates API functions
 export const estimatesApi = {

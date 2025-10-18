@@ -111,6 +111,10 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
           duration: 30, // Default duration
           status: 'scheduled' // Default status for new appointments
         });
+        
+        if (!newAppointment) {
+          throw new Error('Failed to create appointment - no data returned');
+        }
 
         // Create automatic billing for the consultation
         if (newAppointment && consultationCost > 0) {
@@ -143,7 +147,15 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
       onSave();
     } catch (error) {
       console.error('Error creating appointment:', error);
-      // The error handling system should catch this and display it
+      addError({
+        type: 'error',
+        title: 'Appointment Creation Failed',
+        message: 'Failed to create appointment',
+        details: error instanceof Error ? error.message : String(error),
+        component: 'AppointmentForm',
+        action: 'handleSubmit',
+        userAction: 'Create new appointment'
+      });
     }
   };
 

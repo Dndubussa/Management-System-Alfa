@@ -111,7 +111,7 @@ interface HospitalContextType {
   isNotificationRead: (notification: Notification, userId: string) => boolean;
   markNotificationRead: (id: string, userId: string) => Promise<void>;
   generateBill: (patientId: string, appointmentId?: string, recordId?: string) => void;
-  updateBillStatus: (id: string, status: Bill['status'], paymentMethod?: string) => Promise<void>;
+  updateBillStatus: (id: string, status: Bill['status'], paymentMethod?: Bill['paymentMethod']) => Promise<void>;
   addBillItem: (billId: string, item: Omit<BillItem, 'id'>) => Promise<void>;
   autoGenerateBills: () => Promise<void>;
   updateAutobillingConfig: (config: Partial<AutobillingConfig>) => Promise<void>;
@@ -120,7 +120,7 @@ interface HospitalContextType {
   addUser: (user: Omit<User, 'id'>) => Promise<void>;
   updateUser: (id: string, user: Partial<User>) => Promise<void>;
   removeUser: (id: string) => Promise<void>;
-  addAppointment: (appointment: Omit<Appointment, 'id'>) => Promise<void>;
+  addAppointment: (appointment: Omit<Appointment, 'id'>) => Promise<Appointment>;
   updateAppointmentStatus: (id: string, status: Appointment['status']) => Promise<void>;
   submitInsuranceClaim: (claimData: Omit<InsuranceClaim, 'id' | 'submissionDate' | 'status'>) => Promise<void>;
   updateInsuranceClaimStatus: (id: string, status: InsuranceClaim['status'], rejectionReason?: string) => Promise<void>;
@@ -448,12 +448,9 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         setMedicationInventory(medicationInventoryData);
       } catch (err) {
         console.error('Error loading data:', err);
-        console.error('Error details:', {
-          name: err.name,
-          message: err.message,
-          stack: err.stack
-        });
-        setError(`Failed to load data from server: ${err.message}`);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('Error details:', errorMessage);
+        setError(`Failed to load data from server: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -959,6 +956,10 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       const newAppointment = await service.createAppointment(appointmentData);
       console.log('Appointment created successfully:', newAppointment);
       
+      if (!newAppointment) {
+        throw new Error('Failed to create appointment - no data returned from server');
+      }
+      
       setAppointments(prev => [...prev, newAppointment]);
 
       // Automatically generate bill if autobilling is enabled for appointments
@@ -1038,7 +1039,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateBillStatus = async (id: string, status: Bill['status'], paymentMethod?: string) => {
+  const updateBillStatus = async (id: string, status: Bill['status'], paymentMethod?: Bill['paymentMethod']) => {
     try {
       const updatedBill = await service.updateBillStatus(id, status, paymentMethod);
       setBills(prev => prev.map(bill =>

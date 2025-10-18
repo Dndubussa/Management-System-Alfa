@@ -62,6 +62,15 @@ app.use(express.json());
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// Health check endpoint for Vercel
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Helper function for Supabase queries
 
 // Password hashing utilities
@@ -573,17 +582,29 @@ app.get('/api/appointments/:id', async (req, res) => {
 
 app.post('/api/appointments', async (req, res) => {
   try {
+    console.log('Received appointment data:', req.body);
+    
+    // Validate required fields
+    if (!req.body.patientId || !req.body.doctorId || !req.body.dateTime) {
+      return res.status(400).json({ 
+        error: 'Missing required fields', 
+        details: 'patientId, doctorId, and dateTime are required' 
+      });
+    }
+    
     // Convert camelCase to snake_case for database
     const appointmentData = {
       patient_id: req.body.patientId,
       doctor_id: req.body.doctorId,
       date_time: req.body.dateTime,
-      duration: req.body.duration,
-      type: req.body.type,
+      duration: req.body.duration || 30, // Default to 30 minutes
+      type: req.body.type || 'consultation',
       status: req.body.status || 'scheduled',
       notes: req.body.notes || ''
     };
 
+    console.log('Inserting appointment data:', appointmentData);
+    
     const { data, error } = await supabase
       .from('appointments')
       .insert([appointmentData])
@@ -592,8 +613,14 @@ app.post('/api/appointments', async (req, res) => {
     
     if (error) {
       console.error('Supabase error creating appointment:', error);
-      return res.status(400).json({ error: error.message });
+      return res.status(400).json({ 
+        error: 'Database error', 
+        details: error.message,
+        hint: error.hint
+      });
     }
+    
+    console.log('Appointment created successfully:', data);
     
     // Ensure we return the created appointment data
     if (data) {
@@ -603,7 +630,10 @@ app.post('/api/appointments', async (req, res) => {
     }
   } catch (error) {
     console.error('Server error creating appointment:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: 'Server error', 
+      details: error.message 
+    });
   }
 });
 
@@ -2210,15 +2240,20 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
 
-// Start server with Supabase connection test
-app.listen(PORT, async () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`API endpoints are available at http://localhost:${PORT}/api`);
-  
-  // Test Supabase connection
-  const connectionOk = await testSupabaseConnection();
-  if (!connectionOk) {
-    console.log('⚠️  Warning: Supabase connection failed. Some features may not work.');
-    console.log('Please check your .env.local file and Supabase credentials.');
-  }
-});
+// Start server with Supabase connection test (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, async () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`API endpoints are available at http://localhost:${PORT}/api`);
+    
+    // Test Supabase connection
+    const connectionOk = await testSupabaseConnection();
+    if (!connectionOk) {
+      console.log('⚠️  Warning: Supabase connection failed. Some features may not work.');
+      console.log('Please check your .env.local file and Supabase credentials.');
+    }
+  });
+} else {
+  // For Vercel deployment, export the app
+  module.exports = app;
+}
