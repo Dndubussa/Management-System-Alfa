@@ -39,7 +39,7 @@ export function OTReports() {
     { id: 'custom', name: 'Custom Range' },
   ];
 
-  const generateReport = () => {
+  const generateReport = (overrideType?: string, overrideRange?: string) => {
     // Generate PDF report with hospital branding
     const doc = new jsPDF();
     
@@ -64,13 +64,15 @@ export function OTReports() {
     // Add report title
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    const reportTitle = reportTypes.find(r => r.id === reportType)?.name || 'OT Report';
+    const effectiveType = overrideType || reportType;
+    const reportTitle = reportTypes.find(r => r.id === effectiveType)?.name || 'OT Report';
     doc.text(reportTitle, 14, 35);
     
     // Add date range info
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    let dateRangeText = dateRanges.find(r => r.id === dateRange)?.name || 'All Time';
+    const effectiveRange = overrideRange || dateRange;
+    let dateRangeText = dateRanges.find(r => r.id === effectiveRange)?.name || 'All Time';
     doc.text(`Date Range: ${dateRangeText}`, 14, 45);
     
     // Add generated date
@@ -90,18 +92,20 @@ export function OTReports() {
     doc.text(`Postponed Surgeries: ${reportData.postponedSurgeries}`, 14, 112);
     
     // Save the PDF
-    doc.save(`OT_${reportType}_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(`OT_${effectiveType}_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
-  const downloadReport = (format: 'pdf' | 'csv') => {
+  const downloadReport = (format: 'pdf' | 'csv', overrideType?: string, overrideRange?: string) => {
+    const effectiveType = overrideType || reportType;
+    const effectiveRange = overrideRange || dateRange;
     if (format === 'pdf') {
-      generateReport();
+      generateReport(effectiveType, effectiveRange);
     } else {
       // Generate CSV report with hospital branding
       let csvContent = `ALFA SPECIALIZED HOSPITAL\n`;
       csvContent += `Excellence in Healthcare Services\n`;
-      csvContent += `${reportTypes.find(r => r.id === reportType)?.name || 'OT Report'}\n`;
-      csvContent += `Date Range: ${dateRanges.find(r => r.id === dateRange)?.name || 'All Time'}\n`;
+      csvContent += `${reportTypes.find(r => r.id === effectiveType)?.name || 'OT Report'}\n`;
+      csvContent += `Date Range: ${dateRanges.find(r => r.id === effectiveRange)?.name || 'All Time'}\n`;
       csvContent += `Generated: ${new Date().toLocaleString()}\n\n`;
       
       csvContent += `Metric,Value\n`;
@@ -116,7 +120,7 @@ export function OTReports() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `OT_${reportType}_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.setAttribute('download', `OT_${effectiveType}_Report_${new Date().toISOString().slice(0, 10)}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -313,10 +317,16 @@ export function OTReports() {
                     <p className="text-sm text-gray-500">Generated on Oct 5, 2025</p>
                   </div>
                   <div className="flex space-x-2">
-                    <button className="text-blue-600 hover:text-blue-800">
+                    <button
+                      onClick={() => downloadReport('csv', 'daily')}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
                       <Download className="w-4 h-4" />
                     </button>
-                    <button className="text-green-600 hover:text-green-800">
+                    <button
+                      onClick={() => downloadReport('pdf', 'daily')}
+                      className="text-green-600 hover:text-green-800"
+                    >
                       <FileText className="w-4 h-4" />
                     </button>
                   </div>
@@ -330,10 +340,16 @@ export function OTReports() {
                     <p className="text-sm text-gray-500">Generated on Oct 1, 2025</p>
                   </div>
                   <div className="flex space-x-2">
-                    <button className="text-blue-600 hover:text-blue-800">
+                    <button
+                      onClick={() => downloadReport('csv', 'weekly')}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
                       <Download className="w-4 h-4" />
                     </button>
-                    <button className="text-green-600 hover:text-green-800">
+                    <button
+                      onClick={() => downloadReport('pdf', 'weekly')}
+                      className="text-green-600 hover:text-green-800"
+                    >
                       <FileText className="w-4 h-4" />
                     </button>
                   </div>
@@ -347,10 +363,16 @@ export function OTReports() {
                     <p className="text-sm text-gray-500">Generated on Sep 30, 2025</p>
                   </div>
                   <div className="flex space-x-2">
-                    <button className="text-blue-600 hover:text-blue-800">
+                    <button
+                      onClick={() => downloadReport('csv', 'monthly')}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
                       <Download className="w-4 h-4" />
                     </button>
-                    <button className="text-green-600 hover:text-green-800">
+                    <button
+                      onClick={() => downloadReport('pdf', 'monthly')}
+                      className="text-green-600 hover:text-green-800"
+                    >
                       <FileText className="w-4 h-4" />
                     </button>
                   </div>
