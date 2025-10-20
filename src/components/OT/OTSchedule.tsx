@@ -4,14 +4,12 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { SurgeryRequest } from '../../types';
-import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
-import { useConsultationBilling } from '../../hooks/useConsultationBilling';
+// Consultation cost removed per request
 import { SurgeryTypeSelector } from '../Common/SurgeryTypeSelector';
 import { useServiceBilling } from '../../hooks/useServiceBilling';
 
 export function OTSchedule() {
   const { surgeryRequests, otSlots, otResources, patients, users, addSurgeryRequest } = useHospital();
-  const { createConsultationBill } = useConsultationBilling();
   const { createProcedureBill, findServicePrice } = useServiceBilling();
   const { user } = useAuth();
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
@@ -30,14 +28,7 @@ export function OTSchedule() {
     notes: ''
   });
 
-  const [consultationCost, setConsultationCost] = useState<number>(0);
-  const [consultationService, setConsultationService] = useState<string>('');
   const [procedureCost, setProcedureCost] = useState<number>(0);
-
-  const handleCostCalculated = (cost: number, serviceName: string) => {
-    setConsultationCost(cost);
-    setConsultationService(serviceName);
-  };
 
   // Calculate procedure cost when surgery type changes
   const handleSurgeryTypeChange = (surgeryType: string) => {
@@ -45,7 +36,7 @@ export function OTSchedule() {
     setProcedureCost(cost);
   };
 
-  const totalCost = consultationCost + procedureCost;
+  const totalCost = procedureCost;
 
   // Get scheduled surgeries
   const scheduledSurgeries = surgeryRequests.filter(req => req.status === 'scheduled' && req.scheduledDate);
@@ -91,22 +82,6 @@ export function OTSchedule() {
         requestedDate: new Date().toISOString()
       });
 
-      // Create automatic billing for consultation if cost > 0
-      if (consultationCost > 0 && newSurgeryRequest) {
-        try {
-          await createConsultationBill(
-            newSurgery.patientId,
-            undefined, // No appointment ID for surgery requests
-            consultationService || `${newSurgery.urgency.charAt(0).toUpperCase() + newSurgery.urgency.slice(1)} Surgery Consultation`,
-            consultationCost,
-            newSurgery.urgency,
-            `Surgery consultation for ${newSurgery.surgeryType}`
-          );
-        } catch (error) {
-          console.error('Failed to create automatic billing:', error);
-        }
-      }
-
       // Create billing for procedure if cost > 0
       if (procedureCost > 0 && newSurgeryRequest) {
         try {
@@ -131,8 +106,6 @@ export function OTSchedule() {
         diagnosis: '',
         notes: ''
       });
-      setConsultationCost(0);
-      setConsultationService('');
       setShowScheduleModal(false);
     } catch (error) {
       console.error('Error scheduling surgery:', error);
@@ -276,16 +249,7 @@ export function OTSchedule() {
                   </select>
                 </div>
 
-                {/* Consultation Cost Display */}
-                {newSurgery.patientId && (
-                  <ConsultationCostDisplay
-                    appointmentType={newSurgery.urgency === 'emergency' ? 'emergency' : 'consultation'}
-                    doctorId={newSurgery.requestingDoctorId}
-                    department="surgery"
-                    onCostCalculated={handleCostCalculated}
-                    showBreakdown={true}
-                  />
-                )}
+                {/* Consultation Cost Display removed per request */}
 
                 {/* Procedure Cost Display */}
                 {procedureCost > 0 && (
