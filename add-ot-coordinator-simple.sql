@@ -17,44 +17,18 @@ INSERT INTO users (
     name,
     email,
     role,
-    department,
-    phone,
-    address,
-    specialization,
-    license_number,
-    hire_date,
-    salary,
-    status,
-    created_at,
-    updated_at
+    department
 ) VALUES (
     'YOUR_USER_ID_HERE', -- Replace with the actual user ID from step 1
     'Rogers Aluli',
     'alulirogers@gmail.com',
     'ot-coordinator',
-    'Operating Theatre',
-    '+255123456789',
-    'Dar es Salaam, Tanzania',
-    'OT Coordination and Management',
-    'OT-001-2024',
-    CURRENT_DATE,
-    1500000,
-    'active',
-    NOW(),
-    NOW()
+    'Operating Theatre'
 ) ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     email = EXCLUDED.email,
     role = EXCLUDED.role,
-    department = EXCLUDED.department,
-    phone = EXCLUDED.phone,
-    address = EXCLUDED.address,
-    specialization = EXCLUDED.specialization,
-    license_number = EXCLUDED.license_number,
-    hire_date = EXCLUDED.hire_date,
-    salary = EXCLUDED.salary,
-    status = EXCLUDED.status,
-    updated_at = NOW();
+    department = EXCLUDED.department;
 
 -- STEP 3: Verify the user was added
 SELECT 
@@ -62,8 +36,6 @@ SELECT
     name,
     email,
     role,
-    department,
-    specialization,
-    status
+    department
 FROM users 
 WHERE email = 'alulirogers@gmail.com';

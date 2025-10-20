@@ -22,44 +22,18 @@ INSERT INTO users (
     name,
     email,
     role,
-    department,
-    phone,
-    address,
-    specialization,
-    license_number,
-    hire_date,
-    salary,
-    status,
-    created_at,
-    updated_at
+    department
 ) VALUES (
     'USER_ID_FROM_AUTH', -- Replace with actual user ID from auth.users
     'Rogers Aluli',
     'alulirogers@gmail.com',
     'ot-coordinator',
-    'Operating Theatre',
-    '+255123456789', -- Update with actual phone number
-    'Dar es Salaam, Tanzania', -- Update with actual address
-    'OT Coordination and Management',
-    'OT-001-2024', -- Update with actual license number
-    CURRENT_DATE,
-    1500000, -- Update with actual salary (in TZS)
-    'active',
-    NOW(),
-    NOW()
+    'Operating Theatre'
 ) ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     email = EXCLUDED.email,
     role = EXCLUDED.role,
-    department = EXCLUDED.department,
-    phone = EXCLUDED.phone,
-    address = EXCLUDED.address,
-    specialization = EXCLUDED.specialization,
-    license_number = EXCLUDED.license_number,
-    hire_date = EXCLUDED.hire_date,
-    salary = EXCLUDED.salary,
-    status = EXCLUDED.status,
-    updated_at = NOW();
+    department = EXCLUDED.department;
 
 -- 4. Verify the user was added/updated
 SELECT 
@@ -68,8 +42,6 @@ SELECT
     email,
     role,
     department,
-    specialization,
-    status,
     created_at
 FROM users 
 WHERE email = 'alulirogers@gmail.com';
@@ -139,14 +111,11 @@ SELECT
     u.email,
     u.role,
     u.department,
-    u.specialization,
-    u.status,
     u.created_at
 FROM users u
 WHERE u.role LIKE '%ot%' 
    OR u.department LIKE '%Operating%' 
    OR u.department LIKE '%Theatre%'
-   OR u.specialization LIKE '%OT%'
 ORDER BY u.created_at DESC;
 
 -- 10. Create a notification for the new OT coordinator
@@ -175,14 +144,6 @@ SELECT
     u.email,
     u.role,
     u.department,
-    u.specialization,
-    u.phone,
-    u.address,
-    u.license_number,
-    u.hire_date,
-    u.salary,
-    u.status,
-    u.created_at,
-    u.updated_at
+    u.created_at
 FROM users u
 WHERE u.email = 'alulirogers@gmail.com';
