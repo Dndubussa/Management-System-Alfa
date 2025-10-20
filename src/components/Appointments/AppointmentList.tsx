@@ -12,7 +12,7 @@ interface AppointmentListProps {
 }
 
 export function AppointmentList({ onNewAppointment, onEditAppointment }: AppointmentListProps) {
-  const { appointments, patients } = useHospital();
+  const { appointments, patients, users } = useHospital();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -44,6 +44,11 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
 
   const getPatientName = (patientId: string) => {
     return getPatientDisplayName(patients, patientId);
+  };
+
+  const getDoctorName = (doctorId: string) => {
+    const doctor = users.find(u => u.id === doctorId);
+    return doctor ? doctor.name : 'Unknown Doctor';
   };
 
   const formatDateTime = (dateTimeString: string) => {
@@ -146,6 +151,9 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                   MRN
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Doctor
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date & Time
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -165,7 +173,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     {searchTerm || statusFilter || dateFilter 
                       ? 'No appointments found matching your criteria.' 
                       : 'No appointments scheduled.'}
@@ -194,6 +202,17 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                           {(() => {
                             const patient = findPatientSafely(patients, appointment.patientId);
                             return patient?.mrn || 'N/A';
+                          })()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {getDoctorName(appointment.doctorId)}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {(() => {
+                            const doctor = users.find(u => u.id === appointment.doctorId);
+                            return doctor ? doctor.role : '';
                           })()}
                         </div>
                       </td>
