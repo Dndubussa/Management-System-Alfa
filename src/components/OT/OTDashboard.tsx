@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function OTDashboard() {
-  const { surgeryRequests, otSlots, otResources, users, updateSurgeryRequest, loading, error } = useHospital();
+  const { surgeryRequests, otSlots, otResources, users, patients, updateSurgeryRequest, loading, error } = useHospital();
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('today');
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -238,7 +238,7 @@ export function OTDashboard() {
             {pendingRequests.length > 0 ? (
               <div className="space-y-4">
                 {pendingRequests.slice(0, 5).map(request => {
-                  const patient = users.find(u => u.id === request.patientId);
+                  const patient = patients.find(p => p.id === request.patientId);
                   const doctor = users.find(u => u.id === request.requestingDoctorId);
                   return (
                     <div key={request.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
@@ -246,7 +246,7 @@ export function OTDashboard() {
                         <div>
                           <h3 className="font-medium text-gray-900">{request.surgeryType}</h3>
                           <p className="text-sm text-gray-500">
-                            Patient: {patient ? `${patient.name}` : 'Unknown Patient'}
+                            Patient: {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}
                           </p>
                           <p className="text-sm text-gray-500">
                             Requested by: {doctor ? doctor.name : 'Unknown Doctor'}
@@ -299,7 +299,7 @@ export function OTDashboard() {
             {scheduledSurgeries.length > 0 ? (
               <div className="space-y-4">
                 {scheduledSurgeries.slice(0, 5).map(request => {
-                  const patient = users.find(u => u.id === request.patientId);
+                  const patient = patients.find(p => p.id === request.patientId);
                   const doctor = users.find(u => u.id === request.requestingDoctorId);
                   return (
                     <div key={request.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
@@ -307,7 +307,7 @@ export function OTDashboard() {
                         <div>
                           <h3 className="font-medium text-gray-900">{request.surgeryType}</h3>
                           <p className="text-sm text-gray-500">
-                            Patient: {patient ? `${patient.name}` : 'Unknown Patient'}
+                            Patient: {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}
                           </p>
                         </div>
                         <div className="text-right">
