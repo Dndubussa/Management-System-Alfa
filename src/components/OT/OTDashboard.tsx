@@ -3,9 +3,10 @@ import { Calendar, Scissors, Users, Settings, FileBarChart, Bell, TrendingUp, Al
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function OTDashboard() {
-  const { surgeryRequests, otSlots, otResources, users, updateSurgeryRequest } = useHospital();
+  const { surgeryRequests, otSlots, otResources, users, updateSurgeryRequest, loading, error } = useHospital();
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('today');
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -60,6 +61,32 @@ export function OTDashboard() {
     // For now, let's update the status to 'reviewed'
     updateSurgeryRequest(request.id, { status: 'reviewed' });
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLoading 
+        role="ot-coordinator" 
+        department="Operating Theatre" 
+        title="OT Coordinator" 
+      />
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <Scissors className="w-5 h-5 text-red-600 mr-2" />
+            <h3 className="text-sm font-medium text-red-800">Error Loading OT Dashboard</h3>
+          </div>
+          <p className="text-sm text-red-700 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
