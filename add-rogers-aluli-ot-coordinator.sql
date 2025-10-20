@@ -25,8 +25,7 @@ SELECT
     name,
     email,
     role,
-    department,
-    created_at
+    department
 FROM users 
 WHERE email = 'alulirogers@gmail.com';
 
@@ -36,8 +35,6 @@ SELECT
     name,
     email,
     role,
-    department,
-    created_at
+    department
 FROM users 
-WHERE role = 'ot-coordinator'
-ORDER BY created_at DESC;
+WHERE role = 'ot-coordinator';
