@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { SurgeryRequest } from '../../types';
 import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
 import { useConsultationBilling } from '../../hooks/useConsultationBilling';
+import { SurgeryTypeSelector } from '../Common/SurgeryTypeSelector';
 import { useServiceBilling } from '../../hooks/useServiceBilling';
 
 export function OTSchedule() {
@@ -237,15 +238,13 @@ export function OTSchedule() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Surgery Type
                   </label>
-                  <input
-                    type="text"
+                  <SurgeryTypeSelector
                     value={newSurgery.surgeryType}
-                    onChange={(e) => {
-                      setNewSurgery({...newSurgery, surgeryType: e.target.value});
-                      handleSurgeryTypeChange(e.target.value);
+                    onChange={(surgeryType, cost) => {
+                      setNewSurgery({...newSurgery, surgeryType});
+                      setProcedureCost(cost);
                     }}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    placeholder="e.g., Appendectomy"
+                    placeholder="Search and select surgery type..."
                   />
                 </div>
                 
