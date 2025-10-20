@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, DollarSign } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 
 interface SurgeryTypeSelectorProps {
@@ -17,15 +17,7 @@ export function SurgeryTypeSelector({ value, onChange, placeholder = 'Search and
 
   // Filter surgery-related services from service prices
   const surgeryServices = servicePrices.filter(service => 
-    service.category === 'procedure' && 
-    (service.serviceName.toLowerCase().includes('surgery') ||
-     service.serviceName.toLowerCase().includes('operation') ||
-     service.serviceName.toLowerCase().includes('appendectomy') ||
-     service.serviceName.toLowerCase().includes('cesarean') ||
-     service.serviceName.toLowerCase().includes('hernia') ||
-     service.serviceName.toLowerCase().includes('cholecystectomy') ||
-     service.serviceName.toLowerCase().includes('cataract') ||
-     service.serviceName.toLowerCase().includes('tonsillectomy'))
+    service.category === 'procedure'
   );
 
   // Filter services based on search term
@@ -85,8 +77,7 @@ export function SurgeryTypeSelector({ value, onChange, placeholder = 'Search and
             >
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-900">{service.serviceName}</span>
-                <span className="text-sm font-semibold text-blue-600 flex items-center">
-                  <DollarSign className="w-4 h-4 mr-1" />
+                <span className="text-sm font-semibold text-blue-600">
                   {service.price.toLocaleString()} TZS
                 </span>
               </div>
