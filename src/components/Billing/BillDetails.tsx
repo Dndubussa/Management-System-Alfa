@@ -18,6 +18,34 @@ export function BillDetails({ bill, onClose }: BillDetailsProps) {
   
   const patient = patients.find(p => p.id === bill.patientId);
 
+  const getPaymentMethodDisplay = (patient: Patient | undefined) => {
+    if (!patient) return { method: 'Unknown', details: 'Patient not found' };
+    
+    const provider = patient.insuranceInfo.provider;
+    
+    if (provider === 'Direct') {
+      return {
+        method: 'Cash',
+        details: 'Direct payment'
+      };
+    } else if (provider === 'Lipa Kwa Simu') {
+      return {
+        method: 'Lipa Kwa Simu',
+        details: 'Mobile money payment'
+      };
+    } else if (provider && provider !== 'Direct' && provider !== 'Lipa Kwa Simu') {
+      return {
+        method: 'Insurance',
+        details: provider
+      };
+    } else {
+      return {
+        method: 'Cash',
+        details: 'Direct payment'
+      };
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('sw-TZ', {
       style: 'currency',
@@ -115,8 +143,18 @@ export function BillDetails({ bill, onClose }: BillDetailsProps) {
                 <p><span className="font-medium">Name:</span> {patient?.firstName} {patient?.lastName}</p>
                 <p><span className="font-medium">Phone:</span> {patient?.phone}</p>
                 <p><span className="font-medium">Address:</span> {patient?.address}</p>
-                <p><span className="font-medium">Insurance:</span> {patient?.insuranceInfo.provider}</p>
-                <p><span className="font-medium">Membership No:</span> {patient?.insuranceInfo.membershipNumber}</p>
+                {(() => {
+                  const paymentInfo = getPaymentMethodDisplay(patient);
+                  return (
+                    <>
+                      <p><span className="font-medium">Payment Method:</span> {paymentInfo.method}</p>
+                      <p><span className="font-medium">Details:</span> {paymentInfo.details}</p>
+                      {paymentInfo.method === 'Insurance' && patient?.insuranceInfo.membershipNumber && (
+                        <p><span className="font-medium">Membership No:</span> {patient.insuranceInfo.membershipNumber}</p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>

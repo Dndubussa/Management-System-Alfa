@@ -51,6 +51,36 @@ export function PatientDetail({ patient, onBack, onEdit }: PatientDetailProps) {
     return age;
   };
 
+  const getPaymentMethodDisplay = (patient: Patient) => {
+    const provider = patient.insuranceInfo.provider;
+    
+    if (provider === 'Direct') {
+      return {
+        method: 'Cash',
+        details: 'Direct payment',
+        icon: '💵'
+      };
+    } else if (provider === 'Lipa Kwa Simu') {
+      return {
+        method: 'Lipa Kwa Simu',
+        details: 'Mobile money payment',
+        icon: '📱'
+      };
+    } else if (provider && provider !== 'Direct' && provider !== 'Lipa Kwa Simu') {
+      return {
+        method: 'Insurance',
+        details: provider,
+        icon: '🛡️'
+      };
+    } else {
+      return {
+        method: 'Cash',
+        details: 'Direct payment',
+        icon: '💵'
+      };
+    }
+  };
+
   // Export handlers
   const handleExportCSV = () => {
     const csvContent = exportEMRToCSV(patient, patientRecords);
@@ -176,11 +206,22 @@ export function PatientDetail({ patient, onBack, onEdit }: PatientDetailProps) {
           <div className="flex items-start">
             <Shield className="w-5 h-5 text-gray-400 mt-0.5 mr-3" />
             <div>
-              <p className="text-sm text-gray-500">Insurance</p>
-              <p className="font-medium">{patient.insuranceInfo.provider || 'Not specified'}</p>
-              {patient.insuranceInfo.membershipNumber && (
-                <p className="text-sm font-mono">{patient.insuranceInfo.membershipNumber}</p>
-              )}
+              {(() => {
+                const paymentInfo = getPaymentMethodDisplay(patient);
+                return (
+                  <>
+                    <p className="text-sm text-gray-500">Payment Method</p>
+                    <p className="font-medium flex items-center">
+                      <span className="mr-2">{paymentInfo.icon}</span>
+                      {paymentInfo.method}
+                    </p>
+                    <p className="text-sm text-gray-600">{paymentInfo.details}</p>
+                    {paymentInfo.method === 'Insurance' && patient.insuranceInfo.membershipNumber && (
+                      <p className="text-sm font-mono text-gray-500">#{patient.insuranceInfo.membershipNumber}</p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
           <div>
