@@ -75,7 +75,10 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
   };
 
   const handleDropdownToggle = (patientId: string) => {
+    console.log('🔍 PatientList: handleDropdownToggle called with patientId:', patientId);
+    console.log('🔍 PatientList: current openDropdown:', openDropdown);
     setOpenDropdown(openDropdown === patientId ? null : patientId);
+    console.log('🔍 PatientList: new openDropdown will be:', openDropdown === patientId ? null : patientId);
   };
 
   const handleViewPatient = (patient: Patient) => {
@@ -216,11 +219,17 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                       </button>
                       
                       {/* Dropdown Menu */}
-                      {openDropdown === patient.id && (
+                      {(() => {
+                        console.log('🔍 PatientList: Checking dropdown for patient:', patient.id, 'openDropdown:', openDropdown, 'should show:', openDropdown === patient.id);
+                        return openDropdown === patient.id;
+                      })() && (
                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
                           <div className="py-1">
                             <button
-                              onClick={() => handleViewPatient(patient)}
+                              onClick={() => {
+                                console.log('🔍 PatientList: View Details button clicked for patient:', patient.id);
+                                handleViewPatient(patient);
+                              }}
                               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             >
                               <Eye className="w-4 h-4 mr-3" />
@@ -229,7 +238,10 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                             {/* Only authorized roles can edit patients */}
                             {canEditPatients(user?.role) && (
                               <button
-                                onClick={() => handleEditPatient(patient)}
+                                onClick={() => {
+                                  console.log('🔍 PatientList: Edit Patient button clicked for patient:', patient.id);
+                                  handleEditPatient(patient);
+                                }}
                                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                               >
                                 <Edit className="w-4 h-4 mr-3" />
