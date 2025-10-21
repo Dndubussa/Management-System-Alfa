@@ -211,7 +211,10 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="relative" ref={dropdownRef}>
                       <button
-                        onClick={() => handleDropdownToggle(patient.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDropdownToggle(patient.id);
+                        }}
                         className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
                         title="Actions"
                       >
@@ -223,7 +226,10 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                         console.log('🔍 PatientList: Checking dropdown for patient:', patient.id, 'openDropdown:', openDropdown, 'should show:', openDropdown === patient.id);
                         return openDropdown === patient.id;
                       })() && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                        <div 
+                          className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="py-1">
                             <button
                               onClick={() => {
