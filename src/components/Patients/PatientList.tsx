@@ -99,13 +99,14 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        console.log('🔍 PatientList: Clicking outside dropdown, closing it');
         setOpenDropdown(null);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, []);
 
