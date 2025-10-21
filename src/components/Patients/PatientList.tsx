@@ -79,12 +79,16 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
   };
 
   const handleViewPatient = (patient: Patient) => {
+    console.log('🔍 PatientList: handleViewPatient called with patient:', patient);
     setOpenDropdown(null);
+    console.log('🔍 PatientList: calling onViewPatient prop');
     onViewPatient(patient);
   };
 
   const handleEditPatient = (patient: Patient) => {
+    console.log('🔍 PatientList: handleEditPatient called with patient:', patient);
     setOpenDropdown(null);
+    console.log('🔍 PatientList: calling onEditPatient prop');
     onEditPatient(patient);
   };
 

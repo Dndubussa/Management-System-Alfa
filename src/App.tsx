@@ -271,12 +271,16 @@ function AppContent() {
   }
 
   const handleViewPatient = (patient: Patient) => {
+    console.log('🔍 handleViewPatient called with patient:', patient);
     setSelectedPatient(patient);
+    console.log('🔍 selectedPatient state set, navigating to /patient-detail');
     navigate('/patient-detail');
   };
 
   const handleEditPatient = (patient: Patient) => {
+    console.log('🔍 handleEditPatient called with patient:', patient);
     setSelectedPatient(patient);
+    console.log('🔍 selectedPatient state set, navigating to /patient-edit');
     navigate('/patient-edit');
   };
 
@@ -386,8 +390,14 @@ function AppContent() {
             {/* Common Routes */}
             <Route path="/" element={<DashboardRoute />} />
             <Route path="/patients" element={<PatientList onViewPatient={handleViewPatient} onEditPatient={handleEditPatient} onNewPatient={handleNewPatient} />} />
-            <Route path="/patient-detail" element={selectedPatient ? <PatientDetail patient={selectedPatient} onBack={() => navigate('/patients')} onEdit={() => handleEditPatient(selectedPatient)} /> : <PatientNotSelectedRoute />} />
-            <Route path="/patient-edit" element={selectedPatient ? <PatientForm patient={selectedPatient} onSave={handleSavePatient} onCancel={() => navigate('/patients')} /> : <PatientNotSelectedRoute />} />
+            <Route path="/patient-detail" element={(() => {
+              console.log('🔍 /patient-detail route: selectedPatient =', selectedPatient);
+              return selectedPatient ? <PatientDetail patient={selectedPatient} onBack={() => navigate('/patients')} onEdit={() => handleEditPatient(selectedPatient)} /> : <PatientNotSelectedRoute />;
+            })()} />
+            <Route path="/patient-edit" element={(() => {
+              console.log('🔍 /patient-edit route: selectedPatient =', selectedPatient);
+              return selectedPatient ? <PatientForm patient={selectedPatient} onSave={handleSavePatient} onCancel={() => navigate('/patients')} /> : <PatientNotSelectedRoute />;
+            })()} />
             <Route path="/registration" element={<PatientForm onSave={handleSavePatient} onCancel={() => navigate('/patients')} />} />
             <Route path="/test-connection" element={<TestConnection />} />
             <Route path="/diagnostics" element={<DataLoadingDiagnostics />} />
