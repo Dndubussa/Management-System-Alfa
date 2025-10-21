@@ -20,9 +20,12 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
     emergencyContactName: patient?.emergencyContact?.name || '',
     emergencyContactPhone: patient?.emergencyContact?.phone || '',
     emergencyContactRelationship: patient?.emergencyContact?.relationship || '',
-    insuranceProvider: patient?.insuranceInfo?.provider || '',
+    paymentMethod: patient?.insuranceInfo?.provider === 'Direct' ? 'cash' : 
+                   patient?.insuranceInfo?.provider === 'Lipa Kwa Simu' ? 'lipa-kwa-simu' :
+                   patient?.insuranceInfo?.provider ? 'insurance' : 'cash',
+    insuranceProvider: patient?.insuranceInfo?.provider && patient?.insuranceInfo?.provider !== 'Direct' && patient?.insuranceInfo?.provider !== 'Lipa Kwa Simu' ? patient?.insuranceInfo?.provider : '',
     insuranceMembershipNumber: patient?.insuranceInfo?.membershipNumber || '',
-    cashAmount: '' // New field for cash payments
+    cashAmount: patient?.insuranceInfo?.cashAmount || ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,8 +62,11 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
       if (!formData.phone.trim()) {
         throw new Error('Phone number is required');
       }
-      if (formData.insuranceProvider === 'Direct' && (!formData.cashAmount || Number(formData.cashAmount) <= 0)) {
+      if (formData.paymentMethod === 'cash' && (!formData.cashAmount || Number(formData.cashAmount) <= 0)) {
         throw new Error('Cash amount is required and must be greater than 0');
+      }
+      if (formData.paymentMethod === 'insurance' && (!formData.insuranceProvider || !formData.insuranceMembershipNumber)) {
+        throw new Error('Insurance provider and membership number are required when insurance is selected');
       }
 
       // Convert age back to date of birth for the API
@@ -91,9 +97,11 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
           relationship: formData.emergencyContactRelationship.trim()
         },
         insuranceInfo: {
-          provider: formData.insuranceProvider.trim(),
-          membershipNumber: formData.insuranceProvider === 'Direct' ? '' : formData.insuranceMembershipNumber.trim(),
-          cashAmount: formData.insuranceProvider === 'Direct' ? formData.cashAmount : ''
+          provider: formData.paymentMethod === 'cash' ? 'Direct' : 
+                   formData.paymentMethod === 'lipa-kwa-simu' ? 'Lipa Kwa Simu' :
+                   formData.insuranceProvider.trim(),
+          membershipNumber: formData.paymentMethod === 'insurance' ? formData.insuranceMembershipNumber.trim() : '',
+          cashAmount: formData.paymentMethod === 'cash' ? formData.cashAmount : ''
         }
       };
 
@@ -314,52 +322,33 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
             </div>
           </div>
 
-          {/* Insurance Information Section */}
+          {/* Payment Method Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-              Insurance Information
+              Payment Method
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Insurance Provider */}
+              {/* Payment Method */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Insurance Provider
+                  Payment Method
                 </label>
                 <select
-                  name="insuranceProvider"
-                  value={formData.insuranceProvider}
+                  name="paymentMethod"
+                  value={formData.paymentMethod}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900"
                 >
-                  <option value="">Select Insurance Provider</option>
-                  <option value="NHIF">NHIF (National Health Insurance Fund)</option>
-                  <option value="AAR">AAR Health Insurance</option>
-                  <option value="Jubilee">Jubilee Health Insurance</option>
-                  <option value="CIC">CIC Health Insurance</option>
-                  <option value="UAP">UAP Health Insurance</option>
-                  <option value="Resolution">Resolution Health Insurance</option>
-                  <option value="Sanlam">Sanlam Health Insurance</option>
-                  <option value="Britam">Britam Health Insurance</option>
-                  <option value="APA">APA Health Insurance</option>
-                  <option value="Minet">Minet Health Insurance</option>
-                  <option value="Heritage">Heritage Health Insurance</option>
-                  <option value="Prudential">Prudential Health Insurance</option>
-                  <option value="Allianz">Allianz Health Insurance</option>
-                  <option value="Liberty">Liberty Health Insurance</option>
-                  <option value="First Assurance">First Assurance Health Insurance</option>
-                  <option value="Kenindia">Kenindia Health Insurance</option>
-                  <option value="Madison">Madison Health Insurance</option>
-                  <option value="Takaful">Takaful Health Insurance</option>
-                  <option value="GA Insurance">GA Insurance Health</option>
-                  <option value="Direct">Direct Payment (Cash)</option>
-                  <option value="Other">Other</option>
+                  <option value="cash">Cash</option>
+                  <option value="insurance">Insurance</option>
+                  <option value="lipa-kwa-simu">Lipa Kwa Simu</option>
                 </select>
               </div>
 
-              {/* Conditional Field: Membership Number or Cash Amount */}
+              {/* Conditional Fields based on Payment Method */}
               <div>
-                {formData.insuranceProvider === 'Direct' ? (
+                {formData.paymentMethod === 'cash' && (
                   <>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Cash Amount (TZS)
@@ -375,26 +364,80 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
                     />
                   </>
-                ) : (
-                  <>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Membership Number
-                    </label>
-                    <input
-                      type="text"
-                      name="insuranceMembershipNumber"
-                      value={formData.insuranceMembershipNumber}
-                      onChange={handleChange}
-                      placeholder="Enter insurance membership number"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
-                    />
-                  </>
+                )}
+                {formData.paymentMethod === 'lipa-kwa-simu' && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 text-green-600">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="text-sm text-green-800">
+                        <p className="font-medium">Lipa Kwa Simu</p>
+                        <p className="mt-1">Payment will be processed via mobile money</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Insurance Information Note */}
-            {formData.insuranceProvider && (
+            {/* Insurance Provider and Membership Number - Only shown when Insurance is selected */}
+            {formData.paymentMethod === 'insurance' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Insurance Provider
+                  </label>
+                  <select
+                    name="insuranceProvider"
+                    value={formData.insuranceProvider}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900"
+                  >
+                    <option value="">Select Insurance Provider</option>
+                    <option value="NHIF">NHIF (National Health Insurance Fund)</option>
+                    <option value="AAR">AAR Health Insurance</option>
+                    <option value="Jubilee">Jubilee Health Insurance</option>
+                    <option value="CIC">CIC Health Insurance</option>
+                    <option value="UAP">UAP Health Insurance</option>
+                    <option value="Resolution">Resolution Health Insurance</option>
+                    <option value="Sanlam">Sanlam Health Insurance</option>
+                    <option value="Britam">Britam Health Insurance</option>
+                    <option value="APA">APA Health Insurance</option>
+                    <option value="Minet">Minet Health Insurance</option>
+                    <option value="Heritage">Heritage Health Insurance</option>
+                    <option value="Prudential">Prudential Health Insurance</option>
+                    <option value="Allianz">Allianz Health Insurance</option>
+                    <option value="Liberty">Liberty Health Insurance</option>
+                    <option value="First Assurance">First Assurance Health Insurance</option>
+                    <option value="Kenindia">Kenindia Health Insurance</option>
+                    <option value="Madison">Madison Health Insurance</option>
+                    <option value="Takaful">Takaful Health Insurance</option>
+                    <option value="GA Insurance">GA Insurance Health</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Membership Number
+                  </label>
+                  <input
+                    type="text"
+                    name="insuranceMembershipNumber"
+                    value={formData.insuranceMembershipNumber}
+                    onChange={handleChange}
+                    placeholder="Enter insurance membership number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Payment Method Information Note */}
+            {formData.paymentMethod && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start space-x-2">
                   <div className="w-5 h-5 text-blue-600 mt-0.5">
@@ -403,14 +446,16 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                     </svg>
                   </div>
                   <div className="text-sm text-blue-800">
-                    <p className="font-medium">Insurance Information</p>
+                    <p className="font-medium">Payment Information</p>
                     <p className="mt-1">
-                      {formData.insuranceProvider === 'Direct'
-                        ? 'Patient will pay directly (cash payment)'
+                      {formData.paymentMethod === 'cash'
+                        ? 'Patient will pay directly with cash'
+                        : formData.paymentMethod === 'lipa-kwa-simu'
+                        ? 'Payment will be processed via mobile money (Lipa Kwa Simu)'
                         : `Insurance claims will be processed through ${formData.insuranceProvider}`
                       }
                     </p>
-                    {formData.insuranceProvider === 'Direct' && formData.cashAmount && (
+                    {formData.paymentMethod === 'cash' && formData.cashAmount && (
                       <p className="mt-1 text-green-700 font-medium">
                         Cash Amount: {new Intl.NumberFormat('sw-TZ', {
                           style: 'currency',
@@ -419,7 +464,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                         }).format(Number(formData.cashAmount))}
                       </p>
                     )}
-                    {formData.insuranceMembershipNumber && formData.insuranceProvider !== 'Direct' && (
+                    {formData.insuranceMembershipNumber && formData.paymentMethod === 'insurance' && (
                       <p className="mt-1">
                         Membership Number: <span className="font-mono">{formData.insuranceMembershipNumber}</span>
                       </p>
