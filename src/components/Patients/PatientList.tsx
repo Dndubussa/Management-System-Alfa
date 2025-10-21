@@ -74,6 +74,32 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
     return age;
   };
 
+  const getPaymentMethodDisplay = (patient: Patient) => {
+    const provider = patient.insuranceInfo.provider;
+    
+    if (provider === 'Direct') {
+      return {
+        method: 'Cash',
+        details: 'Direct payment'
+      };
+    } else if (provider === 'Lipa Kwa Simu') {
+      return {
+        method: 'Lipa Kwa Simu',
+        details: 'Mobile money'
+      };
+    } else if (provider && provider !== 'Direct' && provider !== 'Lipa Kwa Simu') {
+      return {
+        method: 'Insurance',
+        details: provider
+      };
+    } else {
+      return {
+        method: 'Cash',
+        details: 'Direct payment'
+      };
+    }
+  };
+
   const handleDropdownToggle = (patientId: string) => {
     console.log('🔍 PatientList: handleDropdownToggle called with patientId:', patientId);
     console.log('🔍 PatientList: current openDropdown:', openDropdown);
@@ -158,7 +184,7 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                 Age/Gender
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Insurance
+                Payment Method
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Registered
@@ -203,8 +229,18 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                     <div className="text-sm text-gray-500 capitalize">{patient.gender}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{patient.insuranceInfo.provider}</div>
-                    <div className="text-sm text-gray-500">{patient.insuranceInfo.membershipNumber}</div>
+                    {(() => {
+                      const paymentInfo = getPaymentMethodDisplay(patient);
+                      return (
+                        <>
+                          <div className="text-sm font-medium text-gray-900">{paymentInfo.method}</div>
+                          <div className="text-sm text-gray-500">{paymentInfo.details}</div>
+                          {paymentInfo.method === 'Insurance' && patient.insuranceInfo.membershipNumber && (
+                            <div className="text-xs text-gray-400">#{patient.insuranceInfo.membershipNumber}</div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(patient.createdAt)}
