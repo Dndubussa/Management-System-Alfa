@@ -62,9 +62,6 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
       if (!formData.phone.trim()) {
         throw new Error('Phone number is required');
       }
-      if (formData.paymentMethod === 'cash' && (!formData.cashAmount || Number(formData.cashAmount) <= 0)) {
-        throw new Error('Cash amount is required and must be greater than 0');
-      }
       if (formData.paymentMethod === 'insurance' && (!formData.insuranceProvider || !formData.insuranceMembershipNumber)) {
         throw new Error('Insurance provider and membership number are required when insurance is selected');
       }
@@ -101,7 +98,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                    formData.paymentMethod === 'lipa-kwa-simu' ? 'Lipa Kwa Simu' :
                    formData.insuranceProvider.trim(),
           membershipNumber: formData.paymentMethod === 'insurance' ? formData.insuranceMembershipNumber.trim() : '',
-          cashAmount: formData.paymentMethod === 'cash' ? formData.cashAmount : ''
+          cashAmount: '' // Cash amount will be set during billing after consultation
         }
       };
 
@@ -349,21 +346,19 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
               {/* Conditional Fields based on Payment Method */}
               <div>
                 {formData.paymentMethod === 'cash' && (
-                  <>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cash Amount (TZS)
-                    </label>
-                    <input
-                      type="number"
-                      name="cashAmount"
-                      value={formData.cashAmount}
-                      onChange={handleChange}
-                      placeholder="Enter cash amount"
-                      min="0"
-                      step="100"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
-                    />
-                  </>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 text-blue-600">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="text-sm text-blue-800">
+                        <p className="font-medium">Cash Payment</p>
+                        <p className="mt-1">Patient will pay directly with cash after consultation</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
                 {formData.paymentMethod === 'lipa-kwa-simu' && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -375,7 +370,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                       </div>
                       <div className="text-sm text-green-800">
                         <p className="font-medium">Lipa Kwa Simu</p>
-                        <p className="mt-1">Payment will be processed via mobile money</p>
+                        <p className="mt-1">Payment will be processed via mobile money after consultation</p>
                       </div>
                     </div>
                   </div>
@@ -449,21 +444,12 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                     <p className="font-medium">Payment Information</p>
                     <p className="mt-1">
                       {formData.paymentMethod === 'cash'
-                        ? 'Patient will pay directly with cash'
+                        ? 'Patient will pay directly with cash after consultation'
                         : formData.paymentMethod === 'lipa-kwa-simu'
-                        ? 'Payment will be processed via mobile money (Lipa Kwa Simu)'
+                        ? 'Payment will be processed via mobile money (Lipa Kwa Simu) after consultation'
                         : `Insurance claims will be processed through ${formData.insuranceProvider}`
                       }
                     </p>
-                    {formData.paymentMethod === 'cash' && formData.cashAmount && (
-                      <p className="mt-1 text-green-700 font-medium">
-                        Cash Amount: {new Intl.NumberFormat('sw-TZ', {
-                          style: 'currency',
-                          currency: 'TZS',
-                          minimumFractionDigits: 0
-                        }).format(Number(formData.cashAmount))}
-                      </p>
-                    )}
                     {formData.insuranceMembershipNumber && formData.paymentMethod === 'insurance' && (
                       <p className="mt-1">
                         Membership Number: <span className="font-mono">{formData.insuranceMembershipNumber}</span>
