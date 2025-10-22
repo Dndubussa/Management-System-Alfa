@@ -19,16 +19,27 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
   const [dateFilter, setDateFilter] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
+  // Debug logging
+  console.log('🔍 AppointmentList - User:', user?.name, 'Role:', user?.role);
+  console.log('🔍 AppointmentList - Total appointments:', appointments.length);
+  console.log('🔍 AppointmentList - Total patients:', patients.length);
+  console.log('🔍 AppointmentList - Total users:', users.length);
+
   // Filter appointments based on user role
   const userAppointments = user?.role === 'doctor' 
     ? appointments.filter(apt => apt.doctorId === user.id)
     : appointments;
 
+  console.log('🔍 AppointmentList - User appointments after role filter:', userAppointments.length);
+
   // For doctors, we still show all appointments including completed ones
   // For receptionists, we show all appointments as well
   const filteredAppointments = userAppointments.filter(appointment => {
     const patient = findPatientSafely(patients, appointment.patientId);
-    if (!patient) return false;
+    if (!patient) {
+      console.log('🔍 AppointmentList - No patient found for appointment:', appointment.id, 'patientId:', appointment.patientId);
+      return false;
+    }
 
     const matchesSearch = searchTerm === '' || 
       `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,8 +50,24 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
     const matchesDate = dateFilter === '' || 
       appointment.dateTime.startsWith(dateFilter);
 
-    return matchesSearch && matchesStatus && matchesDate;
+    const matches = matchesSearch && matchesStatus && matchesDate;
+    if (!matches) {
+      console.log('🔍 AppointmentList - Appointment filtered out:', {
+        appointmentId: appointment.id,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        matchesSearch,
+        matchesStatus,
+        matchesDate,
+        searchTerm,
+        statusFilter,
+        dateFilter
+      });
+    }
+
+    return matches;
   });
+
+  console.log('🔍 AppointmentList - Final filtered appointments:', filteredAppointments.length);
 
   const getPatientName = (patientId: string) => {
     return getPatientDisplayName(patients, patientId);
