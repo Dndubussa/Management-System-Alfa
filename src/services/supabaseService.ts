@@ -278,7 +278,7 @@ export const supabaseService = {
   getPatients: async (): Promise<Patient[]> => {
     try {
       console.log('🔍 getPatients: Fetching all patients from database');
-      const allData = await getAllRecords('patients', 'created_at', false);
+      const allData = await getAllRecords('patients', 'mrn', true);
       console.log('📊 getPatients: Found', allData.length, 'patients in database');
       return allData.map(mapPatientFromDb);
     } catch (error) {
@@ -318,7 +318,7 @@ export const supabaseService = {
         .from('patients')
         .select('*')
         .in('id', patientIds)
-        .order('created_at', { ascending: false });
+        .order('mrn', { ascending: true });
       
       if (patientsError) {
         console.error('❌ Error fetching patients by IDs:', patientsError);

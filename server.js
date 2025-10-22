@@ -181,7 +181,8 @@ app.get('/api/patients', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('patients')
-      .select('*');
+      .select('*')
+      .order('mrn', { ascending: true });
     handleSupabaseResponse(data, error, res);
   } catch (error) {
     res.status(500).json({ error: error.message });
