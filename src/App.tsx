@@ -189,6 +189,62 @@ function NewEMRRecordRoute() {
   );
 }
 
+// Component to display patient details
+function PatientDetailRoute() {
+  const { patientId } = useParams();
+  const { patients } = useHospital();
+  const navigate = useNavigate();
+  
+  const patient = patients.find(p => p.id === patientId);
+  
+  if (!patient) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading patient details...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <PatientDetail 
+      patient={patient} 
+      onBack={() => navigate('/patients')} 
+      onEdit={() => navigate(`/patient-edit/${patient.id}`)} 
+    />
+  );
+}
+
+// Component to edit patient
+function PatientEditRoute() {
+  const { patientId } = useParams();
+  const { patients } = useHospital();
+  const navigate = useNavigate();
+  
+  const patient = patients.find(p => p.id === patientId);
+  
+  if (!patient) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading patient details...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <PatientForm 
+      patient={patient} 
+      onSave={() => navigate('/patients')} 
+      onCancel={() => navigate('/patients')} 
+    />
+  );
+}
+
 // Create a wrapper component for the ophthalmology EMR form
 function OphthalmologyEMRRoute() {
   const { user } = useAuth();
@@ -274,14 +330,14 @@ function AppContent() {
     console.log('🔍 handleViewPatient called with patient:', patient);
     setSelectedPatient(patient);
     console.log('🔍 selectedPatient state set, navigating to /patient-detail');
-    navigate('/patient-detail');
+    navigate(`/patient-detail/${patient.id}`);
   };
 
   const handleEditPatient = (patient: Patient) => {
     console.log('🔍 handleEditPatient called with patient:', patient);
     setSelectedPatient(patient);
     console.log('🔍 selectedPatient state set, navigating to /patient-edit');
-    navigate('/patient-edit');
+    navigate(`/patient-edit/${patient.id}`);
   };
 
   const handleNewPatient = () => {
@@ -390,14 +446,8 @@ function AppContent() {
             {/* Common Routes */}
             <Route path="/" element={<DashboardRoute />} />
             <Route path="/patients" element={<PatientList onViewPatient={handleViewPatient} onEditPatient={handleEditPatient} onNewPatient={handleNewPatient} />} />
-            <Route path="/patient-detail" element={(() => {
-              console.log('🔍 /patient-detail route: selectedPatient =', selectedPatient);
-              return selectedPatient ? <PatientDetail patient={selectedPatient} onBack={() => navigate('/patients')} onEdit={() => handleEditPatient(selectedPatient)} /> : <PatientNotSelectedRoute />;
-            })()} />
-            <Route path="/patient-edit" element={(() => {
-              console.log('🔍 /patient-edit route: selectedPatient =', selectedPatient);
-              return selectedPatient ? <PatientForm patient={selectedPatient} onSave={handleSavePatient} onCancel={() => navigate('/patients')} /> : <PatientNotSelectedRoute />;
-            })()} />
+            <Route path="/patient-detail/:patientId" element={<PatientDetailRoute />} />
+            <Route path="/patient-edit/:patientId" element={<PatientEditRoute />} />
             <Route path="/registration" element={<PatientForm onSave={handleSavePatient} onCancel={() => navigate('/patients')} />} />
             <Route path="/test-connection" element={<TestConnection />} />
             <Route path="/diagnostics" element={<DataLoadingDiagnostics />} />
