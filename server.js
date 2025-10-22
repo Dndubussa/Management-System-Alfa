@@ -826,6 +826,270 @@ app.put('/api/notifications/:id/read', async (req, res) => {
   }
 });
 
+// ==============================================
+// VITAL SIGNS ENDPOINTS
+// ==============================================
+
+// Get vital signs for a patient
+app.get('/api/vital-signs/:patientId', async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    
+    const { data, error } = await supabase
+      .from('vital_signs')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('recorded_at', { ascending: false });
+    
+    if (error) {
+      return handleSupabaseResponse(null, error, res);
+    }
+    
+    res.json(data || []);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get latest vital signs for a patient
+app.get('/api/vital-signs/:patientId/latest', async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    
+    const { data, error } = await supabase
+      .from('vital_signs')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('recorded_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      return handleSupabaseResponse(null, error, res);
+    }
+    
+    res.json(data || null);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Create new vital signs record
+app.post('/api/vital-signs', async (req, res) => {
+  try {
+    const vitalData = {
+      patient_id: req.body.patientId,
+      queue_id: req.body.queueId,
+      recorded_by: req.body.recordedBy,
+      temperature: req.body.temperature,
+      pulse: req.body.pulse,
+      respiratory_rate: req.body.respiratoryRate,
+      blood_pressure_systolic: req.body.bloodPressureSystolic,
+      blood_pressure_diastolic: req.body.bloodPressureDiastolic,
+      height: req.body.height,
+      weight: req.body.weight,
+      bmi: req.body.bmi,
+      oxygen_saturation: req.body.oxygenSaturation,
+      pain_level: req.body.painLevel,
+      urgency: req.body.urgency,
+      notes: req.body.notes,
+      recorded_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('vital_signs')
+      .insert([vitalData])
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(null, error, res);
+    }
+    
+    res.json(data);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Update vital signs record
+app.put('/api/vital-signs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = {
+      temperature: req.body.temperature,
+      pulse: req.body.pulse,
+      respiratory_rate: req.body.respiratoryRate,
+      blood_pressure_systolic: req.body.bloodPressureSystolic,
+      blood_pressure_diastolic: req.body.bloodPressureDiastolic,
+      height: req.body.height,
+      weight: req.body.weight,
+      bmi: req.body.bmi,
+      oxygen_saturation: req.body.oxygenSaturation,
+      pain_level: req.body.painLevel,
+      urgency: req.body.urgency,
+      notes: req.body.notes
+    };
+
+    const { data, error } = await supabase
+      .from('vital_signs')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(null, error, res);
+    }
+    
+    res.json(data);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ==============================================
+// PATIENT QUEUE ENDPOINTS
+// ==============================================
+
+// Get patient queue
+app.get('/api/patient-queue', async (req, res) => {
+  try {
+    const { department, status, workflow_stage } = req.query;
+    
+    let query = supabase
+      .from('patient_queue')
+      .select(`
+        *,
+        patients (
+          id,
+          mrn,
+          first_name,
+          last_name,
+          phone,
+          insurance_provider
+        )
+      `)
+      .order('created_at', { ascending: true });
+    
+    if (department) {
+      query = query.eq('department', department);
+    }
+    if (status) {
+      query = query.eq('status', status);
+    }
+    if (workflow_stage) {
+      query = query.eq('workflow_stage', workflow_stage);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      return handleSupabaseResponse(null, error, res);
+    }
+    
+    res.json(data || []);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Add patient to queue
+app.post('/api/patient-queue', async (req, res) => {
+  try {
+    const queueData = {
+      patient_id: req.body.patientId,
+      department: req.body.department || 'general',
+      priority: req.body.priority || 'normal',
+      status: 'waiting',
+      workflow_stage: 'reception',
+      assigned_doctor_id: req.body.assignedDoctorId || null,
+      assigned_doctor_name: req.body.assignedDoctorName || null,
+      assignment_reason: req.body.assignmentReason || null,
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('patient_queue')
+      .insert([queueData])
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(null, error, res);
+    }
+    
+    res.json(data);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Update queue status
+app.put('/api/patient-queue/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, workflowStage } = req.body;
+    
+    const updateData = {
+      status,
+      workflow_stage: workflowStage,
+      updated_at: new Date().toISOString()
+    };
+
+    if (status === 'in-progress') {
+      updateData.started_at = new Date().toISOString();
+    } else if (status === 'completed') {
+      updateData.completed_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from('patient_queue')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(null, error, res);
+    }
+    
+    res.json(data);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Assign doctor to patient in queue
+app.put('/api/patient-queue/:id/assign-doctor', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assignedDoctorId, assignedDoctorName, assignmentReason } = req.body;
+    
+    const updateData = {
+      assigned_doctor_id: assignedDoctorId,
+      assigned_doctor_name: assignedDoctorName,
+      assignment_reason: assignmentReason,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('patient_queue')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      return handleSupabaseResponse(null, error, res);
+    }
+    
+    res.json(data);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Service Prices
 app.get('/api/service-prices', async (req, res) => {
   try {

@@ -102,6 +102,8 @@ interface HospitalContextType {
   departments: Department[];
   referrals: Referral[];
   users: User[];
+  vitalSigns: any[];
+  patientQueue: any[];
   autobillingConfig: AutobillingConfig;
   insuranceClaims: InsuranceClaim[];
   surgeryRequests: SurgeryRequest[];
@@ -121,6 +123,13 @@ interface HospitalContextType {
   getUserNotifications: (userId: string, userDepartment?: string) => Notification[];
   isNotificationRead: (notification: Notification, userId: string) => boolean;
   markNotificationRead: (id: string, userId: string) => Promise<void>;
+  addVitalSigns: (vitalData: any) => Promise<any>;
+  getVitalSigns: (patientId: string) => Promise<any[]>;
+  getLatestVitalSigns: (patientId: string) => Promise<any | null>;
+  addToQueue: (queueData: any) => Promise<any>;
+  updateQueueStatus: (id: string, status: string, workflowStage: string) => Promise<any>;
+  assignDoctorToQueue: (queueId: string, doctorId: string, doctorName: string, reason: string) => Promise<any>;
+  getPatientQueue: (filters?: { department?: string; status?: string; workflowStage?: string }) => Promise<any[]>;
   generateBill: (patientId: string, appointmentId?: string, recordId?: string) => void;
   updateBillStatus: (id: string, status: Bill['status'], paymentMethod?: Bill['paymentMethod']) => Promise<void>;
   addBillItem: (billId: string, item: Omit<BillItem, 'id'>) => Promise<void>;
@@ -164,6 +173,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [vitalSigns, setVitalSigns] = useState<any[]>([]);
+  const [patientQueue, setPatientQueue] = useState<any[]>([]);
   const [autobillingConfig, setAutobillingConfig] = useState<AutobillingConfig>({
     enabled: true,
     autoGenerateForAppointments: true,
@@ -935,6 +946,99 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // ==============================================
+  // VITAL SIGNS MANAGEMENT FUNCTIONS
+  // ==============================================
+
+  const addVitalSigns = async (vitalData: any) => {
+    try {
+      const newVitalSigns = await service.createVitalSigns(vitalData);
+      setVitalSigns(prev => [newVitalSigns, ...prev]);
+      return newVitalSigns;
+    } catch (err) {
+      console.error('Error creating vital signs:', err);
+      setError('Failed to save vital signs');
+      throw err;
+    }
+  };
+
+  const getVitalSigns = async (patientId: string) => {
+    try {
+      const vitals = await service.getVitalSigns(patientId);
+      return vitals;
+    } catch (err) {
+      console.error('Error loading vital signs:', err);
+      setError('Failed to load vital signs');
+      throw err;
+    }
+  };
+
+  const getLatestVitalSigns = async (patientId: string) => {
+    try {
+      const vitals = await service.getLatestVitalSigns(patientId);
+      return vitals;
+    } catch (err) {
+      console.error('Error loading latest vital signs:', err);
+      setError('Failed to load latest vital signs');
+      throw err;
+    }
+  };
+
+  // ==============================================
+  // PATIENT QUEUE MANAGEMENT FUNCTIONS
+  // ==============================================
+
+  const addToQueue = async (queueData: any) => {
+    try {
+      const newQueueItem = await service.addToQueue(queueData);
+      setPatientQueue(prev => [...prev, newQueueItem]);
+      return newQueueItem;
+    } catch (err) {
+      console.error('Error adding to queue:', err);
+      setError('Failed to add patient to queue');
+      throw err;
+    }
+  };
+
+  const updateQueueStatus = async (id: string, status: string, workflowStage: string) => {
+    try {
+      const updatedItem = await service.updateQueueStatus(id, status, workflowStage);
+      setPatientQueue(prev => prev.map(item => 
+        item.id === id ? updatedItem : item
+      ));
+      return updatedItem;
+    } catch (err) {
+      console.error('Error updating queue status:', err);
+      setError('Failed to update queue status');
+      throw err;
+    }
+  };
+
+  const assignDoctorToQueue = async (queueId: string, doctorId: string, doctorName: string, reason: string) => {
+    try {
+      const updatedItem = await service.assignDoctorToQueue(queueId, doctorId, doctorName, reason);
+      setPatientQueue(prev => prev.map(item => 
+        item.id === queueId ? updatedItem : item
+      ));
+      return updatedItem;
+    } catch (err) {
+      console.error('Error assigning doctor to queue:', err);
+      setError('Failed to assign doctor to patient');
+      throw err;
+    }
+  };
+
+  const getPatientQueue = async (filters?: { department?: string; status?: string; workflowStage?: string }) => {
+    try {
+      const queue = await service.getPatientQueue(filters);
+      return queue;
+    } catch (err) {
+      console.error('Error loading patient queue:', err);
+      setError('Failed to load patient queue');
+      throw err;
+    }
+  };
+
   // New function to get notifications for a specific user
   const getUserNotifications = (userId: string, userDepartment?: string) => {
     return notifications.filter(notification => {
@@ -1669,6 +1773,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       departments,
       referrals,
       users,
+      vitalSigns,
+      patientQueue,
       autobillingConfig,
       insuranceClaims,
       surgeryRequests,
@@ -1688,6 +1794,13 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       getUserNotifications,
       isNotificationRead,
       markNotificationRead,
+      addVitalSigns,
+      getVitalSigns,
+      getLatestVitalSigns,
+      addToQueue,
+      updateQueueStatus,
+      assignDoctorToQueue,
+      getPatientQueue,
       generateBill,
       updateBillStatus,
       addBillItem,

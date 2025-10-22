@@ -88,9 +88,13 @@ export function NurseDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <button onClick={() => navigate('/nurse-triage')} className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-4 text-left">
-          <div className="text-green-700 font-medium">Triage & Vitals</div>
-          <div className="text-sm text-green-800">Record vitals and triage category</div>
+        <button onClick={() => navigate('/triage-queue')} className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-4 text-left">
+          <div className="text-green-700 font-medium">Triage Queue</div>
+          <div className="text-sm text-green-800">View patients waiting for triage</div>
+        </button>
+        <button onClick={() => navigate('/nurse-triage')} className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 text-left">
+          <div className="text-blue-700 font-medium">Triage & Vitals</div>
+          <div className="text-sm text-blue-800">Record vitals and triage category</div>
         </button>
         <button onClick={() => navigate('/nurse-notes')} className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 text-left">
           <div className="text-blue-700 font-medium">Patient Care Notes</div>

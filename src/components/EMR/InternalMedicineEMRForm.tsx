@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Save, 
   X, 
@@ -29,6 +29,8 @@ interface InternalMedicineEMRFormProps {
 export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }: InternalMedicineEMRFormProps) {
   const { addMedicalRecord, patients, addNotification, servicePrices } = useHospital();
   const { user } = useAuth();
+  const [triageVitals, setTriageVitals] = useState<any>(null);
+  const [vitalsLoaded, setVitalsLoaded] = useState(false);
   
   const patient = patients.find(p => p.id === patientId);
   
@@ -53,6 +55,43 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
     },
     status: record?.status || 'active' as const
   });
+
+  // Load triage vital signs when component mounts
+  useEffect(() => {
+    const loadTriageVitals = async () => {
+      if (!patientId || vitalsLoaded) return;
+      
+      try {
+        const response = await fetch(`/api/vital-signs/${patientId}/latest`);
+        if (response.ok) {
+          const vitals = await response.json();
+          if (vitals) {
+            setTriageVitals(vitals);
+            // Auto-populate form with triage vitals if not already set
+            setFormData(prev => ({
+              ...prev,
+              vitals: {
+                ...prev.vitals,
+                bloodPressure: prev.vitals.bloodPressure || `${vitals.bloodPressureSystolic}/${vitals.bloodPressureDiastolic}` || '',
+                heartRate: prev.vitals.heartRate || vitals.pulse?.toString() || '',
+                temperature: prev.vitals.temperature || vitals.temperature?.toString() || '',
+                weight: prev.vitals.weight || vitals.weight?.toString() || '',
+                height: prev.vitals.height || vitals.height?.toString() || '',
+                respiratoryRate: prev.vitals.respiratoryRate || vitals.respiratoryRate?.toString() || '',
+                oxygenSaturation: prev.vitals.oxygenSaturation || vitals.oxygenSaturation?.toString() || ''
+              }
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load triage vitals:', error);
+      } finally {
+        setVitalsLoaded(true);
+      }
+    };
+
+    loadTriageVitals();
+  }, [patientId, vitalsLoaded]);
 
   const [prescriptions, setPrescriptions] = useState<Omit<Prescription, 'id' | 'recordId' | 'patientId' | 'doctorId' | 'status' | 'createdAt'>[]>(
     record?.prescriptions?.map(p => ({
@@ -648,6 +687,11 @@ MH: ${formData.medicationHistory}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Vital Signs
+                {triageVitals && (
+                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    📋 From Triage
+                  </span>
+                )}
               </label>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">

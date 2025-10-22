@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { Save, X, CheckCircle, UserPlus } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { Patient } from '../../types';
+import InsuranceValidation from '../Receptionist/InsuranceValidation';
 
 interface PatientFormProps {
   patient?: Patient;
-  onSave: () => void;
+  onSave: (newPatient?: Patient) => void;
   onCancel: () => void;
 }
 
 export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
-  const { addPatient, updatePatient } = useHospital();
+  const { addPatient, updatePatient, addToQueue, addNotification, users } = useHospital();
   const [formData, setFormData] = useState({
     name: patient ? `${patient.firstName} ${patient.lastName}` : '',
     age: patient ? calculateAge(patient.dateOfBirth) : '',
@@ -31,6 +32,8 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [showInsuranceValidation, setShowInsuranceValidation] = useState(false);
+  const [registeredPatient, setRegisteredPatient] = useState<Patient | null>(null);
 
   // Helper function to calculate age from date of birth
   function calculateAge(dateOfBirth: string): string {
@@ -103,18 +106,32 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
       };
 
 
+      let newPatient;
       if (patient) {
         await updatePatient(patient.id, patientData);
+        // Show success message for updates
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          onSave();
+        }, 2000);
       } else {
-        await addPatient(patientData);
+        newPatient = await addPatient(patientData);
+        
+        // For new patients with insurance, show insurance validation
+        if (newPatient && newPatient.id && formData.paymentMethod === 'insurance') {
+          setRegisteredPatient(newPatient);
+          setShowInsuranceValidation(true);
+        } else if (newPatient && newPatient.id) {
+          // For cash patients, directly add to triage queue
+          await addPatientToTriageQueue(newPatient, firstName, lastName);
+          setShowSuccess(true);
+          setTimeout(() => {
+            setShowSuccess(false);
+            onSave(newPatient);
+          }, 2000);
+        }
       }
-
-      // Show success message
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        onSave();
-      }, 2000);
 
     } catch (err: any) {
       console.error('Error saving patient:', err);
@@ -131,6 +148,75 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
       [name]: value
     }));
   };
+
+  const addPatientToTriageQueue = async (newPatient: Patient, firstName: string, lastName: string) => {
+    try {
+      // Add patient to triage queue
+      await addToQueue({
+        patientId: newPatient.id,
+        department: 'general',
+        priority: 'normal',
+        status: 'waiting',
+        workflowStage: 'reception'
+      });
+
+      // Notify nurses about new patient
+      const nurses = users.filter(u => u.role === 'nurse').map(u => u.id);
+      if (nurses.length > 0) {
+        addNotification({
+          userIds: nurses,
+          type: 'triage',
+          title: 'New Patient for Triage',
+          message: `Patient ${firstName} ${lastName} is waiting for triage.`,
+          isRead: false,
+          patientId: newPatient.id
+        });
+      }
+    } catch (queueError) {
+      console.error('Error adding patient to triage queue:', queueError);
+      // Don't fail the registration if queue fails
+    }
+  };
+
+  const handleInsuranceValidationComplete = async (isValid: boolean, validationData?: any) => {
+    if (registeredPatient) {
+      if (isValid) {
+        // Insurance validated successfully, add to triage queue
+        await addPatientToTriageQueue(registeredPatient, registeredPatient.firstName, registeredPatient.lastName);
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          onSave(registeredPatient);
+        }, 2000);
+      } else {
+        // Insurance validation failed, but continue with cash payment
+        await addPatientToTriageQueue(registeredPatient, registeredPatient.firstName, registeredPatient.lastName);
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          onSave(registeredPatient);
+        }, 2000);
+      }
+    }
+    setShowInsuranceValidation(false);
+    setRegisteredPatient(null);
+  };
+
+  const handleInsuranceValidationCancel = () => {
+    setShowInsuranceValidation(false);
+    setRegisteredPatient(null);
+  };
+
+  // Show insurance validation if needed
+  if (showInsuranceValidation && registeredPatient) {
+    return (
+      <InsuranceValidation
+        patient={registeredPatient}
+        onValidationComplete={handleInsuranceValidationComplete}
+        onCancel={handleInsuranceValidationCancel}
+      />
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto">

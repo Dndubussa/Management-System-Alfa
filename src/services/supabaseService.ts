@@ -1957,5 +1957,268 @@ export const supabaseService = {
       console.error('❌ Supabase: Error logging inventory transaction:', error);
       throw error;
     }
+  },
+
+  // ==============================================
+  // VITAL SIGNS SERVICE FUNCTIONS
+  // ==============================================
+
+  // Get vital signs for a patient
+  getVitalSigns: async (patientId: string): Promise<any[]> => {
+    return await withErrorHandling(async () => {
+      const { data, error } = await supabase
+        .from('vital_signs')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('recorded_at', { ascending: false });
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'getVitalSigns',
+          userAction: 'Load vital signs data',
+          metadata: { patientId, table: 'vital_signs' }
+        });
+      }
+      
+      return toCamelCase(data) as any[];
+    }, {
+      title: 'Failed to load vital signs',
+      component: 'supabaseService',
+      action: 'getVitalSigns',
+      userAction: 'Load vital signs data'
+    }) as unknown as Promise<any[]>;
+  },
+
+  // Get latest vital signs for a patient
+  getLatestVitalSigns: async (patientId: string): Promise<any | null> => {
+    return await withErrorHandling(async () => {
+      const { data, error } = await supabase
+        .from('vital_signs')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('recorded_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'getLatestVitalSigns',
+          userAction: 'Load latest vital signs',
+          metadata: { patientId, table: 'vital_signs' }
+        });
+      }
+      
+      return data ? toCamelCase(data) as any : null;
+    }, {
+      title: 'Failed to load latest vital signs',
+      component: 'supabaseService',
+      action: 'getLatestVitalSigns',
+      userAction: 'Load latest vital signs'
+    }) as unknown as Promise<any | null>;
+  },
+
+  // Create new vital signs record
+  createVitalSigns: async (vitalData: any): Promise<any> => {
+    return await withErrorHandling(async () => {
+      const vitalSignsData = {
+        ...toSnakeCase(vitalData),
+        recorded_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('vital_signs')
+        .insert([vitalSignsData])
+        .select()
+        .single();
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'createVitalSigns',
+          userAction: 'Save vital signs',
+          metadata: { table: 'vital_signs' }
+        });
+      }
+      
+      return toCamelCase(data) as any;
+    }, {
+      title: 'Failed to save vital signs',
+      component: 'supabaseService',
+      action: 'createVitalSigns',
+      userAction: 'Save vital signs'
+    }) as unknown as Promise<any>;
+  },
+
+  // Update vital signs record
+  updateVitalSigns: async (id: string, vitalData: any): Promise<any> => {
+    return await withErrorHandling(async () => {
+      const updateData = toSnakeCase(vitalData);
+
+      const { data, error } = await supabase
+        .from('vital_signs')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'updateVitalSigns',
+          userAction: 'Update vital signs',
+          metadata: { id, table: 'vital_signs' }
+        });
+      }
+      
+      return toCamelCase(data) as any;
+    }, {
+      title: 'Failed to update vital signs',
+      component: 'supabaseService',
+      action: 'updateVitalSigns',
+      userAction: 'Update vital signs'
+    }) as unknown as Promise<any>;
+  },
+
+  // ==============================================
+  // PATIENT QUEUE SERVICE FUNCTIONS
+  // ==============================================
+
+  // Get patient queue
+  getPatientQueue: async (filters?: { department?: string; status?: string; workflowStage?: string }): Promise<any[]> => {
+    return await withErrorHandling(async () => {
+      let query = supabase
+        .from('patient_queue')
+        .select(`
+          *,
+          patients (
+            id,
+            mrn,
+            first_name,
+            last_name,
+            phone,
+            insurance_provider
+          )
+        `)
+        .order('created_at', { ascending: true });
+      
+      if (filters?.department) {
+        query = query.eq('department', filters.department);
+      }
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.workflowStage) {
+        query = query.eq('workflow_stage', filters.workflowStage);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'getPatientQueue',
+          userAction: 'Load patient queue',
+          metadata: { filters, table: 'patient_queue' }
+        });
+      }
+      
+      return toCamelCase(data) as any[];
+    }, {
+      title: 'Failed to load patient queue',
+      component: 'supabaseService',
+      action: 'getPatientQueue',
+      userAction: 'Load patient queue'
+    }) as unknown as Promise<any[]>;
+  },
+
+  // Add patient to queue
+  addToQueue: async (queueData: any): Promise<any> => {
+    return await withErrorHandling(async () => {
+      const queueRecord = {
+        ...toSnakeCase(queueData),
+        created_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('patient_queue')
+        .insert([queueRecord])
+        .select()
+        .single();
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'addToQueue',
+          userAction: 'Add patient to queue',
+          metadata: { table: 'patient_queue' }
+        });
+      }
+      
+      return toCamelCase(data) as any;
+    }, {
+      title: 'Failed to add patient to queue',
+      component: 'supabaseService',
+      action: 'addToQueue',
+      userAction: 'Add patient to queue'
+    }) as unknown as Promise<any>;
+  },
+
+  // Update queue status
+  updateQueueStatus: async (id: string, status: string, workflowStage: string): Promise<any> => {
+    return await withErrorHandling(async () => {
+      const updateData: any = {
+        status,
+        workflow_stage: workflowStage,
+        updated_at: new Date().toISOString()
+      };
+
+      if (status === 'in-progress') {
+        updateData.started_at = new Date().toISOString();
+      } else if (status === 'completed') {
+        updateData.completed_at = new Date().toISOString();
+      }
+
+      const { data, error } = await supabase
+        .from('patient_queue')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        throw handleSupabaseError(error, {
+          component: 'supabaseService',
+          action: 'updateQueueStatus',
+          userAction: 'Update queue status',
+          metadata: { id, status, workflowStage, table: 'patient_queue' }
+        });
+      }
+      
+      return toCamelCase(data) as any;
+    }, {
+      title: 'Failed to update queue status',
+      component: 'supabaseService',
+      action: 'updateQueueStatus',
+      userAction: 'Update queue status'
+    }) as unknown as Promise<any>;
+  },
+
+  // Assign doctor to patient in queue
+  assignDoctorToQueue: async (queueId: string, doctorId: string, doctorName: string, reason: string): Promise<any> => {
+    return makeApiCall(`/api/patient-queue/${queueId}/assign-doctor`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        assignedDoctorId: doctorId,
+        assignedDoctorName: doctorName,
+        assignmentReason: reason
+      })
+    }, {
+      title: 'Failed to assign doctor to patient',
+      component: 'supabaseService',
+      action: 'assignDoctorToQueue',
+      userAction: 'Assign doctor to patient'
+    }) as unknown as Promise<any>;
   }
 };

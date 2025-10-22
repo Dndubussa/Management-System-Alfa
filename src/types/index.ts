@@ -25,6 +25,11 @@ export interface Patient {
     membershipNumber: string;
     cashAmount?: string; // Optional field for cash payments
   };
+  // Doctor assignment fields
+  assignedDoctorId?: string;
+  assignedDoctorName?: string;
+  assignmentDate?: string;
+  assignmentReason?: string;
   createdAt: string;
   updatedAt: string;
 }

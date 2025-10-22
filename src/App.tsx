@@ -38,6 +38,7 @@ import { ChronicDiseaseDashboard } from './components/ChronicDisease/ChronicDise
 import { ReportsDashboard } from './components/Reports/ReportsDashboard';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { ReceptionistDashboard } from './components/Receptionist/ReceptionistDashboard';
+import { InsuranceManagementDashboard } from './components/Receptionist/InsuranceManagementDashboard';
 import { InsuranceClaimDetails } from './components/Receptionist/InsuranceClaimDetails';
 import { PriceLookupAndEstimates } from './components/Receptionist/PriceLookupAndEstimates';
 import { DoctorAppointmentDashboard } from './components/Appointments/DoctorAppointmentDashboard';
@@ -74,8 +75,12 @@ import { PTTherapyPlans } from './components/PhysicalTherapist/PTTherapyPlans';
 import { PTEMR } from './components/PhysicalTherapist/PTEMR';
 import { PTReports } from './components/PhysicalTherapist/PTReports';
 
+// Doctor Components
+import { DoctorQueue } from './components/Doctor/DoctorQueue';
+
 // Nurse Components (to be created)
 import { NurseDashboard } from './components/Nurse/NurseDashboard';
+import { TriageQueue } from './components/Nurse/TriageQueue';
 import { NurseTriageVitals } from './components/Nurse/NurseTriageVitals';
 import { NurseCareNotes } from './components/Nurse/NurseCareNotes';
 import { NurseMedicationAdmin } from './components/Nurse/NurseMedicationAdmin';
@@ -287,7 +292,7 @@ function AppContent() {
     );
   }
   
-  const { generateBill, addNotification } = hospitalContext;
+  const { generateBill, addNotification, addToQueue, users, updatePatient } = hospitalContext;
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -344,12 +349,54 @@ function AppContent() {
     navigate('/registration');
   };
 
-  const handleSavePatient = () => {
+  const handleSavePatient = async (newPatient?: Patient) => {
     // Determine if this was an edit or new registration based on whether selectedPatient exists
     const isEdit = !!selectedPatient;
     
     setShowPatientForm(false);
     setSelectedPatient(null);
+    
+    // For new patients, automatically assign a doctor based on insurance type
+    if (!isEdit && newPatient) {
+      try {
+        let assignedDoctorId = null;
+        let assignedDoctorName = null;
+        let assignmentReason = '';
+        
+        if (newPatient.insuranceInfo?.provider === 'NHIF') {
+          // For NHIF patients, assign to a general practitioner
+          const nhifDoctors = users.filter(u => u.role === 'doctor');
+          if (nhifDoctors.length > 0) {
+            assignedDoctorId = nhifDoctors[0].id;
+            assignedDoctorName = nhifDoctors[0].name;
+            assignmentReason = 'NHIF patient - assigned to general practitioner';
+          }
+        } else {
+          // For non-NHIF patients, can assign to any available doctor
+          const availableDoctors = users.filter(u => 
+            u.role === 'doctor' || u.role === 'ophthalmologist' || 
+            u.role === 'radiologist' || u.role === 'physical-therapist'
+          );
+          if (availableDoctors.length > 0) {
+            assignedDoctorId = availableDoctors[0].id;
+            assignedDoctorName = availableDoctors[0].name;
+            assignmentReason = 'Patient assigned to available specialist';
+          }
+        }
+        
+        // Update patient with assigned doctor
+        if (assignedDoctorId) {
+          await updatePatient(newPatient.id, {
+            assignedDoctorId,
+            assignedDoctorName,
+            assignmentDate: new Date().toISOString(),
+            assignmentReason
+          });
+        }
+      } catch (error) {
+        console.error('Error assigning doctor to new patient:', error);
+      }
+    }
     
     // Add notification for successful patient save
     addNotification({
@@ -454,8 +501,9 @@ function AppContent() {
             <Route path="/appointments" element={<AppointmentList onNewAppointment={handleNewAppointment} onEditAppointment={handleEditAppointment} />} />
             <Route path="/appointment/new" element={<AppointmentForm appointment={undefined} onSave={handleSaveAppointment} onCancel={() => navigate('/appointments')} />} />
             <Route path="/appointment-edit" element={selectedAppointment ? <AppointmentForm appointment={selectedAppointment} onSave={handleSaveAppointment} onCancel={() => navigate('/appointments')} /> : <div>Appointment not selected</div>} />
+            <Route path="/doctor-queue" element={<DoctorQueue />} />
             <Route path="/emr" element={<EMRDashboard onCreateRecord={handleCreateRecord} onViewRecord={handleViewRecord} />} />
-            <Route path="/emr/new/:patientId" element={<NewEMRRecordRoute />} />
+            <Route path="/emr/:patientId" element={<NewEMRRecordRoute />} />
             <Route path="/ophthalmology-emr/:patientId?" element={<OphthalmologyEMRRoute />} />
             <Route path="/imaging" element={<OphthalmologyImaging />} />
             <Route path="/lab-orders" element={<LabOrderList />} />
@@ -475,6 +523,7 @@ function AppContent() {
             
             {/* Receptionist-specific Routes */}
             <Route path="/receptionist" element={<ReceptionistDashboard onViewBill={handleViewBill} onViewClaim={handleViewClaim} />} />
+            <Route path="/insurance-management" element={<InsuranceManagementDashboard />} />
             <Route path="/receptionist/price-lookup" element={<PriceLookupAndEstimates />} />
             <Route path="/insurance-claim/:claimId" element={<ClaimDetailRoute />} />
             
@@ -517,6 +566,7 @@ function AppContent() {
             
             {/* Nurse Routes */}
             <Route path="/nurse-dashboard" element={<NurseDashboard />} />
+            <Route path="/triage-queue" element={<TriageQueue />} />
             <Route path="/nurse-triage" element={<NurseTriageVitals />} />
             <Route path="/nurse-notes" element={<NurseCareNotes />} />
             <Route path="/nurse-mar" element={<NurseMedicationAdmin />} />
@@ -656,18 +706,35 @@ function DashboardRoute() {
                 className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-4 text-center transition-colors"
               >
                 <div className="text-green-600 font-medium">New Patient Registration</div>
+                <div className="text-xs text-green-700 mt-1">Auto-adds to triage queue</div>
+              </button>
+              <button
+                onClick={() => navigate('/triage-queue')}
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 text-center transition-colors"
+              >
+                <div className="text-blue-600 font-medium">Triage Queue</div>
+                <div className="text-xs text-blue-700 mt-1">View patients waiting for triage</div>
               </button>
               <button
                 onClick={() => navigate('/appointments')}
-                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 text-center transition-colors"
+                className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg p-4 text-center transition-colors"
               >
-                <div className="text-blue-600 font-medium">Schedule Appointment</div>
+                <div className="text-orange-600 font-medium">Schedule Appointment</div>
+                <div className="text-xs text-orange-700 mt-1">For scheduled visits</div>
+              </button>
+              <button
+                onClick={() => navigate('/insurance-management')}
+                className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg p-4 text-center transition-colors"
+              >
+                <div className="text-indigo-600 font-medium">Insurance Management</div>
+                <div className="text-xs text-indigo-700 mt-1">Validate, claim & track</div>
               </button>
               <button
                 onClick={() => navigate('/receptionist')}
-                className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg p-4 text-center transition-colors"
+                className="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg p-4 text-center transition-colors"
               >
-                <div className="text-indigo-600 font-medium">Insurance Claims</div>
+                <div className="text-purple-600 font-medium">Billing & Claims</div>
+                <div className="text-xs text-purple-700 mt-1">Legacy billing system</div>
               </button>
             </>
           )}
@@ -675,16 +742,25 @@ function DashboardRoute() {
           {(isDoctor || isOphthalmologist) && (
             <>
               <button
-                onClick={() => navigate('/emr')}
+                onClick={() => navigate('/doctor-queue')}
                 className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-4 text-center transition-colors"
               >
-                <div className="text-green-600 font-medium">Create Medical Record</div>
+                <div className="text-green-600 font-medium">Patient Queue</div>
+                <div className="text-xs text-green-700 mt-1">Patients ready for consultation</div>
+              </button>
+              <button
+                onClick={() => navigate('/emr')}
+                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 text-center transition-colors"
+              >
+                <div className="text-blue-600 font-medium">Create Medical Record</div>
+                <div className="text-xs text-blue-700 mt-1">Manual EMR creation</div>
               </button>
               <button
                 onClick={() => navigate('/appointments')}
-                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 text-center transition-colors"
+                className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg p-4 text-center transition-colors"
               >
-                <div className="text-blue-600 font-medium">View Appointments</div>
+                <div className="text-orange-600 font-medium">Scheduled Appointments</div>
+                <div className="text-xs text-orange-700 mt-1">Pre-scheduled visits</div>
               </button>
             </>
           )}
@@ -738,4 +814,6 @@ function App() {
   );
 }
 
+export default App;
+export default App;
 export default App;
