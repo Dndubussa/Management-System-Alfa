@@ -5,25 +5,29 @@
 -- HELPER FUNCTIONS
 -- ==============================================
 
+-- Drop existing functions first to avoid parameter name conflicts
+DROP FUNCTION IF EXISTS table_exists(text);
+DROP FUNCTION IF EXISTS column_exists(text, text);
+
 -- Function to check if table exists
-CREATE OR REPLACE FUNCTION table_exists(table_name text) RETURNS boolean AS $$
+CREATE OR REPLACE FUNCTION table_exists(tbl_name text) RETURNS boolean AS $$
 BEGIN
     RETURN EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
-        AND table_name = $1
+        AND table_name = tbl_name
     );
 END;
 $$ LANGUAGE plpgsql;
 
 -- Function to check if column exists
-CREATE OR REPLACE FUNCTION column_exists(table_name text, column_name text) RETURNS boolean AS $$
+CREATE OR REPLACE FUNCTION column_exists(tbl_name text, col_name text) RETURNS boolean AS $$
 BEGIN
     RETURN EXISTS (
         SELECT FROM information_schema.columns 
         WHERE table_schema = 'public' 
-        AND table_name = $1 
-        AND column_name = $2
+        AND table_name = tbl_name 
+        AND column_name = col_name
     );
 END;
 $$ LANGUAGE plpgsql;
