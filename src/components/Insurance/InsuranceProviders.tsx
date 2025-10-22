@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Save, X, Building2 } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
+import { supabaseService } from '../../services/supabaseService';
 
 interface InsuranceProvider {
   id: string;
   name: string;
   code: string;
-  contactPerson: string;
-  phone: string;
-  email: string;
-  address: string;
-  tariffCodes: string[];
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  tariff_codes?: string[];
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export function InsuranceProviders() {
@@ -18,55 +22,120 @@ export function InsuranceProviders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editingProvider, setEditingProvider] = useState<InsuranceProvider | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   
-  // Insurance providers data - will be fetched from Supabase when table is implemented
+  // Insurance providers data - fetched from Supabase
   const [providers, setProviders] = useState<InsuranceProvider[]>([]);
 
   const [newProvider, setNewProvider] = useState<Omit<InsuranceProvider, 'id'>>({
     name: '',
     code: '',
-    contactPerson: '',
+    contact_person: '',
     phone: '',
     email: '',
     address: '',
-    tariffCodes: []
+    tariff_codes: []
   });
+
+  // Load insurance providers on component mount
+  useEffect(() => {
+    loadProviders();
+  }, []);
+
+  const loadProviders = async () => {
+    try {
+      setLoading(true);
+      const data = await supabaseService.getInsuranceProviders();
+      setProviders(data);
+    } catch (error) {
+      console.error('Error loading insurance providers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredProviders = providers.filter(provider => 
     provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     provider.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddProvider = () => {
+  const handleAddProvider = async () => {
     if (newProvider.name && newProvider.code) {
-      const provider: InsuranceProvider = {
-        ...newProvider,
-        id: (providers.length + 1).toString()
-      };
-      setProviders([...providers, provider]);
-      setNewProvider({
-        name: '',
-        code: '',
-        contactPerson: '',
-        phone: '',
-        email: '',
-        address: '',
-        tariffCodes: []
-      });
-      setIsAdding(false);
+      try {
+        setSaving(true);
+        const providerData = {
+          name: newProvider.name,
+          code: newProvider.code,
+          contactPerson: newProvider.contact_person,
+          phone: newProvider.phone,
+          email: newProvider.email,
+          address: newProvider.address,
+          tariffCodes: newProvider.tariff_codes,
+          isActive: true
+        };
+        
+        await supabaseService.createInsuranceProvider(providerData);
+        await loadProviders(); // Reload the list
+        
+        setNewProvider({
+          name: '',
+          code: '',
+          contact_person: '',
+          phone: '',
+          email: '',
+          address: '',
+          tariff_codes: []
+        });
+        setIsAdding(false);
+      } catch (error) {
+        console.error('Error adding insurance provider:', error);
+        alert('Failed to add insurance provider. Please try again.');
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
-  const handleUpdateProvider = () => {
+  const handleUpdateProvider = async () => {
     if (editingProvider) {
-      setProviders(providers.map(p => p.id === editingProvider.id ? editingProvider : p));
-      setEditingProvider(null);
+      try {
+        setSaving(true);
+        const providerData = {
+          name: editingProvider.name,
+          code: editingProvider.code,
+          contactPerson: editingProvider.contactPerson,
+          phone: editingProvider.phone,
+          email: editingProvider.email,
+          address: editingProvider.address,
+          tariffCodes: editingProvider.tariffCodes,
+          isActive: true
+        };
+        
+        await supabaseService.updateInsuranceProvider(editingProvider.id, providerData);
+        await loadProviders(); // Reload the list
+        setEditingProvider(null);
+      } catch (error) {
+        console.error('Error updating insurance provider:', error);
+        alert('Failed to update insurance provider. Please try again.');
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
-  const handleDeleteProvider = (id: string) => {
+  const handleDeleteProvider = async (id: string) => {
     if (confirm('Are you sure you want to delete this insurance provider?')) {
-      setProviders(providers.filter(p => p.id !== id));
+      try {
+        setSaving(true);
+        await supabaseService.deleteInsuranceProvider(id);
+        await loadProviders(); // Reload the list
+      } catch (error) {
+        console.error('Error deleting insurance provider:', error);
+        alert('Failed to delete insurance provider. Please try again.');
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -134,8 +203,8 @@ export function InsuranceProviders() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
               <input
                 type="text"
-                value={newProvider.contactPerson}
-                onChange={(e) => setNewProvider({...newProvider, contactPerson: e.target.value})}
+                value={newProvider.contact_person || ''}
+                onChange={(e) => setNewProvider({...newProvider, contact_person: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 placeholder="Enter contact person name"
               />
@@ -180,9 +249,10 @@ export function InsuranceProviders() {
             </button>
             <button
               onClick={handleAddProvider}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Provider
+              {saving ? 'Adding...' : 'Add Provider'}
             </button>
           </div>
         </div>
@@ -215,17 +285,26 @@ export function InsuranceProviders() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredProviders.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mb-4"></div>
+                      <p className="text-gray-500">Loading insurance providers...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredProviders.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center">
                       <Building2 className="w-12 h-12 text-gray-300 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Insurance Providers Management</h3>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Insurance Providers Found</h3>
                       <p className="text-gray-500 mb-2">
-                        This feature requires the insurance_providers table to be implemented in the database.
+                        {searchTerm ? 'No providers match your search criteria.' : 'No insurance providers have been added yet.'}
                       </p>
                       <p className="text-sm text-gray-400">
-                        Once implemented, you'll be able to manage insurance providers, their contact information, and tariff codes.
+                        Click "Add Provider" to create your first insurance provider.
                       </p>
                     </div>
                   </td>
@@ -301,14 +380,14 @@ export function InsuranceProviders() {
                           <div className="text-sm text-gray-900">{provider.code}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{provider.contactPerson}</div>
+                          <div className="text-sm text-gray-900">{provider.contact_person || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{provider.phone}</div>
+                          <div className="text-sm text-gray-900">{provider.phone || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {provider.tariffCodes.join(', ')}
+                            {provider.tariff_codes ? provider.tariff_codes.join(', ') : '-'}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

@@ -2220,5 +2220,70 @@ export const supabaseService = {
       action: 'assignDoctorToQueue',
       userAction: 'Assign doctor to patient'
     }) as unknown as Promise<any>;
+  },
+
+  // Insurance Providers
+  getInsuranceProviders: async (search?: string, isActive?: boolean): Promise<any[]> => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (isActive !== undefined) params.append('is_active', isActive.toString());
+    
+    const queryString = params.toString();
+    const url = `/api/insurance-providers${queryString ? `?${queryString}` : ''}`;
+    
+    return makeApiCall(url, {
+      method: 'GET'
+    }, {
+      title: 'Failed to fetch insurance providers',
+      component: 'supabaseService',
+      action: 'getInsuranceProviders',
+      userAction: 'Load insurance providers'
+    }) as unknown as Promise<any[]>;
+  },
+
+  getInsuranceProvider: async (id: string): Promise<any> => {
+    return makeApiCall(`/api/insurance-providers/${id}`, {
+      method: 'GET'
+    }, {
+      title: 'Failed to fetch insurance provider',
+      component: 'supabaseService',
+      action: 'getInsuranceProvider',
+      userAction: 'Load insurance provider details'
+    }) as unknown as Promise<any>;
+  },
+
+  createInsuranceProvider: async (providerData: any): Promise<any> => {
+    return makeApiCall('/api/insurance-providers', {
+      method: 'POST',
+      body: JSON.stringify(providerData)
+    }, {
+      title: 'Failed to create insurance provider',
+      component: 'supabaseService',
+      action: 'createInsuranceProvider',
+      userAction: 'Create insurance provider'
+    }) as unknown as Promise<any>;
+  },
+
+  updateInsuranceProvider: async (id: string, providerData: any): Promise<any> => {
+    return makeApiCall(`/api/insurance-providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(providerData)
+    }, {
+      title: 'Failed to update insurance provider',
+      component: 'supabaseService',
+      action: 'updateInsuranceProvider',
+      userAction: 'Update insurance provider'
+    }) as unknown as Promise<any>;
+  },
+
+  deleteInsuranceProvider: async (id: string): Promise<any> => {
+    return makeApiCall(`/api/insurance-providers/${id}`, {
+      method: 'DELETE'
+    }, {
+      title: 'Failed to delete insurance provider',
+      component: 'supabaseService',
+      action: 'deleteInsuranceProvider',
+      userAction: 'Delete insurance provider'
+    }) as unknown as Promise<any>;
   }
 };

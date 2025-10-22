@@ -2494,6 +2494,104 @@ app.post('/api/service-code-mappings', async (req, res) => {
   }
 });
 
+// Insurance Providers endpoints
+app.get('/api/insurance-providers', async (req, res) => {
+  try {
+    const { search, is_active } = req.query;
+    let query = supabase
+      .from('insurance_providers')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,contact_person.ilike.%${search}%`);
+    }
+
+    if (is_active !== undefined) {
+      query = query.eq('is_active', is_active === 'true');
+    }
+
+    const { data, error } = await query;
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/insurance-providers/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('insurance_providers')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/insurance-providers', async (req, res) => {
+  try {
+    const providerData = {
+      name: req.body.name,
+      code: req.body.code,
+      contact_person: req.body.contactPerson,
+      phone: req.body.phone,
+      email: req.body.email,
+      address: req.body.address,
+      tariff_codes: req.body.tariffCodes || [],
+      is_active: req.body.isActive !== undefined ? req.body.isActive : true
+    };
+
+    const { data, error } = await supabase
+      .from('insurance_providers')
+      .insert(providerData)
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/insurance-providers/:id', async (req, res) => {
+  try {
+    const providerData = {
+      name: req.body.name,
+      code: req.body.code,
+      contact_person: req.body.contactPerson,
+      phone: req.body.phone,
+      email: req.body.email,
+      address: req.body.address,
+      tariff_codes: req.body.tariffCodes || [],
+      is_active: req.body.isActive !== undefined ? req.body.isActive : true
+    };
+
+    const { data, error } = await supabase
+      .from('insurance_providers')
+      .update(providerData)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/insurance-providers/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('insurance_providers')
+      .delete()
+      .eq('id', req.params.id);
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API health/info root
 app.get('/api', (req, res) => {
   res.json({ status: 'ok', name: 'Alfa Hospital API', version: 1 });
