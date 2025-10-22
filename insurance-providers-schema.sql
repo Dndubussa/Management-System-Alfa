@@ -42,10 +42,17 @@ CREATE TABLE IF NOT EXISTS insurance_providers (
     email text,
     address text,
     tariff_codes text[], -- Array of tariff codes
-    is_active boolean DEFAULT true,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
 );
+
+-- Add is_active column if it doesn't exist
+DO $$
+BEGIN
+    IF NOT column_exists('insurance_providers', 'is_active') THEN
+        ALTER TABLE insurance_providers ADD COLUMN is_active boolean DEFAULT true;
+    END IF;
+END $$;
 
 -- ==============================================
 -- CREATE INDEXES
@@ -54,7 +61,14 @@ CREATE TABLE IF NOT EXISTS insurance_providers (
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_insurance_providers_name ON insurance_providers(name);
 CREATE INDEX IF NOT EXISTS idx_insurance_providers_code ON insurance_providers(code);
-CREATE INDEX IF NOT EXISTS idx_insurance_providers_is_active ON insurance_providers(is_active);
+
+-- Create is_active index only if the column exists
+DO $$
+BEGIN
+    IF column_exists('insurance_providers', 'is_active') THEN
+        CREATE INDEX IF NOT EXISTS idx_insurance_providers_is_active ON insurance_providers(is_active);
+    END IF;
+END $$;
 
 -- ==============================================
 -- ENABLE ROW LEVEL SECURITY
@@ -104,14 +118,19 @@ CREATE TRIGGER update_insurance_providers_updated_at
 -- INSERT SAMPLE DATA
 -- ==============================================
 
--- Insert sample insurance providers
-INSERT INTO insurance_providers (name, code, contact_person, phone, email, address, tariff_codes) VALUES
-('National Health Insurance Fund', 'NHIF', 'John Mwalimu', '+255 22 123 4567', 'info@nhif.or.tz', 'Dar es Salaam, Tanzania', ARRAY['SHA001', 'SHA002', 'SHA003']),
-('AAR Insurance Tanzania', 'AAR', 'Sarah Kimaro', '+255 22 234 5678', 'info@aar.co.tz', 'Dar es Salaam, Tanzania', ARRAY['AAR001', 'AAR002', 'AAR003']),
-('Jubilee Insurance Tanzania', 'JUBILEE', 'Michael Mwamba', '+255 22 345 6789', 'info@jubilee.co.tz', 'Dar es Salaam, Tanzania', ARRAY['JUB001', 'JUB002', 'JUB003']),
-('Alliance Insurance', 'ALLIANCE', 'Grace Mwangi', '+255 22 456 7890', 'info@alliance.co.tz', 'Dar es Salaam, Tanzania', ARRAY['ALL001', 'ALL002', 'ALL003']),
-('Sanlam Insurance Tanzania', 'SANLAM', 'David Mwangi', '+255 22 567 8901', 'info@sanlam.co.tz', 'Dar es Salaam, Tanzania', ARRAY['SAN001', 'SAN002', 'SAN003'])
-ON CONFLICT (code) DO NOTHING;
+-- Insert sample insurance providers only if table exists and has required columns
+DO $$
+BEGIN
+    IF table_exists('insurance_providers') AND column_exists('insurance_providers', 'name') THEN
+        INSERT INTO insurance_providers (name, code, contact_person, phone, email, address, tariff_codes) VALUES
+        ('National Health Insurance Fund', 'NHIF', 'John Mwalimu', '+255 22 123 4567', 'info@nhif.or.tz', 'Dar es Salaam, Tanzania', ARRAY['SHA001', 'SHA002', 'SHA003']),
+        ('AAR Insurance Tanzania', 'AAR', 'Sarah Kimaro', '+255 22 234 5678', 'info@aar.co.tz', 'Dar es Salaam, Tanzania', ARRAY['AAR001', 'AAR002', 'AAR003']),
+        ('Jubilee Insurance Tanzania', 'JUBILEE', 'Michael Mwamba', '+255 22 345 6789', 'info@jubilee.co.tz', 'Dar es Salaam, Tanzania', ARRAY['JUB001', 'JUB002', 'JUB003']),
+        ('Alliance Insurance', 'ALLIANCE', 'Grace Mwangi', '+255 22 456 7890', 'info@alliance.co.tz', 'Dar es Salaam, Tanzania', ARRAY['ALL001', 'ALL002', 'ALL003']),
+        ('Sanlam Insurance Tanzania', 'SANLAM', 'David Mwangi', '+255 22 567 8901', 'info@sanlam.co.tz', 'Dar es Salaam, Tanzania', ARRAY['SAN001', 'SAN002', 'SAN003'])
+        ON CONFLICT (code) DO NOTHING;
+    END IF;
+END $$;
 
 -- ==============================================
 -- CLEANUP HELPER FUNCTIONS

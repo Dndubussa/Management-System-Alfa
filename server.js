@@ -2507,9 +2507,11 @@ app.get('/api/insurance-providers', async (req, res) => {
       query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,contact_person.ilike.%${search}%`);
     }
 
-    if (is_active !== undefined) {
-      query = query.eq('is_active', is_active === 'true');
-    }
+    // Only filter by is_active if the column exists (will be added by schema)
+    // For now, we'll skip this filter to avoid the column error
+    // if (is_active !== undefined) {
+    //   query = query.eq('is_active', is_active === 'true');
+    // }
 
     const { data, error } = await query;
     handleSupabaseResponse(data, error, res);
@@ -2540,8 +2542,9 @@ app.post('/api/insurance-providers', async (req, res) => {
       phone: req.body.phone,
       email: req.body.email,
       address: req.body.address,
-      tariff_codes: req.body.tariffCodes || [],
-      is_active: req.body.isActive !== undefined ? req.body.isActive : true
+      tariff_codes: req.body.tariffCodes || []
+      // is_active will be added when the schema is run
+      // is_active: req.body.isActive !== undefined ? req.body.isActive : true
     };
 
     const { data, error } = await supabase
@@ -2564,8 +2567,9 @@ app.put('/api/insurance-providers/:id', async (req, res) => {
       phone: req.body.phone,
       email: req.body.email,
       address: req.body.address,
-      tariff_codes: req.body.tariffCodes || [],
-      is_active: req.body.isActive !== undefined ? req.body.isActive : true
+      tariff_codes: req.body.tariffCodes || []
+      // is_active will be added when the schema is run
+      // is_active: req.body.isActive !== undefined ? req.body.isActive : true
     };
 
     const { data, error } = await supabase
