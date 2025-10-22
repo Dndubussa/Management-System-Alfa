@@ -65,6 +65,18 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
     }
 
     return matches;
+  }).sort((a, b) => {
+    // Sort by patient MRN in ascending order (P001, P002, P003...)
+    const patientA = findPatientSafely(patients, a.patientId);
+    const patientB = findPatientSafely(patients, b.patientId);
+    
+    if (!patientA || !patientB) return 0;
+    
+    // Extract numeric part from MRN (P001 -> 1, P002 -> 2, etc.)
+    const mrnA = parseInt(patientA.mrn.replace('P', '')) || 0;
+    const mrnB = parseInt(patientB.mrn.replace('P', '')) || 0;
+    
+    return mrnA - mrnB;
   });
 
   console.log('🔍 AppointmentList - Final filtered appointments:', filteredAppointments.length);

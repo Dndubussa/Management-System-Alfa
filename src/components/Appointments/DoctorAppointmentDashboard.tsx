@@ -19,7 +19,19 @@ export function DoctorAppointmentDashboard() {
       apt.dateTime.startsWith(today) &&
       apt.status !== 'completed' // Exclude completed appointments
     )
-    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+    .sort((a, b) => {
+      // Sort by patient MRN in ascending order (P001, P002, P003...)
+      const patientA = findPatientSafely(patients, a.patientId);
+      const patientB = findPatientSafely(patients, b.patientId);
+      
+      if (!patientA || !patientB) return 0;
+      
+      // Extract numeric part from MRN (P001 -> 1, P002 -> 2, etc.)
+      const mrnA = parseInt(patientA.mrn.replace('P', '')) || 0;
+      const mrnB = parseInt(patientB.mrn.replace('P', '')) || 0;
+      
+      return mrnA - mrnB;
+    });
 
   const getPatientName = (patientId: string) => {
     return getPatientDisplayName(patients, patientId);
