@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'receptionist' | 'doctor' | 'lab' | 'pharmacy' | 'radiologist' | 'ophthalmologist' | 'admin' | 'ot-coordinator' | 'insurance-officer' | 'cashier' | 'physical-therapist' | 'nurse' | 'hr';
+  role: 'receptionist' | 'doctor' | 'lab' | 'pharmacy' | 'radiologist' | 'ophthalmologist' | 'admin' | 'ot-coordinator' | 'cashier' | 'physical-therapist' | 'nurse' | 'hr';
   department: string;
 }
 

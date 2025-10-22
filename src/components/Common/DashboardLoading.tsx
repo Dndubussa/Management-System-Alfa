@@ -26,8 +26,6 @@ export function DashboardLoading({ role, department, title }: DashboardLoadingPr
         return { icon: Shield, color: 'text-gray-500', bgColor: 'bg-gray-50' };
       case 'cashier':
         return { icon: DollarSign, color: 'text-yellow-500', bgColor: 'bg-yellow-50' };
-      case 'insurance-officer':
-        return { icon: CreditCard, color: 'text-indigo-500', bgColor: 'bg-indigo-50' };
       case 'physical-therapist':
         return { icon: Activity, color: 'text-orange-500', bgColor: 'bg-orange-50' };
       case 'ot-coordinator':

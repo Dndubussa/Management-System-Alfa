@@ -89,7 +89,7 @@ BEGIN
     ALTER TABLE users ADD CONSTRAINT users_role_check 
     CHECK (role IN (
         'receptionist', 'doctor', 'lab', 'pharmacy', 'radiologist', 
-        'ophthalmologist', 'admin', 'ot-coordinator', 'insurance-officer', 
+        'ophthalmologist', 'admin', 'ot-coordinator', 
         'cashier', 'physical-therapist', 'nurse', 'hr'
     ));
     

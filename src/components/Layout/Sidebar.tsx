@@ -146,16 +146,6 @@ export function Sidebar({ onTabChange }: SidebarProps) {
           { id: 'reports', label: 'System Reports', icon: BarChart3, path: '/reports' },
         ];
       
-      case 'insurance-officer':
-        return [
-          ...baseItems,
-          { id: 'insurance-dashboard', label: 'Dashboard', icon: FileCheck, path: '/insurance-dashboard' },
-          { id: 'verification', label: 'Insurance Verification', icon: UserCheck, path: '/insurance-verification' },
-          { id: 'claims', label: 'Claim Submission', icon: FileText, path: '/insurance-submission' },
-          { id: 'tracking', label: 'Claim Tracking', icon: Shield, path: '/insurance-tracking' },
-          { id: 'reports', label: 'Reports & Analytics', icon: BarChart3, path: '/insurance-reports' },
-          { id: 'providers', label: 'Insurance Providers', icon: Users, path: '/insurance-providers' },
-        ];
       
       case 'cashier':
         return [

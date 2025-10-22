@@ -53,7 +53,6 @@ import { OTPatientQueue } from './components/OT/OTPatientQueue';
 import { OTReports } from './components/OT/OTReports';
 
 // Insurance Officer Components
-import { InsuranceOfficerDashboard } from './components/Insurance/InsuranceOfficerDashboard';
 import { InsuranceProviders } from './components/Insurance/InsuranceProviders';
 import { InsuranceReports } from './components/Insurance/InsuranceReports';
 import { InsuranceVerification } from './components/Insurance/InsuranceVerification';
@@ -539,14 +538,6 @@ function AppContent() {
             <Route path="/ot-patient-queue" element={<OTPatientQueue />} />
             <Route path="/ot-reports" element={<OTReports />} />
             
-            {/* Insurance Officer Routes */}
-            <Route path="/insurance-dashboard" element={<InsuranceOfficerDashboard />} />
-            <Route path="/insurance-claims" element={<InsuranceOfficerDashboard />} />
-            <Route path="/insurance-reports" element={<InsuranceReports />} />
-            <Route path="/insurance-providers" element={<InsuranceProviders />} />
-            <Route path="/insurance-verification" element={<InsuranceVerification />} />
-            <Route path="/insurance-submission" element={<ClaimSubmission />} />
-            <Route path="/insurance-tracking" element={<ClaimTracking />} />
             
             {/* Cashier Routes */}
             <Route path="/cashier-dashboard" element={<CashierDashboard />} />
@@ -620,7 +611,6 @@ function DashboardRoute() {
   const isOphthalmologist = user?.role === 'ophthalmologist';
   const isAdmin = user?.role === 'admin';
   const isOTCoordinator = user?.role === 'ot-coordinator';
-  const isInsuranceOfficer = user?.role === 'insurance-officer';
   const isCashier = user?.role === 'cashier';
   const isPhysicalTherapist = user?.role === 'physical-therapist';
   const isNurse = user?.role === 'nurse';
@@ -645,10 +635,6 @@ function DashboardRoute() {
     return <OTDashboard />;
   }
   
-  // Use Insurance Officer dashboard
-  if (isInsuranceOfficer) {
-    return <InsuranceOfficerDashboard />;
-  }
   
   // Use Cashier dashboard
   if (isCashier) {

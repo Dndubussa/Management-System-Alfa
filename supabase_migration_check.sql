@@ -155,7 +155,7 @@ begin
             id uuid default uuid_generate_v4() primary key,
             name text not null,
             email text unique not null,
-            role text check (role in ('receptionist', 'doctor', 'lab', 'pharmacy', 'radiologist', 'ophthalmologist', 'admin', 'ot-coordinator', 'insurance-officer', 'cashier', 'physical-therapist')) not null,
+            role text check (role in ('receptionist', 'doctor', 'lab', 'pharmacy', 'radiologist', 'ophthalmologist', 'admin', 'ot-coordinator', 'cashier', 'physical-therapist')) not null,
             department text not null
         );
     end if;

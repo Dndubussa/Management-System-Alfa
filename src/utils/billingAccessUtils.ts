@@ -16,7 +16,6 @@ export const getFullBillingAccessRoles = (): string[] => [
  */
 export const getViewOnlyBillingAccessRoles = (): string[] => [
   'receptionist',
-  'insurance-officer',
   'ot-coordinator'
 ];
 
