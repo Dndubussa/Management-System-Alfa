@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Save, X, Building2 } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 
 interface InsuranceProvider {
@@ -219,7 +219,7 @@ export function InsuranceProviders() {
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center">
-                      <Building className="w-12 h-12 text-gray-300 mb-4" />
+                      <Building2 className="w-12 h-12 text-gray-300 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">Insurance Providers Management</h3>
                       <p className="text-gray-500 mb-2">
                         This feature requires the insurance_providers table to be implemented in the database.
