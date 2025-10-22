@@ -230,37 +230,78 @@ export function OphthalmologistDashboard() {
             <p className="text-gray-500">You don't have any appointments scheduled for today.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {todayAppointments.map((appointment) => {
-              const patient = patients.find(p => p.id === appointment.patientId);
-              return (
-                <div key={appointment.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 flex items-center justify-center">
-                        <Users className="w-8 h-8 text-gray-500" />
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {formatDate(appointment.dateTime)}
-                        </p>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-2">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Patient
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    MRN
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {todayAppointments.map((appointment) => {
+                  const patient = patients.find(p => p.id === appointment.patientId);
+                  const dateTime = new Date(appointment.dateTime);
+                  const timeString = dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  
+                  return (
+                    <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                            <Users className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-blue-600 font-medium">
+                          {patient?.mrn || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{timeString}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
                           {appointment.type}
                         </span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-3">
-                      <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize">
+                          {appointment.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm">
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

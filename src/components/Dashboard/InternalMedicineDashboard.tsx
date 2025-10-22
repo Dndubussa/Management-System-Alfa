@@ -272,37 +272,76 @@ export function InternalMedicineDashboard() {
             No appointments scheduled for today.
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {todayAppointments.map(appointment => {
-              const patient = findPatient(appointment.patientId);
-              return (
-                <div key={appointment.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between">
-                    <div>
-                      <h3 className="font-medium text-gray-900">
-                        {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}
-                      </h3>
-                      <div className="text-sm text-gray-500">
-                        {formatDate(appointment.dateTime)}
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Type: {appointment.type} • Status: {appointment.status}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                        {appointment.status}
-                      </span>
-                    </div>
-                  </div>
-                  {appointment.notes && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <span className="font-medium">Notes:</span> {appointment.notes}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Patient
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    MRN
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Time
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Notes
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {todayAppointments.map(appointment => {
+                  const patient = findPatient(appointment.patientId);
+                  const dateTime = new Date(appointment.dateTime);
+                  const timeString = dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  
+                  return (
+                    <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                            <Users className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-blue-600 font-medium">
+                          {patient?.mrn || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{timeString}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 capitalize">{appointment.type}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                          {appointment.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600">
+                          {appointment.notes || '-'}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

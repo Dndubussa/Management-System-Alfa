@@ -98,50 +98,76 @@ export function DoctorAppointmentDashboard() {
                 <p className="text-sm mt-2">Completed appointments are moved to the All Appointments list.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {doctorAppointments.map((appointment) => {
-                  const dateTime = formatDateTime(appointment.dateTime);
-                  const patientName = getPatientName(appointment.patientId);
-                  
-                  return (
-                    <div 
-                      key={appointment.id} 
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => setSelectedAppointment(appointment)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-2">
-                              <User className="w-4 h-4 text-gray-600" />
-                            </div>
-                            <div>
-                              <h3 className="font-medium text-gray-900">{patientName}</h3>
-                              <div className="text-xs text-blue-600 font-medium">
-                                {(() => {
-                                  const patient = findPatientSafely(patients, appointment.patientId);
-                                  return patient?.mrn || 'N/A';
-                                })()}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Patient
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        MRN
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Time
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {doctorAppointments.map((appointment) => {
+                      const dateTime = formatDateTime(appointment.dateTime);
+                      const patientName = getPatientName(appointment.patientId);
+                      const patient = findPatientSafely(patients, appointment.patientId);
+                      
+                      return (
+                        <tr 
+                          key={appointment.id} 
+                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedAppointment(appointment)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                <User className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{patientName}</div>
                               </div>
                             </div>
-                          </div>
-                          <div className="mt-2 text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <Clock className="w-4 h-4 mr-1" />
-                              {dateTime.time}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-blue-600 font-medium">
+                              {patient?.mrn || 'N/A'}
                             </div>
-                          </div>
-                        </div>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
-                          {appointment.status}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-xs text-gray-500">
-                        Click to update status
-                      </div>
-                    </div>
-                  );
-                })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{dateTime.time}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 capitalize">{appointment.type}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
+                              {appointment.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            Click to update status
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
