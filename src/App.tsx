@@ -523,6 +523,11 @@ function AppContent() {
             {/* Receptionist-specific Routes */}
             <Route path="/receptionist" element={<ReceptionistDashboard onViewBill={handleViewBill} onViewClaim={handleViewClaim} />} />
             <Route path="/insurance-management" element={<InsuranceManagementDashboard />} />
+            <Route path="/insurance-verification" element={<InsuranceVerification />} />
+            <Route path="/insurance-providers" element={<InsuranceProviders />} />
+            <Route path="/insurance-submission" element={<ClaimSubmission />} />
+            <Route path="/insurance-tracking" element={<ClaimTracking />} />
+            <Route path="/insurance-reports" element={<InsuranceReports />} />
             <Route path="/receptionist/price-lookup" element={<PriceLookupAndEstimates />} />
             <Route path="/insurance-claim/:claimId" element={<ClaimDetailRoute />} />
             

@@ -26,7 +26,9 @@ import {
   PieChart,
   UserPlus,
   GraduationCap,
-  TrendingUp
+  TrendingUp,
+  Building,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -64,6 +66,11 @@ export function Sidebar({ onTabChange }: SidebarProps) {
           { id: 'patients', label: 'Patients', icon: Users, path: '/patients' },
           { id: 'appointments', label: 'Appointments', icon: Calendar, path: '/appointments' },
           { id: 'insurance-management', label: 'Insurance Management', icon: Shield, path: '/insurance-management' },
+          { id: 'insurance-verification', label: 'Insurance Verification', icon: UserCheck, path: '/insurance-verification' },
+          { id: 'insurance-providers', label: 'Insurance Providers', icon: Building, path: '/insurance-providers' },
+          { id: 'insurance-submission', label: 'Claim Submission', icon: FileText, path: '/insurance-submission' },
+          { id: 'insurance-tracking', label: 'Claim Tracking', icon: Search, path: '/insurance-tracking' },
+          { id: 'insurance-reports', label: 'Insurance Reports', icon: BarChart3, path: '/insurance-reports' },
           { id: 'price-lookup', label: 'Price Lookup & Estimates', icon: Calculator, path: '/receptionist/price-lookup' },
           { id: 'receptionist', label: 'Insurance Claims', icon: FileText, path: '/receptionist' },
           { id: 'billing', label: 'Billing', icon: CreditCard, path: '/billing' },
