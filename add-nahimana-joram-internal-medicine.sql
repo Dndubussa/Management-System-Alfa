@@ -13,7 +13,7 @@ INSERT INTO users (
     '13a7227c-9dde-4cfb-a92b-abdb5a992aaa',
     'Nahimana Joram William',
     'nahijoram60@gmail.com',
-    'internal-medicine',
+    'doctor',
     'Internal Medicine'
 );
 
@@ -35,5 +35,5 @@ SELECT
     role,
     department
 FROM users 
-WHERE role = 'internal-medicine'
+WHERE role = 'doctor' AND department = 'Internal Medicine'
 ORDER BY name;
