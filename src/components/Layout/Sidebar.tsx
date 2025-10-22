@@ -63,6 +63,7 @@ export function Sidebar({ onTabChange }: SidebarProps) {
           ...baseItems,
           { id: 'patients', label: 'Patients', icon: Users, path: '/patients' },
           { id: 'appointments', label: 'Appointments', icon: Calendar, path: '/appointments' },
+          { id: 'insurance-management', label: 'Insurance Management', icon: Shield, path: '/insurance-management' },
           { id: 'price-lookup', label: 'Price Lookup & Estimates', icon: Calculator, path: '/receptionist/price-lookup' },
           { id: 'receptionist', label: 'Insurance Claims', icon: FileText, path: '/receptionist' },
           { id: 'billing', label: 'Billing', icon: CreditCard, path: '/billing' },
@@ -72,9 +73,9 @@ export function Sidebar({ onTabChange }: SidebarProps) {
         return [
           ...baseItems,
           { id: 'patients', label: 'My Patients', icon: Users, path: '/patients' },
+          { id: 'doctor-queue', label: 'Patient Queue', icon: ListOrdered, path: '/doctor-queue' },
           { id: 'doctor-appointments', label: 'Today\'s Appointments', icon: Calendar, path: '/doctor-appointments' },
           { id: 'appointments', label: 'All Appointments', icon: Calendar, path: '/appointments' },
-          // Remove patient queue
           { id: 'emr', label: 'Medical Records', icon: FileText, path: '/emr' },
           { id: 'clinical-orders', label: 'Clinical Orders', icon: TestTube, path: '/lab-orders' },
           { id: 'prescriptions', label: 'Prescriptions', icon: Pill, path: '/prescriptions' },
@@ -182,6 +183,7 @@ export function Sidebar({ onTabChange }: SidebarProps) {
         return [
           ...baseItems,
           { id: 'nurse-dashboard', label: 'Dashboard', icon: BarChart3, path: '/nurse-dashboard' },
+          { id: 'triage-queue', label: 'Triage Queue', icon: ListOrdered, path: '/triage-queue' },
           { id: 'nurse-triage', label: 'Triage & Vitals', icon: Activity, path: '/nurse-triage' },
           { id: 'nurse-notes', label: 'Patient Care Notes', icon: FileText, path: '/nurse-notes' },
           { id: 'nurse-mar', label: 'Medication Admin', icon: PieChart, path: '/nurse-mar' },
