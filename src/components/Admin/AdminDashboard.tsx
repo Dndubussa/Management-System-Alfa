@@ -3,6 +3,7 @@ import { Users, FileText, Calendar, TestTube, Pill, CreditCard, BarChart3, Setti
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLoading } from '../Common/DashboardLoading';
+import { formatDate, formatDateTime } from '../../utils/dateUtils';
 
 export function AdminDashboard() {
   const { 
@@ -70,24 +71,6 @@ export function AdminDashboard() {
     return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  // Format date and time
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   // Show loading state
   if (loading) {

@@ -5,6 +5,7 @@ import { Patient, MedicalRecord, Appointment } from '../../types';
 import { ArrowLeft, Calendar, Phone, Mail, MapPin, User, Heart, Stethoscope, FileText, Clock, Download, Shield } from 'lucide-react';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
 import { canViewMedicalRecords } from '../../utils/roleUtils';
+import { formatDate, formatDateTime } from '../../utils/dateUtils';
 
 interface PatientDetailProps {
   patient: Patient;
@@ -20,23 +21,6 @@ export function PatientDetail({ patient, onBack, onEdit }: PatientDetailProps) {
   const patientRecords = medicalRecords.filter(record => record.patientId === patient.id);
   const patientAppointments = appointments.filter(appointment => appointment.patientId === patient.id);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const calculateAge = (dateOfBirth: string) => {
     const today = new Date();

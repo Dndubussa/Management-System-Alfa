@@ -1,17 +1,9 @@
 import { MedicalRecord, Patient } from '../types';
+import { formatDate } from './dateUtils';
 
 /**
  * Utility functions for exporting EMR data in various formats
  */
-
-// Format date for consistent display
-const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
 
 /**
  * Convert EMR data to CSV format

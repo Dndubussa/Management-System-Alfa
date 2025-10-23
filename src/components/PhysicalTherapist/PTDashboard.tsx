@@ -3,6 +3,7 @@ import { Calendar, Users, FileText, Activity, BarChart3, Search, Filter, Eye, Pl
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLoading } from '../Common/DashboardLoading';
+import { formatDate, formatTime } from '../../utils/dateUtils';
 
 export function PTDashboard() {
   const { patients, appointments, medicalRecords, loading, error } = useHospital();
@@ -38,16 +39,6 @@ export function PTDashboard() {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('sw-TZ');
-  };
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('sw-TZ', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   // Show loading state
   if (loading) {

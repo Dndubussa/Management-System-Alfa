@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Appointment } from '../../types';
 import { AppointmentStatusUpdate } from './AppointmentStatusUpdate';
 import { findPatientSafely, getPatientDisplayName } from '../../utils/patientUtils';
+import { formatDateTime } from '../../utils/dateUtils';
 
 interface AppointmentListProps {
   onNewAppointment: () => void;
@@ -90,13 +91,6 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
     return doctor ? doctor.name : 'Unknown Doctor';
   };
 
-  const formatDateTime = (dateTimeString: string) => {
-    const date = new Date(dateTimeString);
-    return {
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -251,11 +245,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                         <div className="flex items-center text-sm text-gray-900">
                           <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                           <div>
-                            <div>{dateTime.date}</div>
-                            <div className="text-gray-500 flex items-center">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {dateTime.time}
-                            </div>
+                            <div>{dateTime}</div>
                           </div>
                         </div>
                       </td>

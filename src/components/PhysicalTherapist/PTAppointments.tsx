@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, User, Search, Filter, Plus, Edit, Eye, CheckCircle, Play } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
+import { formatDate, formatTime } from '../../utils/dateUtils';
 
 export function PTAppointments() {
   const { patients, appointments } = useHospital();
@@ -49,16 +50,6 @@ export function PTAppointments() {
     return patient ? patient.mrn : 'Unknown MRN';
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('sw-TZ');
-  };
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('sw-TZ', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
