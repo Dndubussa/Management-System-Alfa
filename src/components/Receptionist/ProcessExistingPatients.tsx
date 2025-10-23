@@ -10,6 +10,9 @@ export function ProcessExistingPatients() {
   const [unprocessedPatients, setUnprocessedPatients] = useState<Patient[]>([]);
   const [processing, setProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
+  const [showDoctorSelection, setShowDoctorSelection] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
 
   // Find patients who need to be processed
   useEffect(() => {
@@ -45,7 +48,7 @@ export function ProcessExistingPatients() {
   };
 
   // Process a single patient
-  const processPatient = async (patient: Patient) => {
+  const processPatient = async (patient: Patient, doctorId?: string) => {
     try {
       const availableDoctors = getAvailableDoctors(patient);
       if (availableDoctors.length === 0) {
@@ -53,11 +56,22 @@ export function ProcessExistingPatients() {
         return;
       }
 
-      // Auto-assign appropriate doctor
-      let assignedDoctor = availableDoctors[0];
-      if (patient.insuranceInfo?.provider === 'NHIF') {
-        const generalDoctors = availableDoctors.filter(d => d.role === 'doctor');
-        assignedDoctor = generalDoctors.length > 0 ? generalDoctors[0] : availableDoctors[0];
+      let assignedDoctor;
+      
+      if (doctorId) {
+        // Use manually selected doctor
+        assignedDoctor = availableDoctors.find(d => d.id === doctorId);
+        if (!assignedDoctor) {
+          alert('Selected doctor is not available for this patient type');
+          return;
+        }
+      } else {
+        // Auto-assign appropriate doctor
+        assignedDoctor = availableDoctors[0];
+        if (patient.insuranceInfo?.provider === 'NHIF') {
+          const generalDoctors = availableDoctors.filter(d => d.role === 'doctor');
+          assignedDoctor = generalDoctors.length > 0 ? generalDoctors[0] : availableDoctors[0];
+        }
       }
 
       // Update patient with assigned doctor
@@ -65,9 +79,11 @@ export function ProcessExistingPatients() {
         assignedDoctorId: assignedDoctor.id,
         assignedDoctorName: assignedDoctor.name,
         assignmentDate: new Date().toISOString(),
-        assignmentReason: patient.insuranceInfo?.provider === 'NHIF' 
-          ? 'NHIF patient - assigned to general practitioner' 
-          : 'Patient assigned to specialist'
+        assignmentReason: doctorId 
+          ? 'Patient manually assigned to selected doctor'
+          : patient.insuranceInfo?.provider === 'NHIF' 
+            ? 'NHIF patient - assigned to general practitioner' 
+            : 'Patient assigned to specialist'
       });
 
       // Add patient to triage queue
@@ -79,9 +95,11 @@ export function ProcessExistingPatients() {
         workflowStage: 'reception',
         assignedDoctorId: assignedDoctor.id,
         assignedDoctorName: assignedDoctor.name,
-        assignmentReason: patient.insuranceInfo?.provider === 'NHIF' 
-          ? 'NHIF patient - assigned to general practitioner' 
-          : 'Patient assigned to specialist'
+        assignmentReason: doctorId 
+          ? 'Patient manually assigned to selected doctor'
+          : patient.insuranceInfo?.provider === 'NHIF' 
+            ? 'NHIF patient - assigned to general practitioner' 
+            : 'Patient assigned to specialist'
       });
 
       // Notify nurses
@@ -304,13 +322,25 @@ export function ProcessExistingPatients() {
                     {new Date(patient.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => processPatient(patient)}
-                      className="text-green-600 hover:text-green-900 transition-colors flex items-center space-x-1"
-                    >
-                      <Stethoscope className="w-4 h-4" />
-                      <span>Process</span>
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => processPatient(patient)}
+                        className="text-green-600 hover:text-green-900 transition-colors flex items-center space-x-1"
+                      >
+                        <Stethoscope className="w-4 h-4" />
+                        <span>Auto Process</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedPatient(patient);
+                          setShowDoctorSelection(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>Choose Doctor</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -318,6 +348,73 @@ export function ProcessExistingPatients() {
           </table>
         </div>
       </div>
+
+      {/* Doctor Selection Modal */}
+      {showDoctorSelection && selectedPatient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Doctor for Patient</h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Patient
+                </label>
+                <div className="text-sm text-gray-900">
+                  {selectedPatient.firstName} {selectedPatient.lastName} ({selectedPatient.mrn})
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available Doctors
+                </label>
+                <select
+                  value={selectedDoctorId}
+                  onChange={(e) => setSelectedDoctorId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select a doctor...</option>
+                  {getAvailableDoctors(selectedPatient).map((doctor) => (
+                    <option key={doctor.id} value={doctor.id}>
+                      Dr. {doctor.name} ({doctor.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDoctorSelection(false);
+                    setSelectedPatient(null);
+                    setSelectedDoctorId('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedDoctorId) {
+                      processPatient(selectedPatient, selectedDoctorId);
+                      setShowDoctorSelection(false);
+                      setSelectedPatient(null);
+                      setSelectedDoctorId('');
+                    } else {
+                      alert('Please select a doctor');
+                    }
+                  }}
+                  disabled={!selectedDoctorId || processing}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  {processing ? 'Processing...' : 'Assign & Process'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

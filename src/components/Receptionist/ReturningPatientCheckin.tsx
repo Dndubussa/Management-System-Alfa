@@ -11,6 +11,8 @@ export function ReturningPatientCheckin() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [processing, setProcessing] = useState(false);
   const [searchResults, setSearchResults] = useState<Patient[]>([]);
+  const [showDoctorSelection, setShowDoctorSelection] = useState(false);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
 
   // Search for patients
   useEffect(() => {
@@ -45,7 +47,7 @@ export function ReturningPatientCheckin() {
   };
 
   // Process returning patient
-  const processReturningPatient = async (patient: Patient) => {
+  const processReturningPatient = async (patient: Patient, doctorId?: string) => {
     setProcessing(true);
     try {
       const availableDoctors = getAvailableDoctors(patient);
@@ -54,20 +56,28 @@ export function ReturningPatientCheckin() {
         return;
       }
 
-      // For returning patients, we can either:
-      // 1. Keep their previous doctor assignment, or
-      // 2. Assign a new doctor based on current availability
+      let assignedDoctor;
       
-      // Option 1: Keep previous doctor if still available
-      let assignedDoctor = availableDoctors.find(d => d.id === patient.assignedDoctorId);
-      
-      // Option 2: If previous doctor not available, assign new one
-      if (!assignedDoctor) {
-        if (patient.insuranceInfo?.provider === 'NHIF') {
-          const generalDoctors = availableDoctors.filter(d => d.role === 'doctor');
-          assignedDoctor = generalDoctors.length > 0 ? generalDoctors[0] : availableDoctors[0];
-        } else {
-          assignedDoctor = availableDoctors[0];
+      if (doctorId) {
+        // Use manually selected doctor
+        assignedDoctor = availableDoctors.find(d => d.id === doctorId);
+        if (!assignedDoctor) {
+          alert('Selected doctor is not available for this patient type');
+          return;
+        }
+      } else {
+        // Auto-assign logic
+        // Option 1: Keep previous doctor if still available
+        assignedDoctor = availableDoctors.find(d => d.id === patient.assignedDoctorId);
+        
+        // Option 2: If previous doctor not available, assign new one
+        if (!assignedDoctor) {
+          if (patient.insuranceInfo?.provider === 'NHIF') {
+            const generalDoctors = availableDoctors.filter(d => d.role === 'doctor');
+            assignedDoctor = generalDoctors.length > 0 ? generalDoctors[0] : availableDoctors[0];
+          } else {
+            assignedDoctor = availableDoctors[0];
+          }
         }
       }
 
@@ -76,9 +86,11 @@ export function ReturningPatientCheckin() {
         assignedDoctorId: assignedDoctor.id,
         assignedDoctorName: assignedDoctor.name,
         assignmentDate: new Date().toISOString(),
-        assignmentReason: patient.assignedDoctorId === assignedDoctor.id 
-          ? 'Returning patient - same doctor' 
-          : 'Returning patient - new doctor assigned'
+        assignmentReason: doctorId 
+          ? 'Returning patient - manually assigned doctor'
+          : patient.assignedDoctorId === assignedDoctor.id 
+            ? 'Returning patient - same doctor' 
+            : 'Returning patient - new doctor assigned'
       });
 
       // Add patient to triage queue for current visit
@@ -90,9 +102,11 @@ export function ReturningPatientCheckin() {
         workflowStage: 'reception',
         assignedDoctorId: assignedDoctor.id,
         assignedDoctorName: assignedDoctor.name,
-        assignmentReason: patient.assignedDoctorId === assignedDoctor.id 
-          ? 'Returning patient - same doctor' 
-          : 'Returning patient - new doctor assigned'
+        assignmentReason: doctorId 
+          ? 'Returning patient - manually assigned doctor'
+          : patient.assignedDoctorId === assignedDoctor.id 
+            ? 'Returning patient - same doctor' 
+            : 'Returning patient - new doctor assigned'
       });
 
       // Notify nurses
@@ -122,8 +136,10 @@ export function ReturningPatientCheckin() {
       setSelectedPatient(null);
       setSearchTerm('');
       setSearchResults([]);
+      setShowDoctorSelection(false);
+      setSelectedDoctorId('');
       
-      alert(`Successfully checked in ${patient.firstName} ${patient.lastName}! They have been added to the triage queue.`);
+      alert(`Successfully checked in ${patient.firstName} ${patient.lastName}! They have been assigned to Dr. ${assignedDoctor.name} and added to the triage queue.`);
     } catch (error) {
       console.error('Error processing returning patient:', error);
       alert('Error processing returning patient. Please try again.');
@@ -269,23 +285,36 @@ export function ReturningPatientCheckin() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => processReturningPatient(patient)}
-                        disabled={processing}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                      >
-                        {processing ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Stethoscope className="w-4 h-4" />
-                            <span>Check In</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => processReturningPatient(patient)}
+                          disabled={processing}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                        >
+                          {processing ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Stethoscope className="w-4 h-4" />
+                              <span>Auto Check In</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedPatient(patient);
+                            setShowDoctorSelection(true);
+                          }}
+                          disabled={processing}
+                          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                        >
+                          <User className="w-4 h-4" />
+                          <span>Choose Doctor</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -370,18 +399,96 @@ export function ReturningPatientCheckin() {
                           <div className="text-xs text-gray-500">{patient.mrn}</div>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          processReturningPatient(patient);
-                        }}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
+                      <div className="flex space-x-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            processReturningPatient(patient);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                          title="Auto Check In"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPatient(patient);
+                            setShowDoctorSelection(true);
+                          }}
+                          className="text-green-600 hover:text-green-800 transition-colors"
+                          title="Choose Doctor"
+                        >
+                          <User className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Doctor Selection Modal */}
+      {showDoctorSelection && selectedPatient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Doctor for Patient</h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Patient
+                </label>
+                <div className="text-sm text-gray-900">
+                  {selectedPatient.firstName} {selectedPatient.lastName} ({selectedPatient.mrn})
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available Doctors
+                </label>
+                <select
+                  value={selectedDoctorId}
+                  onChange={(e) => setSelectedDoctorId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select a doctor...</option>
+                  {getAvailableDoctors(selectedPatient).map((doctor) => (
+                    <option key={doctor.id} value={doctor.id}>
+                      Dr. {doctor.name} ({doctor.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDoctorSelection(false);
+                    setSelectedPatient(null);
+                    setSelectedDoctorId('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedDoctorId) {
+                      processReturningPatient(selectedPatient, selectedDoctorId);
+                    } else {
+                      alert('Please select a doctor');
+                    }
+                  }}
+                  disabled={!selectedDoctorId || processing}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  {processing ? 'Processing...' : 'Assign & Check In'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
