@@ -26,7 +26,9 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                    patient?.insuranceInfo?.provider ? 'insurance' : 'cash',
     insuranceProvider: patient?.insuranceInfo?.provider && patient?.insuranceInfo?.provider !== 'Direct' && patient?.insuranceInfo?.provider !== 'Lipa Kwa Simu' ? patient?.insuranceInfo?.provider : '',
     insuranceMembershipNumber: patient?.insuranceInfo?.membershipNumber || '',
-    cashAmount: patient?.insuranceInfo?.cashAmount || ''
+    cashAmount: patient?.insuranceInfo?.cashAmount || '',
+    assignedDoctorId: patient?.assignedDoctorId || '',
+    assignedDoctorName: patient?.assignedDoctorName || ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +50,26 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
     
     return age.toString();
   }
+
+  // Get available doctors based on insurance type
+  const getAvailableDoctors = () => {
+    const insuranceProvider = formData.insuranceProvider;
+    
+    if (insuranceProvider === 'NHIF') {
+      // NHIF patients see general practitioners
+      return users.filter(u => u.role === 'doctor');
+    } else {
+      // Non-NHIF patients can see any specialist
+      return users.filter(u => 
+        u.role === 'doctor' || 
+        u.role === 'ophthalmologist' || 
+        u.role === 'radiologist' || 
+        u.role === 'physical-therapist'
+      );
+    }
+  };
+
+  const availableDoctors = getAvailableDoctors();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +124,11 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                    formData.insuranceProvider.trim(),
           membershipNumber: formData.paymentMethod === 'insurance' ? formData.insuranceMembershipNumber.trim() : '',
           cashAmount: '' // Cash amount will be set during billing after consultation
-        }
+        },
+        assignedDoctorId: formData.assignedDoctorId,
+        assignedDoctorName: availableDoctors.find(d => d.id === formData.assignedDoctorId)?.name || '',
+        assignmentDate: new Date().toISOString(),
+        assignmentReason: formData.insuranceProvider === 'NHIF' ? 'NHIF patient - assigned to general practitioner' : 'Patient assigned to specialist'
       };
 
 
@@ -151,13 +177,19 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
 
   const addPatientToTriageQueue = async (newPatient: Patient, firstName: string, lastName: string) => {
     try {
-      // Add patient to triage queue
+      // Get assigned doctor info
+      const assignedDoctor = availableDoctors.find(d => d.id === formData.assignedDoctorId);
+      
+      // Add patient to triage queue with assigned doctor
       await addToQueue({
         patientId: newPatient.id,
         department: 'general',
         priority: 'normal',
         status: 'waiting',
-        workflowStage: 'reception'
+        workflowStage: 'reception',
+        assignedDoctorId: formData.assignedDoctorId,
+        assignedDoctorName: assignedDoctor?.name || '',
+        assignmentReason: formData.insuranceProvider === 'NHIF' ? 'NHIF patient - assigned to general practitioner' : 'Patient assigned to specialist'
       });
 
       // Notify nurses about new patient
@@ -167,7 +199,19 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
           userIds: nurses,
           type: 'triage',
           title: 'New Patient for Triage',
-          message: `Patient ${firstName} ${lastName} is waiting for triage.`,
+          message: `Patient ${firstName} ${lastName} is waiting for triage. Assigned to Dr. ${assignedDoctor?.name || 'Unknown'}.`,
+          isRead: false,
+          patientId: newPatient.id
+        });
+      }
+
+      // Notify assigned doctor
+      if (assignedDoctor) {
+        addNotification({
+          userIds: [assignedDoctor.id],
+          type: 'queue',
+          title: 'New Patient Assigned',
+          message: `Patient ${firstName} ${lastName} has been assigned to you and is waiting for triage.`,
           isRead: false,
           patientId: newPatient.id
         });
@@ -401,6 +445,60 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
                   <option value="Guardian">Guardian</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Doctor Assignment Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+              Doctor Assignment
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Assigned Doctor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assign Doctor *
+                </label>
+                <select
+                  name="assignedDoctorId"
+                  value={formData.assignedDoctorId}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900"
+                >
+                  <option value="">Select Doctor</option>
+                  {availableDoctors.map((doctor) => (
+                    <option key={doctor.id} value={doctor.id}>
+                      Dr. {doctor.name} - {doctor.department}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-gray-500 mt-1">
+                  {formData.insuranceProvider === 'NHIF' 
+                    ? 'NHIF patients are assigned to general practitioners'
+                    : 'Non-NHIF patients can be assigned to any specialist'
+                  }
+                </p>
+              </div>
+
+              {/* Doctor Assignment Info */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assignment Info
+                </label>
+                <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                  {formData.assignedDoctorId ? (
+                    <div>
+                      <p><strong>Selected:</strong> {availableDoctors.find(d => d.id === formData.assignedDoctorId)?.name}</p>
+                      <p><strong>Department:</strong> {availableDoctors.find(d => d.id === formData.assignedDoctorId)?.department}</p>
+                      <p><strong>Insurance:</strong> {formData.insuranceProvider || 'Cash'}</p>
+                    </div>
+                  ) : (
+                    <p>Please select a doctor to assign to this patient</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

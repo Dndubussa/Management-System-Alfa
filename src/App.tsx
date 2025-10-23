@@ -355,47 +355,8 @@ function AppContent() {
     setShowPatientForm(false);
     setSelectedPatient(null);
     
-    // For new patients, automatically assign a doctor based on insurance type
-    if (!isEdit && newPatient) {
-      try {
-        let assignedDoctorId = null;
-        let assignedDoctorName = null;
-        let assignmentReason = '';
-        
-        if (newPatient.insuranceInfo?.provider === 'NHIF') {
-          // For NHIF patients, assign to a general practitioner
-          const nhifDoctors = users.filter(u => u.role === 'doctor');
-          if (nhifDoctors.length > 0) {
-            assignedDoctorId = nhifDoctors[0].id;
-            assignedDoctorName = nhifDoctors[0].name;
-            assignmentReason = 'NHIF patient - assigned to general practitioner';
-          }
-        } else {
-          // For non-NHIF patients, can assign to any available doctor
-          const availableDoctors = users.filter(u => 
-            u.role === 'doctor' || u.role === 'ophthalmologist' || 
-            u.role === 'radiologist' || u.role === 'physical-therapist'
-          );
-          if (availableDoctors.length > 0) {
-            assignedDoctorId = availableDoctors[0].id;
-            assignedDoctorName = availableDoctors[0].name;
-            assignmentReason = 'Patient assigned to available specialist';
-          }
-        }
-        
-        // Update patient with assigned doctor
-        if (assignedDoctorId) {
-          await updatePatient(newPatient.id, {
-            assignedDoctorId,
-            assignedDoctorName,
-            assignmentDate: new Date().toISOString(),
-            assignmentReason
-          });
-        }
-      } catch (error) {
-        console.error('Error assigning doctor to new patient:', error);
-      }
-    }
+    // Doctor assignment is now handled during registration in PatientForm
+    // No need to assign doctor here as it's already done during patient creation
     
     // Add notification for successful patient save
     addNotification({

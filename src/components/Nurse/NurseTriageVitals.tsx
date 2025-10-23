@@ -78,36 +78,10 @@ export function NurseTriageVitals() {
           const patientQueue = queueData.find((q: any) => q.patient_id === selectedPatientId);
           
           if (patientQueue) {
-            // First, get the patient to determine insurance type
+            // Get the patient to check if doctor is already assigned
             const patient = patients.find(p => p.id === selectedPatientId);
             
-            // Assign appropriate doctor based on insurance type
-            let assignedDoctorId = null;
-            let assignedDoctorName = null;
-            let assignmentReason = '';
-            
-            if (patient?.insuranceInfo?.provider === 'NHIF') {
-              // For NHIF patients, assign to a general practitioner
-              const nhifDoctors = users.filter(u => u.role === 'doctor');
-              if (nhifDoctors.length > 0) {
-                assignedDoctorId = nhifDoctors[0].id;
-                assignedDoctorName = nhifDoctors[0].name;
-                assignmentReason = 'NHIF patient - assigned to general practitioner';
-              }
-            } else {
-              // For non-NHIF patients, can assign to any available doctor
-              const availableDoctors = users.filter(u => 
-                u.role === 'doctor' || u.role === 'ophthalmologist' || 
-                u.role === 'radiologist' || u.role === 'physical-therapist'
-              );
-              if (availableDoctors.length > 0) {
-                assignedDoctorId = availableDoctors[0].id;
-                assignedDoctorName = availableDoctors[0].name;
-                assignmentReason = 'Patient assigned to available specialist';
-              }
-            }
-            
-            // Update queue status
+            // Update queue status to move patient to doctor stage
             await fetch(`/api/patient-queue/${patientQueue.id}/status`, {
               method: 'PUT',
               headers: {
@@ -119,32 +93,28 @@ export function NurseTriageVitals() {
               }),
             });
             
-            // Assign doctor if one was selected
-            if (assignedDoctorId) {
-              await fetch(`/api/patient-queue/${patientQueue.id}/assign-doctor`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  assignedDoctorId,
-                  assignedDoctorName,
-                  assignmentReason
-                }),
-              });
+            // If patient already has an assigned doctor, no need to assign again
+            if (patient?.assignedDoctorId && patient?.assignedDoctorName) {
+              console.log(`Patient ${patient.firstName} ${patient.lastName} already assigned to Dr. ${patient.assignedDoctorName}`);
+            } else {
+              console.warn(`Patient ${patient?.firstName} ${patient?.lastName} does not have an assigned doctor. This should have been set during registration.`);
             }
           }
         }
         
-        // Notify doctors
-        addNotification({
-          userIds: [], // Will be populated with doctor IDs
-          type: 'triage',
-          title: 'Patient Ready for Doctor',
-          message: `Patient ${selectedPatientId} completed triage with ${form.urgency} priority. Vital signs recorded.`,
-          isRead: false,
-          createdAt: new Date().toISOString()
-        } as any);
+        // Notify assigned doctor
+        const patient = patients.find(p => p.id === selectedPatientId);
+        if (patient?.assignedDoctorId) {
+          addNotification({
+            userIds: [patient.assignedDoctorId],
+            type: 'triage',
+            title: 'Triage Complete - Patient Ready',
+            message: `Patient ${patient.firstName} ${patient.lastName} has completed triage with ${form.urgency} priority and is ready for consultation.`,
+            isRead: false,
+            patientId: selectedPatientId,
+            createdAt: new Date().toISOString()
+          } as any);
+        }
         
         // Reset form
         setForm({ 
