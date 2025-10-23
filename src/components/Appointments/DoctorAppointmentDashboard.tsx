@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AppointmentStatusUpdate } from './AppointmentStatusUpdate';
 import { Calendar, Clock, User, Info } from 'lucide-react';
 import { findPatientSafely, getPatientDisplayName } from '../../utils/patientUtils';
+import { formatDateTime } from '../../utils/dateUtils';
 import { DashboardLoading } from '../Common/DashboardLoading';
 
 export function DoctorAppointmentDashboard() {
@@ -37,13 +38,6 @@ export function DoctorAppointmentDashboard() {
     return getPatientDisplayName(patients, patientId);
   };
 
-  const formatDateTime = (dateTimeString: string) => {
-    const date = new Date(dateTimeString);
-    return {
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -162,7 +156,7 @@ export function DoctorAppointmentDashboard() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{dateTime.time}</div>
+                            <div className="text-sm text-gray-900">{dateTime}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900 capitalize">{appointment.type}</div>

@@ -3,6 +3,7 @@ import { Search, User, Stethoscope, Clock, CheckCircle, AlertTriangle, RefreshCw
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Patient } from '../../types';
+import { formatDate } from '../../utils/dateUtils';
 
 export function ReturningPatientCheckin() {
   const { patients, users, addToQueue, addNotification, updatePatient } = useHospital();
@@ -161,9 +162,6 @@ export function ReturningPatientCheckin() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   return (
     <div className="space-y-6">

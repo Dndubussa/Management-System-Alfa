@@ -4,6 +4,7 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Patient } from '../../types';
 import { hasRestrictedPatientVisibility, canCreatePatients, canEditPatients } from '../../utils/roleUtils';
+import { formatDate } from '../../utils/dateUtils';
 
 interface PatientListProps {
   onViewPatient: (patient: Patient) => void;
@@ -57,9 +58,6 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
 
   const filteredPatients = getFilteredPatients();
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const calculateAge = (dateOfBirth: string) => {
     const today = new Date();
