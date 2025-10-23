@@ -41,7 +41,6 @@ import { ReceptionistDashboard } from './components/Receptionist/ReceptionistDas
 import { InsuranceManagementDashboard } from './components/Receptionist/InsuranceManagementDashboard';
 import { InsuranceClaimDetails } from './components/Receptionist/InsuranceClaimDetails';
 import { PriceLookupAndEstimates } from './components/Receptionist/PriceLookupAndEstimates';
-import ProcessExistingPatients from './components/Receptionist/ProcessExistingPatients';
 import ReturningPatientCheckin from './components/Receptionist/ReturningPatientCheckin';
 import { DoctorAppointmentDashboard } from './components/Appointments/DoctorAppointmentDashboard';
 
@@ -486,7 +485,6 @@ function AppContent() {
             {/* Receptionist-specific Routes */}
             <Route path="/receptionist" element={<ReceptionistDashboard onViewBill={handleViewBill} onViewClaim={handleViewClaim} />} />
             <Route path="/returning-patient-checkin" element={<ReturningPatientCheckin />} />
-            <Route path="/process-existing-patients" element={<ProcessExistingPatients />} />
             <Route path="/insurance-management" element={<InsuranceManagementDashboard />} />
             <Route path="/insurance-verification" element={<InsuranceVerification />} />
             <Route path="/insurance-providers" element={<InsuranceProviders />} />
@@ -671,20 +669,13 @@ function DashboardRoute() {
                 <div className="text-blue-600 font-medium">Triage Queue</div>
                 <div className="text-xs text-blue-700 mt-1">View patients waiting for triage</div>
               </button>
-              <button
-                onClick={() => navigate('/returning-patient-checkin')}
-                className="bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg p-4 text-center transition-colors"
-              >
-                <div className="text-cyan-600 font-medium">Returning Patient Check-in</div>
-                <div className="text-xs text-cyan-700 mt-1">Check in existing patients</div>
-              </button>
-              <button
-                onClick={() => navigate('/process-existing-patients')}
-                className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg p-4 text-center transition-colors"
-              >
-                <div className="text-orange-600 font-medium">Process Existing Patients</div>
-                <div className="text-xs text-orange-700 mt-1">Assign doctors & add to triage</div>
-              </button>
+            <button
+              onClick={() => navigate('/returning-patient-checkin')}
+              className="bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg p-4 text-center transition-colors"
+            >
+              <div className="text-cyan-600 font-medium">Returning Patient Check-in</div>
+              <div className="text-xs text-cyan-700 mt-1">Check in existing patients</div>
+            </button>
               <button
                 onClick={() => navigate('/insurance-management')}
                 className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg p-4 text-center transition-colors"

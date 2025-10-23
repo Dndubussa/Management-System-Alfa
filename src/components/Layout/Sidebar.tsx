@@ -29,7 +29,6 @@ import {
   TrendingUp,
   Building2,
   Search,
-  AlertTriangle,
   RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -62,13 +61,12 @@ export function Sidebar({ onTabChange }: SidebarProps) {
     ];
 
     switch (user?.role) {
-      case 'receptionist':
-        return [
-          ...baseItems,
-          { id: 'patients', label: 'Patients', icon: Users, path: '/patients' },
-          { id: 'returning-checkin', label: 'Returning Patient Check-in', icon: RefreshCw, path: '/returning-patient-checkin' },
-          { id: 'process-existing', label: 'Process Existing Patients', icon: AlertTriangle, path: '/process-existing-patients' },
-          { id: 'insurance-management', label: 'Insurance Management', icon: Shield, path: '/insurance-management' },
+        case 'receptionist':
+          return [
+            ...baseItems,
+            { id: 'patients', label: 'Patients', icon: Users, path: '/patients' },
+            { id: 'returning-checkin', label: 'Returning Patient Check-in', icon: RefreshCw, path: '/returning-patient-checkin' },
+            { id: 'insurance-management', label: 'Insurance Management', icon: Shield, path: '/insurance-management' },
           { id: 'insurance-verification', label: 'Insurance Verification', icon: UserCheck, path: '/insurance-verification' },
           { id: 'insurance-providers', label: 'Insurance Providers', icon: Building2, path: '/insurance-providers' },
           { id: 'insurance-submission', label: 'Claim Submission', icon: FileText, path: '/insurance-submission' },
