@@ -28,7 +28,8 @@ import {
   GraduationCap,
   TrendingUp,
   Building2,
-  Search
+  Search,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -64,6 +65,7 @@ export function Sidebar({ onTabChange }: SidebarProps) {
         return [
           ...baseItems,
           { id: 'patients', label: 'Patients', icon: Users, path: '/patients' },
+          { id: 'process-existing', label: 'Process Existing Patients', icon: AlertTriangle, path: '/process-existing-patients' },
           { id: 'insurance-management', label: 'Insurance Management', icon: Shield, path: '/insurance-management' },
           { id: 'insurance-verification', label: 'Insurance Verification', icon: UserCheck, path: '/insurance-verification' },
           { id: 'insurance-providers', label: 'Insurance Providers', icon: Building2, path: '/insurance-providers' },
