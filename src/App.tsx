@@ -663,13 +663,6 @@ function DashboardRoute() {
                 <div className="text-green-600 font-medium">New Patient Registration</div>
                 <div className="text-xs text-green-700 mt-1">Auto-adds to triage queue</div>
               </button>
-              <button
-                onClick={() => navigate('/triage-queue')}
-                className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 text-center transition-colors"
-              >
-                <div className="text-blue-600 font-medium">Triage Queue</div>
-                <div className="text-xs text-blue-700 mt-1">View patients waiting for triage</div>
-              </button>
             <button
               onClick={() => navigate('/returning-patient-checkin')}
               className="bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg p-4 text-center transition-colors"
