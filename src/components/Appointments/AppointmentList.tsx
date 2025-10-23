@@ -3,7 +3,6 @@ import { Calendar, Clock, User, Plus, Search, Filter } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Appointment } from '../../types';
-import { AppointmentStatusUpdate } from './AppointmentStatusUpdate';
 import { findPatientSafely, getPatientDisplayName } from '../../utils/patientUtils';
 import { formatDateTime } from '../../utils/dateUtils';
 
@@ -16,9 +15,6 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
   const { appointments, patients, users, patientQueue } = useHospital();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showPatientHistory, setShowPatientHistory] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
@@ -48,22 +44,13 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
       `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (patient.mrn && patient.mrn.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === '' || appointment.status === statusFilter;
-    
-    const matchesDate = dateFilter === '' || 
-      appointment.dateTime.startsWith(dateFilter);
-
-    const matches = matchesSearch && matchesStatus && matchesDate;
+    const matches = matchesSearch;
     if (!matches) {
       console.log('🔍 AppointmentList - Appointment filtered out:', {
         appointmentId: appointment.id,
         patientName: `${patient.firstName} ${patient.lastName}`,
         matchesSearch,
-        matchesStatus,
-        matchesDate,
-        searchTerm,
-        statusFilter,
-        dateFilter
+        searchTerm
       });
     }
 
@@ -136,10 +123,6 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
     }
   };
 
-  const handleStatusUpdate = () => {
-    // Refresh the appointment list or perform any necessary updates
-    setSelectedAppointment(null);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -165,15 +148,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
 
       </div>
 
-      {selectedAppointment ? (
-        <div className="p-6">
-          <AppointmentStatusUpdate 
-            appointment={selectedAppointment} 
-            onStatusUpdate={handleStatusUpdate} 
-          />
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
+      <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -207,8 +182,8 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
               {filteredAppointments.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    {searchTerm || statusFilter || dateFilter 
-                      ? 'No appointments found matching your criteria.' 
+                    {searchTerm 
+                      ? 'No appointments found matching your search.' 
                       : 'No appointments scheduled.'}
                   </td>
                 </tr>
@@ -276,54 +251,9 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        {user?.role === 'doctor' ? (
-                          // Doctors can only update status for today's appointments that are not completed
-                          <button
-                            onClick={() => {
-                              const today = new Date().toISOString().split('T')[0];
-                              const isToday = appointment.dateTime.startsWith(today);
-                              const isCompleted = appointment.status === 'completed';
-                              
-                              // Only allow status update for today's appointments that are not completed
-                              if (isToday && !isCompleted) {
-                                setSelectedAppointment(appointment);
-                              }
-                            }}
-                            className={`${
-                              (() => {
-                                const today = new Date().toISOString().split('T')[0];
-                                const isToday = appointment.dateTime.startsWith(today);
-                                const isCompleted = appointment.status === 'completed';
-                                return isToday && !isCompleted 
-                                  ? 'text-green-600 hover:text-green-900' 
-                                  : 'text-gray-400 cursor-not-allowed';
-                              })()
-                            } transition-colors`}
-                            disabled={(() => {
-                              const today = new Date().toISOString().split('T')[0];
-                              const isToday = appointment.dateTime.startsWith(today);
-                              const isCompleted = appointment.status === 'completed';
-                              return !(isToday && !isCompleted);
-                            })()}
-                          >
-                            {(() => {
-                              const today = new Date().toISOString().split('T')[0];
-                              const isToday = appointment.dateTime.startsWith(today);
-                              const isCompleted = appointment.status === 'completed';
-                              
-                              if (isCompleted) return 'Completed';
-                              if (!isToday) return 'View Only';
-                              return 'Update Status';
-                            })()}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => onEditAppointment(appointment)}
-                            className="text-green-600 hover:text-green-900 transition-colors"
-                          >
-                            Edit
-                          </button>
-                        )}
+                        <span className="text-gray-500 text-sm">
+                          View Only
+                        </span>
                       </td>
                     </tr>
                   );
