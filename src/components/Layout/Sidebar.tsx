@@ -178,7 +178,6 @@ export function Sidebar({ onTabChange }: SidebarProps) {
       
       case 'nurse':
         return [
-          ...baseItems,
           { id: 'nurse-dashboard', label: 'Dashboard', icon: BarChart3, path: '/nurse-dashboard' },
           { id: 'triage-queue', label: 'Triage Queue', icon: ListOrdered, path: '/triage-queue' },
           { id: 'nurse-triage', label: 'Triage & Vitals', icon: Activity, path: '/nurse-triage' },
