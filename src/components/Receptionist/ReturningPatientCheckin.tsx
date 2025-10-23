@@ -47,8 +47,8 @@ export function ReturningPatientCheckin() {
     }
   };
 
-  // Process returning patient
-  const processReturningPatient = async (patient: Patient, doctorId?: string) => {
+  // Process returning patient with selected doctor
+  const processReturningPatient = async (patient: Patient, doctorId: string) => {
     setProcessing(true);
     try {
       const availableDoctors = getAvailableDoctors(patient);
@@ -57,29 +57,11 @@ export function ReturningPatientCheckin() {
         return;
       }
 
-      let assignedDoctor;
-      
-      if (doctorId) {
-        // Use manually selected doctor
-        assignedDoctor = availableDoctors.find(d => d.id === doctorId);
-        if (!assignedDoctor) {
-          alert('Selected doctor is not available for this patient type');
-          return;
-        }
-      } else {
-        // Auto-assign logic
-        // Option 1: Keep previous doctor if still available
-        assignedDoctor = availableDoctors.find(d => d.id === patient.assignedDoctorId);
-        
-        // Option 2: If previous doctor not available, assign new one
-        if (!assignedDoctor) {
-          if (patient.insuranceInfo?.provider === 'NHIF') {
-            const generalDoctors = availableDoctors.filter(d => d.role === 'doctor');
-            assignedDoctor = generalDoctors.length > 0 ? generalDoctors[0] : availableDoctors[0];
-          } else {
-            assignedDoctor = availableDoctors[0];
-          }
-        }
+      // Use manually selected doctor
+      const assignedDoctor = availableDoctors.find(d => d.id === doctorId);
+      if (!assignedDoctor) {
+        alert('Selected doctor is not available for this patient type');
+        return;
       }
 
       // Update patient with current visit assignment
@@ -87,11 +69,7 @@ export function ReturningPatientCheckin() {
         assignedDoctorId: assignedDoctor.id,
         assignedDoctorName: assignedDoctor.name,
         assignmentDate: new Date().toISOString(),
-        assignmentReason: doctorId 
-          ? 'Returning patient - manually assigned doctor'
-          : patient.assignedDoctorId === assignedDoctor.id 
-            ? 'Returning patient - same doctor' 
-            : 'Returning patient - new doctor assigned'
+        assignmentReason: 'Returning patient - manually assigned doctor'
       });
 
       // Add patient to triage queue for current visit
@@ -103,11 +81,7 @@ export function ReturningPatientCheckin() {
         workflowStage: 'reception',
         assignedDoctorId: assignedDoctor.id,
         assignedDoctorName: assignedDoctor.name,
-        assignmentReason: doctorId 
-          ? 'Returning patient - manually assigned doctor'
-          : patient.assignedDoctorId === assignedDoctor.id 
-            ? 'Returning patient - same doctor' 
-            : 'Returning patient - new doctor assigned'
+        assignmentReason: 'Returning patient - manually assigned doctor'
       });
 
       // Notify nurses
@@ -283,36 +257,17 @@ export function ReturningPatientCheckin() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => processReturningPatient(patient)}
-                          disabled={processing}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                        >
-                          {processing ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                              <span>Processing...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Stethoscope className="w-4 h-4" />
-                              <span>Auto Check In</span>
-                            </>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedPatient(patient);
-                            setShowDoctorSelection(true);
-                          }}
-                          disabled={processing}
-                          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>Choose Doctor</span>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedPatient(patient);
+                          setShowDoctorSelection(true);
+                        }}
+                        disabled={processing}
+                        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                      >
+                        <User className="w-4 h-4" />
+                        <span>Choose Doctor</span>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -397,29 +352,17 @@ export function ReturningPatientCheckin() {
                           <div className="text-xs text-gray-500">{patient.mrn}</div>
                         </div>
                       </div>
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            processReturningPatient(patient);
-                          }}
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
-                          title="Auto Check In"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPatient(patient);
-                            setShowDoctorSelection(true);
-                          }}
-                          className="text-green-600 hover:text-green-800 transition-colors"
-                          title="Choose Doctor"
-                        >
-                          <User className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPatient(patient);
+                          setShowDoctorSelection(true);
+                        }}
+                        className="text-green-600 hover:text-green-800 transition-colors"
+                        title="Choose Doctor"
+                      >
+                        <User className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -484,7 +427,7 @@ export function ReturningPatientCheckin() {
                   disabled={!selectedDoctorId || processing}
                   className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
-                  {processing ? 'Processing...' : 'Assign & Check In'}
+                  {processing ? 'Processing...' : 'Check In Patient'}
                 </button>
               </div>
             </div>
