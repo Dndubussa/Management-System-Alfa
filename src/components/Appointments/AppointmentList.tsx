@@ -446,6 +446,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
