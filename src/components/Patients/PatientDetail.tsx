@@ -204,6 +204,25 @@ export function PatientDetail({ patient, onBack, onEdit }: PatientDetailProps) {
             </div>
           </div>
           <div className="flex items-start">
+            <Stethoscope className="w-5 h-5 text-gray-400 mt-0.5 mr-3" />
+            <div>
+              <p className="text-sm text-gray-500">Assigned Doctor</p>
+              {patient.assignedDoctorName ? (
+                <>
+                  <p className="font-medium">Dr. {patient.assignedDoctorName}</p>
+                  {patient.assignmentDate && (
+                    <p className="text-sm text-gray-500">Assigned: {formatDate(patient.assignmentDate)}</p>
+                  )}
+                  {patient.assignmentReason && (
+                    <p className="text-sm text-gray-400">{patient.assignmentReason}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-400 italic">Not assigned</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-start">
             <Shield className="w-5 h-5 text-gray-400 mt-0.5 mr-3" />
             <div>
               {(() => {

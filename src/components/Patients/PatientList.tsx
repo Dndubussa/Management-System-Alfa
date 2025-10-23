@@ -187,6 +187,9 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                 Payment Method
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Assigned Doctor
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Registered
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -197,7 +200,7 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredPatients.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                   {searchTerm ? 'No patients found matching your search.' : 
                    hasRestrictedPatientVisibility(user?.role) ? 'No patients have been scheduled to see you and have medical records with you yet.' : 
                    'No patients registered yet.'}
@@ -241,6 +244,29 @@ export function PatientList({ onViewPatient, onEditPatient, onNewPatient }: Pati
                         </>
                       );
                     })()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {patient.assignedDoctorName ? (
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          Dr. {patient.assignedDoctorName}
+                        </div>
+                        {patient.assignmentDate && (
+                          <div className="text-xs text-gray-500">
+                            Assigned: {formatDate(patient.assignmentDate)}
+                          </div>
+                        )}
+                        {patient.assignmentReason && (
+                          <div className="text-xs text-gray-400 truncate max-w-32" title={patient.assignmentReason}>
+                            {patient.assignmentReason}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400 italic">
+                        Not assigned
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(patient.createdAt)}
