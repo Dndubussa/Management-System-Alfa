@@ -42,6 +42,7 @@ import { InsuranceManagementDashboard } from './components/Receptionist/Insuranc
 import { InsuranceClaimDetails } from './components/Receptionist/InsuranceClaimDetails';
 import { PriceLookupAndEstimates } from './components/Receptionist/PriceLookupAndEstimates';
 import ProcessExistingPatients from './components/Receptionist/ProcessExistingPatients';
+import ReturningPatientCheckin from './components/Receptionist/ReturningPatientCheckin';
 import { DoctorAppointmentDashboard } from './components/Appointments/DoctorAppointmentDashboard';
 
 // OT Coordinator Components
@@ -484,6 +485,7 @@ function AppContent() {
             
             {/* Receptionist-specific Routes */}
             <Route path="/receptionist" element={<ReceptionistDashboard onViewBill={handleViewBill} onViewClaim={handleViewClaim} />} />
+            <Route path="/returning-patient-checkin" element={<ReturningPatientCheckin />} />
             <Route path="/process-existing-patients" element={<ProcessExistingPatients />} />
             <Route path="/insurance-management" element={<InsuranceManagementDashboard />} />
             <Route path="/insurance-verification" element={<InsuranceVerification />} />
@@ -668,6 +670,13 @@ function DashboardRoute() {
               >
                 <div className="text-blue-600 font-medium">Triage Queue</div>
                 <div className="text-xs text-blue-700 mt-1">View patients waiting for triage</div>
+              </button>
+              <button
+                onClick={() => navigate('/returning-patient-checkin')}
+                className="bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg p-4 text-center transition-colors"
+              >
+                <div className="text-cyan-600 font-medium">Returning Patient Check-in</div>
+                <div className="text-xs text-cyan-700 mt-1">Check in existing patients</div>
               </button>
               <button
                 onClick={() => navigate('/process-existing-patients')}

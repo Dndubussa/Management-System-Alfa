@@ -29,7 +29,8 @@ import {
   TrendingUp,
   Building2,
   Search,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -65,6 +66,7 @@ export function Sidebar({ onTabChange }: SidebarProps) {
         return [
           ...baseItems,
           { id: 'patients', label: 'Patients', icon: Users, path: '/patients' },
+          { id: 'returning-checkin', label: 'Returning Patient Check-in', icon: RefreshCw, path: '/returning-patient-checkin' },
           { id: 'process-existing', label: 'Process Existing Patients', icon: AlertTriangle, path: '/process-existing-patients' },
           { id: 'insurance-management', label: 'Insurance Management', icon: Shield, path: '/insurance-management' },
           { id: 'insurance-verification', label: 'Insurance Verification', icon: UserCheck, path: '/insurance-verification' },
