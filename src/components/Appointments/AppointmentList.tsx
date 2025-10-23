@@ -13,12 +13,14 @@ interface AppointmentListProps {
 }
 
 export function AppointmentList({ onNewAppointment, onEditAppointment }: AppointmentListProps) {
-  const { appointments, patients, users } = useHospital();
+  const { appointments, patients, users, patientQueue } = useHospital();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [showPatientHistory, setShowPatientHistory] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
   // Debug logging
   console.log('🔍 AppointmentList - User:', user?.name, 'Role:', user?.role);
@@ -91,6 +93,29 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
     return doctor ? doctor.name : 'Unknown Doctor';
   };
 
+  // Get patient current status (in queue, triage, doctor, etc.)
+  const getPatientCurrentStatus = (patientId: string) => {
+    const queueItem = patientQueue.find(item => item.patientId === patientId);
+    if (queueItem) {
+      switch (queueItem.workflowStage) {
+        case 'reception': return { status: 'Waiting for Triage', color: 'bg-yellow-100 text-yellow-800' };
+        case 'triage': return { status: 'In Triage', color: 'bg-blue-100 text-blue-800' };
+        case 'doctor': return { status: 'With Doctor', color: 'bg-green-100 text-green-800' };
+        case 'lab': return { status: 'In Lab', color: 'bg-purple-100 text-purple-800' };
+        case 'pharmacy': return { status: 'In Pharmacy', color: 'bg-indigo-100 text-indigo-800' };
+        case 'completed': return { status: 'Completed', color: 'bg-gray-100 text-gray-800' };
+        default: return { status: 'Unknown', color: 'bg-gray-100 text-gray-800' };
+      }
+    }
+    return { status: 'Not in System', color: 'bg-gray-100 text-gray-800' };
+  };
+
+  // Get patient history (all appointments)
+  const getPatientHistory = (patientId: string) => {
+    return appointments.filter(apt => apt.patientId === patientId)
+      .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -120,7 +145,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">All Appointments</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Patient Appointments & History</h2>
           {/* New Appointment button removed for receptionists to avoid workflow conflicts */}
         </div>
 
@@ -173,6 +198,12 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                   Patient
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Current Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  History
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   MRN
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -198,7 +229,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
                     {searchTerm || statusFilter || dateFilter 
                       ? 'No appointments found matching your criteria.' 
                       : 'No appointments scheduled.'}
@@ -221,6 +252,22 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                             <div className="text-sm text-gray-500">ID: {appointment.patientId}</div>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPatientCurrentStatus(appointment.patientId).color}`}>
+                          {getPatientCurrentStatus(appointment.patientId).status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            setSelectedPatient(findPatientSafely(patients, appointment.patientId));
+                            setShowPatientHistory(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          View History ({getPatientHistory(appointment.patientId).length})
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-blue-600">
@@ -318,6 +365,82 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Patient History Modal */}
+      {showPatientHistory && selectedPatient && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Patient History - {selectedPatient.firstName} {selectedPatient.lastName}
+                </h3>
+                <button
+                  onClick={() => setShowPatientHistory(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <div className="text-sm text-gray-600">
+                  <strong>MRN:</strong> {selectedPatient.mrn} | 
+                  <strong> Phone:</strong> {selectedPatient.phone} | 
+                  <strong> Insurance:</strong> {selectedPatient.insuranceInfo?.provider || 'None'}
+                </div>
+              </div>
+
+              <div className="max-h-96 overflow-y-auto">
+                <div className="space-y-4">
+                  {getPatientHistory(selectedPatient.id).length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      No appointment history found for this patient.
+                    </div>
+                  ) : (
+                    getPatientHistory(selectedPatient.id).map((appointment, index) => (
+                      <div key={appointment.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                Appointment #{index + 1}
+                              </span>
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
+                                {appointment.status}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-600 space-y-1">
+                              <div><strong>Date:</strong> {formatDateTime(appointment.dateTime)}</div>
+                              <div><strong>Doctor:</strong> {getDoctorName(appointment.doctorId)}</div>
+                              <div><strong>Department:</strong> {appointment.department}</div>
+                              {appointment.notes && (
+                                <div><strong>Notes:</strong> {appointment.notes}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowPatientHistory(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
