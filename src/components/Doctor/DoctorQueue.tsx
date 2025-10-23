@@ -86,10 +86,12 @@ export function DoctorQueue() {
   };
 
   // Filter patients ready for doctor consultation and assigned to this doctor
+  // Only show patients who have completed triage (have vital signs recorded)
   const doctorPatients = patientQueue.filter(item => 
     item.status === 'waiting' && 
     item.workflowStage === 'doctor' &&
-    item.assignedDoctorId === user?.id
+    item.assignedDoctorId === user?.id &&
+    item.vital_signs // Only show patients who have completed triage (have vital signs)
   );
 
   if (loading) {
@@ -123,8 +125,8 @@ export function DoctorQueue() {
       {doctorPatients.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
           <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Patients Waiting</h3>
-          <p className="text-gray-600">All patients have been seen or no patients are ready for consultation.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Patients Ready for Consultation</h3>
+          <p className="text-gray-600">No patients have completed triage and are ready for consultation yet.</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -133,7 +135,7 @@ export function DoctorQueue() {
               Patients Ready for Consultation ({doctorPatients.length})
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              Patients who have completed triage and are waiting for doctor consultation
+              Patients who have completed triage (vital signs recorded) and are ready for doctor consultation
             </p>
           </div>
           

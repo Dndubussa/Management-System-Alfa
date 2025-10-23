@@ -41,9 +41,25 @@ export function NurseTriageVitals() {
         }
       }
       
-      // Save vital signs to database
+      // First, get the patient queue item to get the queue ID
+      const queueResponse = await fetch('/api/patient-queue', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      let queueId = null;
+      if (queueResponse.ok) {
+        const queueData = await queueResponse.json();
+        const patientQueue = queueData.find((q: any) => q.patient_id === selectedPatientId);
+        queueId = patientQueue?.id;
+      }
+
+      // Save vital signs to database with queue ID
       const vitalData = {
         patientId: selectedPatientId,
+        queueId: queueId, // Link vital signs to the queue item
         recordedBy: user.id,
         temperature: form.temperature ? parseFloat(form.temperature) : null,
         pulse: form.pulse ? parseInt(form.pulse) : null,
@@ -67,22 +83,14 @@ export function NurseTriageVitals() {
         body: JSON.stringify(vitalData),
       });
       
-      if (response.ok) {
+      if (response.ok && queueId) {
         // Update queue status to triage completed
-        const queueResponse = await fetch('/api/patient-queue', {
-          method: 'GET',
-        });
-        
-        if (queueResponse.ok) {
-          const queueData = await queueResponse.json();
-          const patientQueue = queueData.find((q: any) => q.patient_id === selectedPatientId);
-          
-          if (patientQueue) {
+        // We already have the queueId from above
             // Get the patient to check if doctor is already assigned
             const patient = patients.find(p => p.id === selectedPatientId);
             
             // Update queue status to move patient to doctor stage
-            await fetch(`/api/patient-queue/${patientQueue.id}/status`, {
+            await fetch(`/api/patient-queue/${queueId}/status`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
@@ -99,11 +107,8 @@ export function NurseTriageVitals() {
             } else {
               console.warn(`Patient ${patient?.firstName} ${patient?.lastName} does not have an assigned doctor. This should have been set during registration.`);
             }
-          }
-        }
         
-        // Notify assigned doctor
-        const patient = patients.find(p => p.id === selectedPatientId);
+        // Notify assigned doctor (patient variable already declared above)
         if (patient?.assignedDoctorId) {
           addNotification({
             userIds: [patient.assignedDoctorId],
