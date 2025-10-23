@@ -143,44 +143,26 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm">
-        <div className="px-4 sm:px-6 lg:px-8 py-6 border-b border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Patient Appointments & History</h2>
-          {/* New Appointment button removed for receptionists to avoid workflow conflicts */}
-        </div>
+      <div className="bg-white">
+        <div className="px-6 py-8">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">Patient Appointments & History</h1>
+            {/* New Appointment button removed for receptionists to avoid workflow conflicts */}
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="sm:col-span-2 lg:col-span-1 relative">
+        <div className="mb-6">
+          <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by patient name or MRN..."
+              placeholder="Search appointments by patient name or MRN..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          >
-            <option value="">All Status</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          />
         </div>
+
       </div>
 
       {selectedAppointment ? (
@@ -191,47 +173,40 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
           />
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Patient
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  PATIENT INFO
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                  Current Status
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                  History
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   MRN
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Doctor
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  DOCTOR
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date & Time
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  DATE & TIME
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                  Type
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  STATUS
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  CURRENT STATUS
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                  Notes
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  HISTORY
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ACTIONS
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAppointments.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     {searchTerm || statusFilter || dateFilter 
                       ? 'No appointments found matching your criteria.' 
                       : 'No appointments scheduled.'}
@@ -242,10 +217,10 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                   const dateTime = formatDateTime(appointment.dateTime);
                   return (
                     <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                            <User className="w-4 h-4 text-gray-600" />
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                            <User className="w-5 h-5 text-gray-600" />
                           </div>
                           <div>
                             <div className="text-sm font-medium text-gray-900">
@@ -255,23 +230,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPatientCurrentStatus(appointment.patientId).color}`}>
-                          {getPatientCurrentStatus(appointment.patientId).status}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
-                        <button
-                          onClick={() => {
-                            setSelectedPatient(findPatientSafely(patients, appointment.patientId));
-                            setShowPatientHistory(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                        >
-                          View History ({getPatientHistory(appointment.patientId).length})
-                        </button>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-blue-600">
                           {(() => {
                             const patient = findPatientSafely(patients, appointment.patientId);
@@ -279,7 +238,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                           })()}
                         </div>
                       </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {getDoctorName(appointment.doctorId)}
                         </div>
@@ -290,28 +249,33 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
                           })()}
                         </div>
                       </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                          <div>
-                            <div>{dateTime}</div>
-                          </div>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {dateTime}
                         </div>
                       </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(appointment.type)}`}>
-                          {appointment.type}
-                        </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
                           {appointment.status}
                         </span>
                       </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                        {appointment.notes || '-'}
+                      <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPatientCurrentStatus(appointment.patientId).color}`}>
+                          {getPatientCurrentStatus(appointment.patientId).status}
+                        </span>
                       </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                        <button
+                          onClick={() => {
+                            setSelectedPatient(findPatientSafely(patients, appointment.patientId));
+                            setShowPatientHistory(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          View History ({getPatientHistory(appointment.patientId).length})
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {user?.role === 'doctor' ? (
                           // Doctors can only update status for today's appointments that are not completed
                           <button
@@ -367,7 +331,6 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
               )}
             </tbody>
           </table>
-          </div>
         </div>
       )}
 
