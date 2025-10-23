@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 export function NurseTriageVitals() {
   const { patients, users, addNotification } = useHospital();
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [form, setForm] = useState({
     temperature: '', pulse: '', respiratoryRate: '', bloodPressure: '',
@@ -136,13 +138,19 @@ export function NurseTriageVitals() {
         });
         setSelectedPatientId('');
         
-        alert('Vital signs recorded successfully! Patient is now ready for doctor consultation.');
+        showSuccess(
+          'Vital Signs Recorded Successfully!',
+          'Patient vital signs have been recorded and the patient is now ready for doctor consultation.'
+        );
       } else {
         throw new Error('Failed to save vital signs');
       }
     } catch (error) {
       console.error('Error saving vital signs:', error);
-      alert('Failed to save vital signs. Please try again.');
+      showError(
+        'Failed to Save Vital Signs',
+        'There was an error saving the vital signs. Please try again or contact support if the issue persists.'
+      );
     }
   };
 

@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Search, User, Stethoscope, Clock, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { Patient } from '../../types';
 import { formatDate } from '../../utils/dateUtils';
 
 export function ReturningPatientCheckin() {
   const { patients, users, addToQueue, addNotification, updatePatient } = useHospital();
   const { user } = useAuth();
+  const { showSuccess, showError, showWarning } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -53,14 +55,14 @@ export function ReturningPatientCheckin() {
     try {
       const availableDoctors = getAvailableDoctors(patient);
       if (availableDoctors.length === 0) {
-        alert('No doctors available for this patient type');
+        showError('No Doctors Available', 'No doctors are available for this patient type. Please contact administration.');
         return;
       }
 
       // Use manually selected doctor
       const assignedDoctor = availableDoctors.find(d => d.id === doctorId);
       if (!assignedDoctor) {
-        alert('Selected doctor is not available for this patient type');
+        showError('Doctor Not Available', 'The selected doctor is not available for this patient type. Please choose another doctor.');
         return;
       }
 
@@ -114,10 +116,16 @@ export function ReturningPatientCheckin() {
       setShowDoctorSelection(false);
       setSelectedDoctorId('');
       
-      alert(`Successfully checked in ${patient.firstName} ${patient.lastName}! They have been assigned to Dr. ${assignedDoctor.name} and added to the triage queue.`);
+      showSuccess(
+        'Patient Checked In Successfully!',
+        `${patient.firstName} ${patient.lastName} has been assigned to Dr. ${assignedDoctor.name} and added to the triage queue.`
+      );
     } catch (error) {
       console.error('Error processing returning patient:', error);
-      alert('Error processing returning patient. Please try again.');
+      showError(
+        'Check-in Failed',
+        'There was an error processing the returning patient. Please try again or contact support if the issue persists.'
+      );
     } finally {
       setProcessing(false);
     }
@@ -421,7 +429,7 @@ export function ReturningPatientCheckin() {
                     if (selectedDoctorId) {
                       processReturningPatient(selectedPatient, selectedDoctorId);
                     } else {
-                      alert('Please select a doctor');
+                      showWarning('Doctor Selection Required', 'Please select a doctor before checking in the patient.');
                     }
                   }}
                   disabled={!selectedDoctorId || processing}

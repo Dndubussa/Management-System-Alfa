@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { HospitalProvider, useHospital } from './context/HospitalContext';
 import { ErrorProvider } from './context/ErrorContext';
+import { ToastProvider } from './context/ToastContext';
 import { ErrorDisplay, ErrorSummary } from './components/ErrorHandling/ErrorDisplay';
 import { ErrorBoundary } from './components/ErrorHandling/ErrorBoundary';
 import { DataLoadingDiagnostics } from './components/Diagnostics/DataLoadingDiagnostics';
@@ -757,12 +758,14 @@ function App() {
   return (
     <ErrorProvider>
       <ErrorBoundary>
-        <AuthProvider>
-          <HospitalProvider>
-            <AppContent />
-            <ErrorDisplay />
-          </HospitalProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <HospitalProvider>
+              <AppContent />
+              <ErrorDisplay />
+            </HospitalProvider>
+          </AuthProvider>
+        </ToastProvider>
       </ErrorBoundary>
     </ErrorProvider>
   );
