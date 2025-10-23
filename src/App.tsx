@@ -668,13 +668,6 @@ function DashboardRoute() {
                 <div className="text-xs text-blue-700 mt-1">View patients waiting for triage</div>
               </button>
               <button
-                onClick={() => navigate('/appointments')}
-                className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg p-4 text-center transition-colors"
-              >
-                <div className="text-orange-600 font-medium">Schedule Appointment</div>
-                <div className="text-xs text-orange-700 mt-1">For scheduled visits</div>
-              </button>
-              <button
                 onClick={() => navigate('/insurance-management')}
                 className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg p-4 text-center transition-colors"
               >

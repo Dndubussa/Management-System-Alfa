@@ -64,7 +64,6 @@ export function Sidebar({ onTabChange }: SidebarProps) {
         return [
           ...baseItems,
           { id: 'patients', label: 'Patients', icon: Users, path: '/patients' },
-          { id: 'appointments', label: 'Appointments', icon: Calendar, path: '/appointments' },
           { id: 'insurance-management', label: 'Insurance Management', icon: Shield, path: '/insurance-management' },
           { id: 'insurance-verification', label: 'Insurance Verification', icon: UserCheck, path: '/insurance-verification' },
           { id: 'insurance-providers', label: 'Insurance Providers', icon: Building2, path: '/insurance-providers' },

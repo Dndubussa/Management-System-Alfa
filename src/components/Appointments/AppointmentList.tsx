@@ -127,15 +127,7 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">All Appointments</h2>
-          {user?.role === 'receptionist' && (
-            <button
-              onClick={onNewAppointment}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Appointment</span>
-            </button>
-          )}
+          {/* New Appointment button removed for receptionists to avoid workflow conflicts */}
         </div>
 
         <div className="flex flex-wrap gap-4">
