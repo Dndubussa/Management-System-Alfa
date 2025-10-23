@@ -262,7 +262,6 @@ export function AppointmentList({ onNewAppointment, onEditAppointment }: Appoint
             </tbody>
           </table>
         </div>
-      )}
 
       {/* Patient History Modal */}
       {showPatientHistory && selectedPatient && (
