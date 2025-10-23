@@ -209,7 +209,13 @@ function mapPatientFromDb(row: any): Patient {
     insuranceInfo: {
       provider: c.insuranceProvider || '',
       membershipNumber: c.insuranceMembershipNumber || '',
+      cashAmount: c.cashAmount || '',
     },
+    // Doctor assignment fields
+    assignedDoctorId: c.assignedDoctorId || undefined,
+    assignedDoctorName: c.assignedDoctorName || undefined,
+    assignmentDate: c.assignmentDate || undefined,
+    assignmentReason: c.assignmentReason || undefined,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
   };
@@ -461,6 +467,20 @@ export const supabaseService = {
       patientData.emergency_contact_name = emergencyContact.name || '';
       patientData.emergency_contact_phone = emergencyContact.phone || '';
       patientData.emergency_contact_relationship = emergencyContact.relationship || '';
+    }
+
+    // Add doctor assignment fields separately
+    if (patient.assignedDoctorId !== undefined) {
+      patientData.assigned_doctor_id = patient.assignedDoctorId || null;
+    }
+    if (patient.assignedDoctorName !== undefined) {
+      patientData.assigned_doctor_name = patient.assignedDoctorName || null;
+    }
+    if (patient.assignmentDate !== undefined) {
+      patientData.assignment_date = patient.assignmentDate || null;
+    }
+    if (patient.assignmentReason !== undefined) {
+      patientData.assignment_reason = patient.assignmentReason || null;
     }
 
     // Remove undefined values to avoid validation errors
