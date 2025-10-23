@@ -66,7 +66,7 @@ export function TriageQueue() {
 
   // Filter patients waiting for triage
   const triagePatients = patientQueue.filter(item => 
-    item.status === 'waiting' && item.workflowStage === 'reception'
+    item && item.status === 'waiting' && item.workflowStage === 'reception'
   );
 
   if (loading) {

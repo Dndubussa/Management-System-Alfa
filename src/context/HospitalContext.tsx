@@ -275,7 +275,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           otSlotsData,
           otResourcesData,
           inventoryItemsData,
-          medicationInventoryData
+          medicationInventoryData,
+          patientQueueData
         ] = await Promise.all([
           loadPatients(),
           service.getMedicalRecords().then(data => {
@@ -493,6 +494,19 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
               metadata: { error: err }
             });
             return []; 
+          }),
+          service.getPatientQueue().catch(err => { 
+            addError({
+              type: 'error',
+              title: 'Failed to Load Patient Queue',
+              message: 'Unable to load patient queue data',
+              details: err instanceof Error ? err.message : String(err),
+              component: 'HospitalContext',
+              action: 'loadData',
+              userAction: 'Application startup',
+              metadata: { error: err }
+            });
+            return []; 
           })
         ]);
         
@@ -509,7 +523,8 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
           departments: departmentsData.length,
           referrals: referralsData.length,
           users: usersData.length,
-          insuranceClaims: insuranceClaimsData.length
+          insuranceClaims: insuranceClaimsData.length,
+          patientQueue: patientQueueData.length
         });
         
         setPatients(patientsData);
@@ -529,6 +544,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
         setOTResources(otResourcesData);
         setInventoryItems(inventoryItemsData);
         setMedicationInventory(medicationInventoryData);
+        setPatientQueue(patientQueueData);
       } catch (err) {
         console.error('Error loading data:', err);
         const errorMessage = err instanceof Error ? err.message : String(err);
