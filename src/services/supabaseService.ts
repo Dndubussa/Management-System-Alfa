@@ -2047,6 +2047,9 @@ export const supabaseService = {
         recorded_at: new Date().toISOString()
       };
 
+      console.log('🔍 Supabase createVitalSigns - Data to insert:', vitalSignsData);
+      console.log('🔍 Supabase createVitalSigns - Client URL:', supabase.supabaseUrl);
+      
       const { data, error } = await supabase
         .from('vital_signs')
         .insert([vitalSignsData])
@@ -2054,6 +2057,13 @@ export const supabaseService = {
         .single();
       
       if (error) {
+        console.error('❌ Supabase createVitalSigns error:', error);
+        console.error('❌ Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw handleSupabaseError(error, {
           component: 'supabaseService',
           action: 'createVitalSigns',
