@@ -61,6 +61,7 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
 
   const [duplicateCheck, setDuplicateCheck] = useState<any>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load triage vital signs when component mounts
   useEffect(() => {
@@ -119,7 +120,7 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
   const [referrals, setReferrals] = useState<{specialist: string, reason: string}[]>([]);
   const [admissionRequest, setAdmissionRequest] = useState({ required: false, reason: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Check for duplicates before submitting
@@ -128,7 +129,10 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
       return;
     }
     
-    const now = new Date().toISOString();
+    setIsSubmitting(true);
+    
+    try {
+      const now = new Date().toISOString();
     
     // Prepare prescriptions with full data
     const fullPrescriptions: Prescription[] = prescriptions.map((p, index) => ({
@@ -212,6 +216,12 @@ MH: ${formData.medicationHistory}
     }
 
     onSave();
+    } catch (error) {
+      console.error('Error saving medical record:', error);
+      showError('Save Failed', 'There was an error saving the medical record. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -1238,16 +1248,27 @@ MH: ${formData.medicationHistory}
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            disabled={isSubmitting}
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-green-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            disabled={isSubmitting}
+            className="px-4 py-2 bg-green-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4 inline mr-1" />
-            Save Record
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline mr-1"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 inline mr-1" />
+                Save Record
+              </>
+            )}
           </button>
         </div>
       </form>

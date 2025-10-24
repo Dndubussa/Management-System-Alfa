@@ -50,6 +50,7 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
   const [consultationService, setConsultationService] = useState<string>('');
   const [duplicateCheck, setDuplicateCheck] = useState<any>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Handle consultation cost calculation from the reusable component
   const handleCostCalculated = (cost: number, serviceName: string) => {
@@ -80,6 +81,8 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
       showWarning('Duplicate Appointment Found', 'Please review the duplicate detection results before proceeding.');
       return;
     }
+    
+    setIsSubmitting(true);
     
     try {
       const dateTime = `${formData.date}T${formData.time}:00Z`;
@@ -170,6 +173,8 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
         action: 'handleSubmit',
         userAction: 'Create new appointment'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -336,7 +341,8 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors flex items-center space-x-2"
+            disabled={isSubmitting}
+            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-4 h-4" />
             <span>Cancel</span>
@@ -344,17 +350,27 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
           
           <button
             type="submit"
-            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2"
+            disabled={isSubmitting}
+            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4" />
-            <span>
-              {appointment ? 'Update Appointment' : 'Schedule Appointment'}
-              {!appointment && consultationCost > 0 && (
-                <span className="ml-2 text-green-200">
-                  ({consultationCost.toLocaleString()} TZS)
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>
+                  {appointment ? 'Update Appointment' : 'Schedule Appointment'}
+                  {!appointment && consultationCost > 0 && (
+                    <span className="ml-2 text-green-200">
+                      ({consultationCost.toLocaleString()} TZS)
+                    </span>
+                  )}
                 </span>
-              )}
-            </span>
+              </>
+            )}
           </button>
         </div>
       </form>
