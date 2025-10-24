@@ -17,11 +17,25 @@ export default async function handler(req, res) {
   try {
     const { createClient } = await import('@supabase/supabase-js');
     
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+    // Try to get environment variables - Vercel functions need non-VITE variables
+    // But we'll fallback to VITE variables for compatibility
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.VITE_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    
+    console.log('🔍 Auth environment variables check:');
+    console.log('SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
+    console.log('VITE_SUPABASE_KEY:', process.env.VITE_SUPABASE_KEY ? 'SET' : 'MISSING');
+    console.log('VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
     
     if (!supabaseUrl || !supabaseKey) {
-      return res.status(500).json({ error: 'Missing Supabase credentials' });
+      console.error('❌ Missing Supabase credentials for auth');
+      return res.status(500).json({ 
+        error: 'Missing Supabase credentials for authentication.',
+        details: {
+          supabaseUrl: supabaseUrl ? 'SET' : 'MISSING',
+          supabaseKey: supabaseKey ? 'SET' : 'MISSING'
+        }
+      });
     }
     
     const supabase = createClient(supabaseUrl, supabaseKey);
