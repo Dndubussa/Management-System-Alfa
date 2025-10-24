@@ -1,7 +1,11 @@
 // API Configuration
 export const getApiUrl = (endpoint: string = '') => {
-  // Use the current hostname for API calls to ensure consistency with deployment
-  const baseUrl = `${window.location.origin}/api`;
+  // Use the backend server for API calls when in development
+  // Use the current hostname for API calls in production (Vercel)
+  const isDevelopment = import.meta.env.DEV;
+  const baseUrl = isDevelopment 
+    ? 'http://localhost:3001/api' 
+    : `${window.location.origin}/api`;
   
   console.log('🔍 API Configuration:', {
     hostname: window.location.hostname,
@@ -9,7 +13,8 @@ export const getApiUrl = (endpoint: string = '') => {
     baseUrl,
     endpoint,
     fullUrl: endpoint ? `${baseUrl}/${endpoint}` : baseUrl,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: isDevelopment ? 'development' : 'production'
   });
   
   return endpoint ? `${baseUrl}/${endpoint}` : baseUrl;

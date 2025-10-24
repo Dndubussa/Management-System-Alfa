@@ -1,76 +1,60 @@
 # 🔐 Vercel Environment Variables Setup Guide
 
-## Security Best Practices
+## Your Current Configuration
 
-For security reasons, we should never expose the Supabase service role key to the frontend. Here's how to properly configure environment variables for Vercel deployment:
+Based on your setup, you're correctly using `VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY` for your Vercel deployment. This is the right approach for your application.
 
 ## Required Environment Variables
 
-### 1. Frontend Variables (Public)
-These variables are safe to expose to the frontend:
+### Variables You're Already Using (Correct)
+These variables are safe and working in your Vercel deployment:
 
 ```
 VITE_SUPABASE_URL=your-supabase-project-url
 VITE_SUPABASE_KEY=your-anon-key
 ```
 
-### 2. Backend Variables (Server-side Only)
-These variables should ONLY be available on the server-side:
-
-```
-SUPABASE_URL=your-supabase-project-url
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
 ## Vercel Dashboard Configuration
 
 1. Go to your Vercel project dashboard
 2. Navigate to Settings → Environment Variables
-3. Add the following variables:
+3. Ensure these variables are set:
 
 | Variable Name | Value | Environment |
 |---------------|-------|-------------|
 | `VITE_SUPABASE_URL` | Your Supabase project URL | All |
 | `VITE_SUPABASE_KEY` | Your Supabase anon key | All |
-| `SUPABASE_URL` | Your Supabase project URL | All |
-| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service role key | Production & Preview Only |
 
-## Why This Approach?
+## Why This Works
 
-1. **Security**: The service role key has full access to your database and should never be exposed to the frontend
-2. **Functionality**: Serverless functions need the service role key to perform backend operations
-3. **Separation**: Frontend uses anon key for limited, user-authenticated access
-4. **Flexibility**: Backend operations use service role key for full access when needed
+1. **Security**: The anon key has limited permissions and is safe to use in frontend applications
+2. **Compatibility**: Your Vercel functions are correctly configured to use these same variables
+3. **Simplicity**: Using the same variables for both frontend and backend reduces configuration complexity
 
-## Environment Variable Availability
+## Troubleshooting Your Current Issue
 
-- **Development**: Both frontend and backend variables available
-- **Preview**: Both frontend and backend variables available
-- **Production**: Both frontend and backend variables available
+Since you're already using the correct environment variables, the issue is likely related to:
+
+1. **Vercel Function Deployment**: The serverless function may not be deployed correctly
+2. **CORS Configuration**: Missing CORS headers in the Vercel function
+3. **API Route Configuration**: Incorrect routing in vercel.json
 
 ## Testing Your Configuration
 
-After setting up the environment variables:
+After verifying your environment variables:
 
-1. Redeploy your application
-2. Test the vital signs form
-3. Check Vercel function logs for any errors
-
-## Troubleshooting
-
-### Issue: "Missing Supabase credentials"
-**Solution**: Ensure all required environment variables are set in Vercel dashboard
-
-### Issue: "Supabase error: permission denied"
-**Solution**: The service role key is not properly configured for backend operations
-
-### Issue: Functions not deploying
-**Solution**: Check that your API routes follow the correct Vercel function structure
+1. Check that your Vercel function is deployed
+2. Verify CORS headers are set in the function
+3. Test the API endpoint directly in your browser:
+   ```
+   https://your-app.vercel.app/api/vital-signs
+   ```
+   You should see a JSON response like `{"error":"Method not allowed"}` instead of HTML.
 
 ## Need Help?
 
 If you're still experiencing issues:
 1. Check Vercel function logs for specific error messages
 2. Verify your Supabase project is active and accessible
-3. Confirm all environment variables are correctly set
-4. Ensure your database RLS policies are properly configured
+3. Confirm your database RLS policies are properly configured
+4. Check that your vercel.json routing is correct

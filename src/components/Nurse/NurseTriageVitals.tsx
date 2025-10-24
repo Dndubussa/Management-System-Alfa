@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
-import { API_ENDPOINTS } from '../../config/api';
 
 export function NurseTriageVitals() {
   const { patients, users, addNotification } = useHospital();
@@ -166,45 +165,11 @@ export function NurseTriageVitals() {
       
       console.log('🔍 Attempting to save vital signs:', vitalData);
       
-      try {
-        // First, try using the Supabase service directly
-        console.log('🔄 Trying direct Supabase service...');
-        const { supabaseService } = await import('../../services/supabaseService');
-        const result = await supabaseService.createVitalSigns(vitalData);
-        console.log('✅ Vital signs saved successfully via Supabase service:', result);
-      } catch (directError) {
-        console.log('⚠️ Direct Supabase service failed, falling back to API endpoint...', directError);
-        
-        // Fallback to API endpoint
-        const apiUrl = API_ENDPOINTS.VITAL_SIGNS;
-        console.log('🔍 Attempting to save vital signs to:', apiUrl);
-        
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(vitalData),
-        });
-        
-        console.log('🔍 Response status:', response.status);
-        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ API Error Response:', errorText);
-          
-          // Check if it's an HTML response (server not running)
-          if (errorText.includes('<!doctype') || errorText.includes('<html')) {
-            throw new Error('Server not running. Please start the backend server on port 3001.');
-          }
-          
-          throw new Error(`API Error: ${response.status} - ${errorText}`);
-        }
-        
-        const result = await response.json();
-        console.log('✅ Vital signs saved successfully via API:', result);
-      }
+      // Use direct Supabase service for optimal performance
+      console.log('🔄 Using direct Supabase service...');
+      const { supabaseService } = await import('../../services/supabaseService');
+      const result = await supabaseService.createVitalSigns(vitalData);
+      console.log('✅ Vital signs saved successfully via Supabase service:', result);
       
       // Update queue status to triage completed
       if (queueId) {
@@ -265,23 +230,33 @@ export function NurseTriageVitals() {
     } catch (error) {
       console.error('Error saving vital signs:', error);
       
-      // Enhanced error handling with specific messages
+      // Enhanced error handling for Supabase service
       let errorMessage = 'Unknown error occurred';
       let errorTitle = 'Save Failed';
       let errorDetails = '';
       
-      if (error instanceof SyntaxError && (error.message.includes('<!doctype') || error.message.includes('<!DOCTYPE'))) {
-        errorTitle = 'Vercel Function Not Deployed';
-        errorMessage = 'Received HTML instead of JSON response.';
-        errorDetails = 'The Vercel serverless function may not be deployed or environment variables are missing. Check Vercel dashboard.';
-      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        errorTitle = 'Network Error';
-        errorMessage = 'Cannot connect to the API endpoint.';
-        errorDetails = 'Please check your internet connection and Vercel deployment status.';
-      } else if (error instanceof Error) {
-        errorTitle = 'API Error';
-        errorMessage = error.message;
-        errorDetails = 'Check Vercel function logs for detailed error information.';
+      if (error instanceof Error) {
+        if (error.message.includes('JWT') || error.message.includes('token')) {
+          errorTitle = 'Authentication Error';
+          errorMessage = 'Session expired or invalid credentials.';
+          errorDetails = 'Please refresh the page and log in again.';
+        } else if (error.message.includes('permission') || error.message.includes('RLS') || error.message.includes('policy')) {
+          errorTitle = 'Permission Error';
+          errorMessage = 'You do not have permission to save vital signs.';
+          errorDetails = 'Contact administrator to verify your access rights.';
+        } else if (error.message.includes('foreign key') || error.message.includes('constraint')) {
+          errorTitle = 'Data Integrity Error';
+          errorMessage = 'Invalid patient or missing required data.';
+          errorDetails = 'Please refresh the page and select a valid patient.';
+        } else if (error.message.includes('network') || error.message.includes('fetch') || error.message.includes('connection')) {
+          errorTitle = 'Network Error';
+          errorMessage = 'Cannot connect to the database.';
+          errorDetails = 'Check your internet connection and try again.';
+        } else {
+          errorTitle = 'Database Error';
+          errorMessage = error.message;
+          errorDetails = 'Check Supabase logs for detailed error information.';
+        }
       }
       
       // Show comprehensive error message
