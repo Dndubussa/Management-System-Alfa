@@ -1,11 +1,10 @@
 -- =====================================================
--- QUICK FIX: Delete specialized medical records first
+-- QUICK FIX: Delete all records that reference patients
+-- (Without sequence reset)
 -- =====================================================
 
--- Delete ophthalmology records that are causing foreign key constraint
+-- Delete specialized medical records first
 DELETE FROM ophthalmology_records;
-
--- Delete other specialized medical records
 DELETE FROM visual_acuity_tests;
 DELETE FROM refraction_data;
 DELETE FROM intraocular_pressure;
@@ -36,17 +35,3 @@ DELETE FROM notifications;
 
 -- Now delete patients (should work without foreign key errors)
 DELETE FROM patients;
-
--- Reset MRN sequence (if it exists)
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM pg_sequences WHERE sequencename = 'mrn_sequence') THEN
-        ALTER SEQUENCE mrn_sequence RESTART WITH 1;
-        RAISE NOTICE 'Reset MRN sequence to 1';
-    ELSE
-        RAISE NOTICE 'MRN sequence does not exist, skipping reset';
-    END IF;
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE NOTICE 'Could not reset MRN sequence: %', SQLERRM;
-END $$;
