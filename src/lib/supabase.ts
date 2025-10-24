@@ -21,8 +21,8 @@ export function getSupabaseClient() {
 export function getSupabaseServiceClient() {
   if (!supabaseServiceInstance) {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    // Use service role key for database operations that require elevated permissions
-    const supabaseKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_KEY;
+    // Use anon key for client-side operations (service role key should only be used server-side)
+    const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
     
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Missing Supabase environment variables');
@@ -40,7 +40,7 @@ export function getSupabaseServiceClient() {
     console.log('🔍 Supabase Service Client Configuration:', {
       supabaseUrl: supabaseUrl ? 'SET' : 'MISSING',
       supabaseKey: supabaseKey ? 'SET' : 'MISSING',
-      keyType: supabaseKey === import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE_ROLE' : 'ANON',
+      keyType: 'ANON_KEY',
       timestamp: new Date().toISOString()
     });
     
