@@ -168,7 +168,17 @@ export function NurseTriageVitals() {
       const apiUrl = API_ENDPOINTS.VITAL_SIGNS;
       
       console.log('🔍 Attempting to save vital signs to:', apiUrl);
+      console.log('🔍 Current window origin:', window.location.origin);
       console.log('🔍 Vital data:', vitalData);
+      
+      // Test the endpoint first to see what we get
+      try {
+        const optionsResponse = await fetch(apiUrl, { method: 'OPTIONS' });
+        console.log('🔍 OPTIONS request status:', optionsResponse.status);
+        console.log('🔍 OPTIONS request headers:', Object.fromEntries(optionsResponse.headers.entries()));
+      } catch (optionsError) {
+        console.log('🔍 OPTIONS request failed:', optionsError);
+      }
       
       const response = await fetch(apiUrl, {
         method: 'POST',
