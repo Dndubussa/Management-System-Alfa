@@ -5,9 +5,10 @@ export const getApiUrl = (endpoint: string = '') => {
                    window.location.hostname.includes('alfasystem.vercel.app') ||
                    process.env.NODE_ENV === 'production';
   
+  // For local development, always use Vercel API since local backend might not be running
   const baseUrl = isVercel
     ? '/api'  // Vercel serverless functions
-    : 'http://localhost:3001/api';
+    : 'https://alfasystem.vercel.app/api';  // Use Vercel API even for local development
   
   console.log('🔍 API Configuration:', {
     hostname: window.location.hostname,
