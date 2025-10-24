@@ -77,21 +77,20 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
         const vitals = await supabaseService.getLatestVitalSigns(patientId);
         if (vitals) {
           setTriageVitals(vitals);
-            // Auto-populate form with triage vitals if not already set
-            setFormData(prev => ({
-              ...prev,
-              vitals: {
-                ...prev.vitals,
-                bloodPressure: prev.vitals.bloodPressure || `${vitals.bloodPressureSystolic}/${vitals.bloodPressureDiastolic}` || '',
-                heartRate: prev.vitals.heartRate || vitals.pulse?.toString() || '',
-                temperature: prev.vitals.temperature || vitals.temperature?.toString() || '',
-                weight: prev.vitals.weight || vitals.weight?.toString() || '',
-                height: prev.vitals.height || vitals.height?.toString() || '',
-                respiratoryRate: prev.vitals.respiratoryRate || vitals.respiratoryRate?.toString() || '',
-                oxygenSaturation: prev.vitals.oxygenSaturation || vitals.oxygenSaturation?.toString() || ''
-              }
-            }));
-          }
+          // Auto-populate form with triage vitals if not already set
+          setFormData(prev => ({
+            ...prev,
+            vitals: {
+              ...prev.vitals,
+              bloodPressure: prev.vitals.bloodPressure || `${vitals.bloodPressureSystolic}/${vitals.bloodPressureDiastolic}` || '',
+              heartRate: prev.vitals.heartRate || vitals.pulse?.toString() || '',
+              temperature: prev.vitals.temperature || vitals.temperature?.toString() || '',
+              weight: prev.vitals.weight || vitals.weight?.toString() || '',
+              height: prev.vitals.height || vitals.height?.toString() || '',
+              respiratoryRate: prev.vitals.respiratoryRate || vitals.respiratoryRate?.toString() || '',
+              oxygenSaturation: prev.vitals.oxygenSaturation || vitals.oxygenSaturation?.toString() || ''
+            }
+          }));
         }
       } catch (error) {
         console.error('Failed to load triage vitals:', error);
