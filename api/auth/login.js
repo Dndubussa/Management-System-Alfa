@@ -1,4 +1,6 @@
 // Vercel serverless function for authentication
+import { createClient } from '@supabase/supabase-js';
+
 export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,8 +20,7 @@ export default async function handler(req, res) {
     console.log('📥 Auth request received:', {
       method: req.method,
       headers: req.headers,
-      bodyType: typeof req.body,
-      body: req.body
+      bodyType: typeof req.body
     });
     
     // In Vercel functions, the body should already be parsed if Content-Type is application/json
@@ -33,8 +34,6 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid JSON in request body' });
       }
     }
-    
-    const { createClient } = await import('@supabase/supabase-js');
     
     // Try to get environment variables - Vercel functions need non-VITE variables
     // But we'll fallback to VITE variables for compatibility
