@@ -164,94 +164,71 @@ export function NurseTriageVitals() {
         notes: `Triage vitals recorded by ${user.name || 'Nurse'}`
       };
       
-      // Use centralized API configuration
-      const apiUrl = API_ENDPOINTS.VITAL_SIGNS;
+      console.log('🔍 Attempting to save vital signs:', vitalData);
       
-      console.log('🔍 Attempting to save vital signs to:', apiUrl);
-      console.log('🔍 Current window origin:', window.location.origin);
-      console.log('🔍 Vital data:', vitalData);
-      
-      // Test the endpoint first to see what we get
       try {
-        const optionsResponse = await fetch(apiUrl, { method: 'OPTIONS' });
-        console.log('🔍 OPTIONS request status:', optionsResponse.status);
-        console.log('🔍 OPTIONS request headers:', Object.fromEntries(optionsResponse.headers.entries()));
-      } catch (optionsError) {
-        console.log('🔍 OPTIONS request failed:', optionsError);
-      }
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(vitalData),
-      });
-      
-      console.log('🔍 Response status:', response.status);
-      console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
-      
-      const responseText = await response.text();
-      console.log('🔍 Raw response text (first 500 chars):', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
-      
-      // Log the actual URL that was called
-      console.log('🔍 Called URL:', apiUrl);
-      
-      if (!response.ok) {
-        // Check if it's an HTML response (server not running or error page)
-        if (responseText.trim().startsWith('<!doctype') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<!DOCTYPE')) {
-          throw new Error(`Vercel function not deployed or misconfigured. Received HTML instead of JSON from ${apiUrl}`);
+        // First, try using the Supabase service directly
+        console.log('🔄 Trying direct Supabase service...');
+        const { supabaseService } = await import('../../services/supabaseService');
+        const result = await supabaseService.createVitalSigns(vitalData);
+        console.log('✅ Vital signs saved successfully via Supabase service:', result);
+      } catch (directError) {
+        console.log('⚠️ Direct Supabase service failed, falling back to API endpoint...', directError);
+        
+        // Fallback to API endpoint
+        const apiUrl = API_ENDPOINTS.VITAL_SIGNS;
+        console.log('🔍 Attempting to save vital signs to:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(vitalData),
+        });
+        
+        console.log('🔍 Response status:', response.status);
+        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Error Response:', errorText);
+          
+          // Check if it's an HTML response (server not running)
+          if (errorText.includes('<!doctype') || errorText.includes('<html')) {
+            throw new Error('Server not running. Please start the backend server on port 3001.');
+          }
+          
+          throw new Error(`API Error: ${response.status} - ${errorText}`);
         }
         
-        let errorDetails = responseText;
-        try {
-          const errorObj = JSON.parse(responseText);
-          errorDetails = errorObj.error || errorObj.message || responseText;
-        } catch (e) {
-          // If we can't parse as JSON, use the raw text
-        }
-        
-        throw new Error(`API Error: ${response.status} - ${errorDetails}`);
+        const result = await response.json();
+        console.log('✅ Vital signs saved successfully via API:', result);
       }
       
-      // Try to parse the response as JSON
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (e) {
-        // If we can't parse as JSON but the response was OK, it's still an error
-        if (responseText.trim().startsWith('<!doctype') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<!DOCTYPE')) {
-          throw new Error(`Received HTML instead of JSON from ${apiUrl}. Check Vercel deployment and environment variables.`);
-        }
-        throw new Error('Invalid JSON response from server: ' + responseText.substring(0, 200));
-      }
-      
-      console.log('✅ Vital signs saved successfully:', result);
-      
+      // Update queue status to triage completed
       if (queueId) {
-        // Update queue status to triage completed
-        // We already have the queueId from above
-            // Get the patient to check if doctor is already assigned
-            const patient = patients.find(p => p.id === selectedPatientId);
-            
-            // Update queue status to move patient to doctor stage
-            await fetch(`/api/patient-queue/${queueId}/status`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                status: 'waiting',
-                workflowStage: 'doctor'
-              }),
-            });
-            
-            // If patient already has an assigned doctor, no need to assign again
-            if (patient?.assignedDoctorId && patient?.assignedDoctorName) {
-              console.log(`Patient ${patient.firstName} ${patient.lastName} already assigned to Dr. ${patient.assignedDoctorName}`);
-            } else {
-              console.warn(`Patient ${patient?.firstName} ${patient?.lastName} does not have an assigned doctor. This should have been set during registration.`);
-            }
+        // Get the patient to check if doctor is already assigned
+        const patient = patients.find(p => p.id === selectedPatientId);
+        
+        // Update queue status to move patient to doctor stage
+        await fetch(`/api/patient-queue/${queueId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'waiting',
+            workflowStage: 'doctor'
+          }),
+        });
+        
+        // If patient already has an assigned doctor, no need to assign again
+        if (patient?.assignedDoctorId && patient?.assignedDoctorName) {
+          console.log(`Patient ${patient.firstName} ${patient.lastName} already assigned to Dr. ${patient.assignedDoctorName}`);
+        } else {
+          console.warn(`Patient ${patient?.firstName} ${patient?.lastName} does not have an assigned doctor. This should have been set during registration.`);
+        }
         
         // Notify assigned doctor (patient variable already declared above)
         if (patient?.assignedDoctorId) {
@@ -294,17 +271,17 @@ export function NurseTriageVitals() {
       let errorDetails = '';
       
       if (error instanceof SyntaxError && (error.message.includes('<!doctype') || error.message.includes('<!DOCTYPE'))) {
-        errorTitle = 'Vercel Function Not Deployed';
+        errorTitle = 'Server Configuration Error';
         errorMessage = 'Received HTML instead of JSON response.';
-        errorDetails = 'The Vercel serverless function may not be deployed or environment variables are missing. Check Vercel dashboard and ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.';
+        errorDetails = 'This usually means the API endpoint is not properly configured or the server is returning an error page.';
       } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         errorTitle = 'Network Error';
-        errorMessage = 'Cannot connect to the API endpoint.';
-        errorDetails = 'Please check your internet connection and Vercel deployment status. Verify the API URL is correct.';
+        errorMessage = 'Cannot connect to the backend server.';
+        errorDetails = 'Please check if the server is running and accessible.';
       } else if (error instanceof Error) {
         errorTitle = 'API Error';
         errorMessage = error.message;
-        errorDetails = 'Check Vercel function logs for detailed error information. Ensure all environment variables are properly configured.';
+        errorDetails = 'Please check the server logs for more details.';
       }
       
       // Show comprehensive error message
