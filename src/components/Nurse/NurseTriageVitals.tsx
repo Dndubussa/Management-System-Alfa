@@ -247,7 +247,31 @@ export function NurseTriageVitals() {
       }
     } catch (error) {
       console.error('Error saving vital signs:', error);
-      // Error handling - could add error state here if needed
+      
+      // Enhanced error handling with specific messages
+      let errorMessage = 'Unknown error occurred';
+      let errorTitle = 'Save Failed';
+      let errorDetails = '';
+      
+      if (error instanceof SyntaxError && error.message.includes('<!doctype')) {
+        errorTitle = 'Server Not Running';
+        errorMessage = 'The backend server is not running or the API endpoint is not available.';
+        errorDetails = 'Please start the backend server on port 3001 or check if the API endpoint exists.';
+      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        errorTitle = 'Network Error';
+        errorMessage = 'Cannot connect to the backend server.';
+        errorDetails = 'Please check if the server is running and accessible.';
+      } else if (error instanceof Error) {
+        errorTitle = 'API Error';
+        errorMessage = error.message;
+        errorDetails = 'Please check the server logs for more details.';
+      }
+      
+      // Show comprehensive error message
+      setShowGlobalError(true);
+      setValidationErrors({
+        api: `${errorTitle}: ${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -276,16 +300,26 @@ export function NurseTriageVitals() {
             </div>
             <div className="ml-3 flex-1">
               <h3 className="text-sm font-medium text-red-800">
-                Please fix the following errors:
+                {errors.api ? 'Server Connection Error' : 'Please fix the following errors:'}
               </h3>
               <div className="mt-2 text-sm text-red-700">
-                <ul className="list-disc list-inside space-y-1">
-                  {Object.entries(errors).map(([field, message]) => (
-                    <li key={field}>
-                      <span className="font-medium capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}:</span> {message}
-                    </li>
-                  ))}
-                </ul>
+                {errors.api ? (
+                  <div className="bg-red-100 border border-red-300 rounded-md p-3">
+                    <div className="font-medium text-red-800 mb-2">🚨 Backend Server Issue</div>
+                    <div className="text-red-700 mb-2">{errors.api}</div>
+                    <div className="text-xs text-red-600 bg-red-50 p-2 rounded border">
+                      <strong>Quick Fix:</strong> Run <code className="bg-red-200 px-1 rounded">node server.js</code> in your terminal to start the backend server.
+                    </div>
+                  </div>
+                ) : (
+                  <ul className="list-disc list-inside space-y-1">
+                    {Object.entries(errors).map(([field, message]) => (
+                      <li key={field}>
+                        <span className="font-medium capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}:</span> {message}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
