@@ -15,18 +15,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Helper function to check if column exists
-CREATE OR REPLACE FUNCTION column_exists(tbl_name text, col_name text) RETURNS boolean AS $$
-BEGIN
-    RETURN EXISTS (
-        SELECT FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = tbl_name 
-        AND column_name = col_name
-    );
-END;
-$$ LANGUAGE plpgsql;
-
 -- Start deletion process
 DO $$
 DECLARE
@@ -96,10 +84,10 @@ BEGIN
     
     -- Delete in reverse dependency order to avoid foreign key constraint errors
     
-    -- 1. Delete notifications first (they reference patients)
+    -- 1. Delete all notifications (they don't have patient_id column)
     IF table_exists('notifications') THEN
-        DELETE FROM notifications WHERE patient_id IS NOT NULL;
-        RAISE NOTICE 'Deleted patient-related notifications';
+        DELETE FROM notifications;
+        RAISE NOTICE 'Deleted all notifications';
     END IF;
     
     -- 2. Delete insurance claims
@@ -176,7 +164,6 @@ END $$;
 
 -- Clean up helper functions
 DROP FUNCTION IF EXISTS table_exists(text);
-DROP FUNCTION IF EXISTS column_exists(text, text);
 
 -- Final verification
 DO $$

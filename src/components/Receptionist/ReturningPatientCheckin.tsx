@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Patient } from '../../types';
 import { formatDate } from '../../utils/dateUtils';
+import { DuplicateDetection } from '../Common/DuplicateDetection';
 
 export function ReturningPatientCheckin() {
   const { patients, users, addToQueue, addNotification, updatePatient } = useHospital();

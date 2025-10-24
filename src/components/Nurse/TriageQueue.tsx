@@ -17,10 +17,11 @@ export function TriageQueue() {
   const loadTriageQueue = async () => {
     setLoading(true);
     try {
-      await getPatientQueue({ 
+      const queueData = await getPatientQueue({ 
         status: 'waiting', 
         workflowStage: 'reception' 
       });
+      console.log('🔍 TriageQueue - Loaded queue data:', queueData);
     } catch (error) {
       console.error('Error loading triage queue:', error);
     } finally {
@@ -68,6 +69,10 @@ export function TriageQueue() {
   const triagePatients = patientQueue.filter(item => 
     item && item.status === 'waiting' && item.workflowStage === 'reception'
   );
+
+  // Debug logging
+  console.log('🔍 TriageQueue - patientQueue from context:', patientQueue);
+  console.log('🔍 TriageQueue - triagePatients filtered:', triagePatients);
 
   if (loading) {
     return (

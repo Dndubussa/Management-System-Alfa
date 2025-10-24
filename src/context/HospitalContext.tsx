@@ -1047,6 +1047,7 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
   const getPatientQueue = async (filters?: { department?: string; status?: string; workflowStage?: string }) => {
     try {
       const queue = await service.getPatientQueue(filters);
+      setPatientQueue(queue);
       return queue;
     } catch (err) {
       console.error('Error loading patient queue:', err);
