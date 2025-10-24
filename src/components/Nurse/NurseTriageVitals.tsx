@@ -182,12 +182,15 @@ export function NurseTriageVitals() {
       console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
       
       const responseText = await response.text();
-      console.log('🔍 Raw response text:', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+      console.log('🔍 Raw response text (first 500 chars):', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+      
+      // Log the actual URL that was called
+      console.log('🔍 Called URL:', apiUrl);
       
       if (!response.ok) {
         // Check if it's an HTML response (server not running or error page)
         if (responseText.trim().startsWith('<!doctype') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<!DOCTYPE')) {
-          throw new Error('Server not running or API endpoint not found. Please check that the backend server is running on port 3001.');
+          throw new Error(`Vercel function not deployed or misconfigured. Received HTML instead of JSON from ${apiUrl}`);
         }
         
         let errorDetails = responseText;
@@ -208,9 +211,9 @@ export function NurseTriageVitals() {
       } catch (e) {
         // If we can't parse as JSON but the response was OK, it's still an error
         if (responseText.trim().startsWith('<!doctype') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<!DOCTYPE')) {
-          throw new Error('Received HTML instead of JSON. Server may be misconfigured.');
+          throw new Error(`Received HTML instead of JSON from ${apiUrl}. Check Vercel deployment and environment variables.`);
         }
-        throw new Error('Invalid JSON response from server');
+        throw new Error('Invalid JSON response from server: ' + responseText.substring(0, 200));
       }
       
       console.log('✅ Vital signs saved successfully:', result);
@@ -283,15 +286,15 @@ export function NurseTriageVitals() {
       if (error instanceof SyntaxError && (error.message.includes('<!doctype') || error.message.includes('<!DOCTYPE'))) {
         errorTitle = 'Vercel Function Not Deployed';
         errorMessage = 'Received HTML instead of JSON response.';
-        errorDetails = 'The Vercel serverless function may not be deployed or environment variables are missing. Check Vercel dashboard.';
+        errorDetails = 'The Vercel serverless function may not be deployed or environment variables are missing. Check Vercel dashboard and ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.';
       } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         errorTitle = 'Network Error';
         errorMessage = 'Cannot connect to the API endpoint.';
-        errorDetails = 'Please check your internet connection and Vercel deployment status.';
+        errorDetails = 'Please check your internet connection and Vercel deployment status. Verify the API URL is correct.';
       } else if (error instanceof Error) {
         errorTitle = 'API Error';
         errorMessage = error.message;
-        errorDetails = 'Check Vercel function logs for detailed error information.';
+        errorDetails = 'Check Vercel function logs for detailed error information. Ensure all environment variables are properly configured.';
       }
       
       // Show comprehensive error message
