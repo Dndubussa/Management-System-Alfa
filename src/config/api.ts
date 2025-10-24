@@ -1,8 +1,7 @@
 // API Configuration
 export const getApiUrl = (endpoint: string = '') => {
-  const baseUrl = process.env.NODE_ENV === 'production'
-    ? '/api'  // Vercel serverless functions
-    : 'http://localhost:3001/api';
+  // Temporarily use local backend until Vercel functions are deployed
+  const baseUrl = 'http://localhost:3001/api';
   
   return endpoint ? `${baseUrl}/${endpoint}` : baseUrl;
 };
