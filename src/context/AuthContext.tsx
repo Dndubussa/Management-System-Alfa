@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
+import { API_ENDPOINTS } from '../config/api';
 import { api } from '../services/api';
 import { supabase } from '../lib/supabase';
 
@@ -77,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         // Use local API
-        const response = await fetch('http://localhost:3001/api/auth/login', {
+        const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

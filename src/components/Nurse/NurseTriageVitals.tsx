@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { API_ENDPOINTS } from '../../config/api';
 
 export function NurseTriageVitals() {
   const { patients, users, addNotification } = useHospital();
@@ -153,10 +154,8 @@ export function NurseTriageVitals() {
         notes: `Triage vitals recorded by ${user.name || 'Nurse'}`
       };
       
-      // Check if we're in development and server might not be running
-      const apiUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/vital-signs' 
-        : 'http://localhost:3001/api/vital-signs';
+      // Use centralized API configuration
+      const apiUrl = API_ENDPOINTS.VITAL_SIGNS;
       
       console.log('🔍 Attempting to save vital signs to:', apiUrl);
       console.log('🔍 Vital data:', vitalData);
