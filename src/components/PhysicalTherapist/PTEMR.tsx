@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { FileText, User, Search, Heart, Activity, Calendar, Eye } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { Patient, MedicalRecord } from '../../types';
 
 export function PTEMR() {
+  const { patientId } = useParams();
   const { patients, medicalRecords } = useHospital();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
+
+  // Auto-select patient if patientId is provided in URL
+  useEffect(() => {
+    if (patientId && patients.length > 0) {
+      const patient = patients.find(p => p.id === patientId);
+      if (patient) {
+        setSelectedPatient(patient);
+      }
+    }
+  }, [patientId, patients]);
 
   const filteredPatients = patients.filter(patient => 
     `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||

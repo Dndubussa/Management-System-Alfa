@@ -83,7 +83,7 @@ export function EMRDashboard({ onCreateRecord, onViewRecord }: EMRDashboardProps
   const handleCreateNewRecord = () => {
     // If a patient is already selected, navigate directly to the new record form
     if (newRecordPatient) {
-      navigate(`/emr/new/${newRecordPatient}`);
+      navigate(`/emr/${newRecordPatient}`);
     }
   };
 

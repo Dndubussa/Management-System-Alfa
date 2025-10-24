@@ -165,7 +165,7 @@ function NewEMRRecordRoute() {
   const navigate = useNavigate();
   
   // Check if user has permission to create EMR records
-  const hasPermission = user?.role === 'doctor' || user?.role === 'ophthalmologist';
+  const hasPermission = user?.role === 'doctor' || user?.role === 'ophthalmologist' || user?.role === 'physical-therapist';
   
   if (!hasPermission) {
     return (
@@ -185,6 +185,12 @@ function NewEMRRecordRoute() {
   // For ophthalmologists, redirect to their specialized EMR form with patient ID
   if (user?.role === 'ophthalmologist') {
     navigate(`/ophthalmology-emr/${patientId || ''}`);
+    return null;
+  }
+  
+  // For physical therapists, redirect to their specialized EMR form with patient ID
+  if (user?.role === 'physical-therapist') {
+    navigate(`/pt-emr/${patientId || ''}`);
     return null;
   }
   
@@ -526,6 +532,7 @@ function AppContent() {
             <Route path="/pt-assessment" element={<PTAssessment />} />
             <Route path="/pt-plans" element={<PTTherapyPlans />} />
             <Route path="/pt-emr" element={<PTEMR />} />
+            <Route path="/pt-emr/:patientId" element={<PTEMR />} />
             <Route path="/pt-reports" element={<PTReports />} />
             
             {/* Nurse Routes */}

@@ -64,6 +64,7 @@ export const getMedicalRecordAccessRoles = (): string[] => [
   'doctor',
   'ophthalmologist',
   'radiologist',
+  'physical-therapist', // Physical therapists need access to patient medical records
   'admin', // Admin should have access for oversight
   // Add other medical specialist roles here as needed
   // 'cardiologist', 'neurologist', 'pediatrician', 'dermatologist', etc.
@@ -85,6 +86,7 @@ export const getMedicalRecordEditRoles = (): string[] => [
   'doctor',
   'ophthalmologist',
   'radiologist',
+  'physical-therapist', // Physical therapists need to create/edit therapy records
   'admin', // Admin should have access for oversight
   // Add other medical specialist roles here as needed
 ];

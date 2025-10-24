@@ -170,7 +170,6 @@ export function Sidebar({ onTabChange }: SidebarProps) {
       case 'physical-therapist':
         return [
           ...baseItems,
-          { id: 'pt-dashboard', label: 'Dashboard', icon: BarChart3, path: '/pt-dashboard' },
           { id: 'pt-appointments', label: 'Appointments', icon: Calendar, path: '/pt-appointments' },
           { id: 'pt-assessment', label: 'Patient Assessment', icon: Users, path: '/pt-assessment' },
           { id: 'pt-plans', label: 'Therapy Plans', icon: FileText, path: '/pt-plans' },
