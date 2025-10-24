@@ -269,7 +269,7 @@ export function NurseTriageVitals() {
       
       // Show comprehensive error message
       setShowGlobalError(true);
-      setValidationErrors({
+      setErrors({
         api: `${errorTitle}: ${errorMessage}${errorDetails ? ` - ${errorDetails}` : ''}`
       });
     } finally {
