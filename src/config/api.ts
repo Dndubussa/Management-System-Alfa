@@ -1,8 +1,21 @@
 // API Configuration
 export const getApiUrl = (endpoint: string = '') => {
-  const baseUrl = process.env.NODE_ENV === 'production'
+  // Check if we're running on Vercel (production) or locally
+  const isVercel = window.location.hostname.includes('vercel.app') || 
+                   window.location.hostname.includes('alfasystem.vercel.app') ||
+                   process.env.NODE_ENV === 'production';
+  
+  const baseUrl = isVercel
     ? '/api'  // Vercel serverless functions
     : 'http://localhost:3001/api';
+  
+  console.log('🔍 API Configuration:', {
+    hostname: window.location.hostname,
+    isVercel,
+    baseUrl,
+    endpoint,
+    fullUrl: endpoint ? `${baseUrl}/${endpoint}` : baseUrl
+  });
   
   return endpoint ? `${baseUrl}/${endpoint}` : baseUrl;
 };
