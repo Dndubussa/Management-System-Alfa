@@ -14,7 +14,7 @@ interface PatientFormProps {
 
 export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
   const { addPatient, updatePatient, addToQueue, addNotification, users } = useHospital();
-  const { showError, showWarning, showSuccess } = useToast();
+  const { showError, showWarning, showSuccess, showInfo } = useToast();
   const [formData, setFormData] = useState({
     name: patient ? `${patient.firstName} ${patient.lastName}` : '',
     age: patient ? calculateAge(patient.dateOfBirth) : '',
@@ -35,7 +35,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [showSuccessState, setShowSuccessState] = useState(false);
   const [error, setError] = useState('');
   const [showInsuranceValidation, setShowInsuranceValidation] = useState(false);
   const [registeredPatient, setRegisteredPatient] = useState<Patient | null>(null);
@@ -148,9 +148,9 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
       if (patient) {
         await updatePatient(patient.id, patientData);
         // Show success message for updates
-        setShowSuccess(true);
+        setShowSuccessState(true);
         setTimeout(() => {
-          setShowSuccess(false);
+          setShowSuccessState(false);
           onSave();
         }, 2000);
       } else {
@@ -163,9 +163,9 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
         } else if (newPatient && newPatient.id) {
           // For cash patients, directly add to triage queue
           await addPatientToTriageQueue(newPatient, firstName, lastName);
-          setShowSuccess(true);
+          setShowSuccessState(true);
           setTimeout(() => {
-            setShowSuccess(false);
+            setShowSuccessState(false);
             onSave(newPatient);
           }, 2000);
         }
@@ -239,17 +239,17 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
       if (isValid) {
         // Insurance validated successfully, add to triage queue
         await addPatientToTriageQueue(registeredPatient, registeredPatient.firstName, registeredPatient.lastName);
-        setShowSuccess(true);
+        setShowSuccessState(true);
         setTimeout(() => {
-          setShowSuccess(false);
+          setShowSuccessState(false);
           onSave(registeredPatient);
         }, 2000);
       } else {
         // Insurance validation failed, but continue with cash payment
         await addPatientToTriageQueue(registeredPatient, registeredPatient.firstName, registeredPatient.lastName);
-        setShowSuccess(true);
+        setShowSuccessState(true);
         setTimeout(() => {
-          setShowSuccess(false);
+          setShowSuccessState(false);
           onSave(registeredPatient);
         }, 2000);
       }
@@ -277,7 +277,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
   return (
     <div className="max-w-2xl mx-auto">
       {/* Success Message */}
-      {showSuccess && (
+      {showSuccessState && (
         <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
           <CheckCircle className="w-6 h-6 text-green-600" />
           <div>
