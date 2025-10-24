@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
+import { supabaseService } from '../../services/supabaseService';
 
 export function NurseTriageVitals() {
   const { patients, users, addNotification } = useHospital();
@@ -167,7 +168,6 @@ export function NurseTriageVitals() {
       
       // Use direct Supabase service for optimal performance
       console.log('🔄 Using direct Supabase service...');
-      const { supabaseService } = await import('../../services/supabaseService');
       const result = await supabaseService.createVitalSigns(vitalData);
       console.log('✅ Vital signs saved successfully via Supabase service:', result);
       
