@@ -1,5 +1,5 @@
 // Supabase service for production deployment
-import { getSupabaseServiceClient, getSupabaseClient } from '../lib/supabase';
+import { getSupabaseServiceClient } from '../lib/supabase';
 import { 
   Patient, 
   MedicalRecord, 
@@ -172,7 +172,8 @@ interface MedicationTransaction {
 }
 
 // Using Supabase authenticated client for database operations
-const supabase = getSupabaseClient();
+// Use the same supabase instance as AuthContext to maintain authentication state
+import { supabase } from '../lib/supabase';
 
 // Helper function to convert snake_case to camelCase
 function toCamelCase(obj: any): any {
@@ -2051,12 +2052,15 @@ export const supabaseService = {
       console.log('🔍 Supabase createVitalSigns - Client URL:', supabase.supabaseUrl);
       
       // Check authentication status
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       console.log('🔍 Authentication status:', { 
+        sessionExists: !!session,
+        sessionUserId: session?.user?.id,
         user: user?.id, 
         userEmail: user?.email,
         authError: authError?.message,
-        sessionExists: !!supabase.auth.getSession()
+        sessionError: sessionError?.message
       });
       
       if (authError || !user) {
