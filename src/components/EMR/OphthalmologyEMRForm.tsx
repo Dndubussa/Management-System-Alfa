@@ -69,6 +69,8 @@ export function OphthalmologyEMRForm() {
     notes: ''
   });
   const [findings, setFindings] = useState<OphthalmologyFinding[]>([]);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showGlobalError, setShowGlobalError] = useState(false);
 
   // Initialize form with existing record data if editing
   useEffect(() => {

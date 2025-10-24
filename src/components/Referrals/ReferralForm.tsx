@@ -17,6 +17,8 @@ export function ReferralForm({ patientId, referral, onSave, onCancel }: Referral
   const [specialist, setSpecialist] = useState(referral?.specialist || '');
   const [reason, setReason] = useState(referral?.reason || '');
   const [notes, setNotes] = useState(referral?.notes || '');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showGlobalError, setShowGlobalError] = useState(false);
 
   const patient = patients.find(p => p.id === patientId);
 

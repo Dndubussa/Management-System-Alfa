@@ -35,6 +35,8 @@ export function LabOrderForm({ patientId, onSave, onCancel }: LabOrderFormProps)
   const [consultationCost, setConsultationCost] = useState<number>(0);
   const [consultationService, setConsultationService] = useState<string>('');
   const [labTestCosts, setLabTestCosts] = useState<{[key: number]: number}>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showGlobalError, setShowGlobalError] = useState(false);
 
   const handleCostCalculated = (cost: number, serviceName: string) => {
     setConsultationCost(cost);

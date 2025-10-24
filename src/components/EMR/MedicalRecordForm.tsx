@@ -74,6 +74,8 @@ export function MedicalRecordForm({ patientId, record, onSave, onCancel }: Medic
   const [consultationService, setConsultationService] = useState<string>('');
   const [prescriptionCosts, setPrescriptionCosts] = useState<{[key: number]: number}>({});
   const [labOrderCosts, setLabOrderCosts] = useState<{[key: number]: number}>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showGlobalError, setShowGlobalError] = useState(false);
 
   const handleCostCalculated = (cost: number, serviceName: string) => {
     setConsultationCost(cost);
