@@ -1,7 +1,7 @@
 // API Configuration
 export const getApiUrl = (endpoint: string = '') => {
   const baseUrl = process.env.NODE_ENV === 'production'
-    ? 'https://alfa-ms-new-main.vercel.app/api'
+    ? '/api'  // Vercel serverless functions
     : 'http://localhost:3001/api';
   
   return endpoint ? `${baseUrl}/${endpoint}` : baseUrl;
