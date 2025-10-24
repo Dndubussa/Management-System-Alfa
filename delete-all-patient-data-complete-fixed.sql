@@ -4,11 +4,11 @@
 -- =====================================================
 
 -- Create helper function first
-CREATE OR REPLACE FUNCTION table_exists(table_name text) RETURNS boolean AS $$
+CREATE OR REPLACE FUNCTION table_exists(tbl_name text) RETURNS boolean AS $$
 BEGIN
     RETURN EXISTS (
         SELECT 1 FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_name = $1
+        WHERE table_schema = 'public' AND table_name = tbl_name
     );
 END;
 $$ LANGUAGE plpgsql;
