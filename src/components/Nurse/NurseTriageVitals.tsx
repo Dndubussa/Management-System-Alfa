@@ -130,19 +130,19 @@ export function NurseTriageVitals() {
         }
       }
       
-      // First, get the patient queue item to get the queue ID
-      const queueResponse = await fetch('/api/patient-queue', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
+      // Get the patient queue item to get the queue ID using Supabase service
       let queueId = null;
-      if (queueResponse.ok) {
-        const queueData = await queueResponse.json();
+      try {
+        const queueData = await supabaseService.getPatientQueue({ 
+          status: 'waiting', 
+          workflowStage: 'reception' 
+        });
         const patientQueue = queueData.find((q: any) => q.patient_id === selectedPatientId);
         queueId = patientQueue?.id;
+        console.log('🔍 Found queue ID:', queueId);
+      } catch (error) {
+        console.warn('⚠️ Could not get queue ID:', error);
+        // Continue without queue ID - not critical for vital signs
       }
 
       // Save vital signs to database with queue ID
@@ -176,17 +176,14 @@ export function NurseTriageVitals() {
         // Get the patient to check if doctor is already assigned
         const patient = patients.find(p => p.id === selectedPatientId);
         
-        // Update queue status to move patient to doctor stage
-        await fetch(`/api/patient-queue/${queueId}/status`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: 'waiting',
-            workflowStage: 'doctor'
-          }),
-        });
+        // Update queue status to move patient to doctor stage using Supabase service
+        try {
+          await supabaseService.updateQueueStatus(queueId, 'waiting', 'doctor');
+          console.log('✅ Queue status updated to doctor stage');
+        } catch (error) {
+          console.warn('⚠️ Could not update queue status:', error);
+          // Continue - not critical for vital signs saving
+        }
         
         // If patient already has an assigned doctor, no need to assign again
         if (patient?.assignedDoctorId && patient?.assignedDoctorName) {

@@ -72,11 +72,11 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
       if (!patientId || vitalsLoaded) return;
       
       try {
-        const response = await fetch(`/api/vital-signs/${patientId}/latest`);
-        if (response.ok) {
-          const vitals = await response.json();
-          if (vitals) {
-            setTriageVitals(vitals);
+        // Use Supabase service instead of API call
+        const { supabaseService } = await import('../../services/supabaseService');
+        const vitals = await supabaseService.getLatestVitalSigns(patientId);
+        if (vitals) {
+          setTriageVitals(vitals);
             // Auto-populate form with triage vitals if not already set
             setFormData(prev => ({
               ...prev,

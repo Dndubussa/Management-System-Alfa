@@ -49,11 +49,10 @@ export function ICD10Search({
           params.append('category', category);
         }
 
-        const response = await fetch(`http://localhost:3001/api/icd10/search?${params}`);
-        if (response.ok) {
-          const data = await response.json();
-          setResults(data);
-        }
+        // Use Supabase service for ICD-10 search
+        const { supabaseService } = await import('../../services/supabaseService');
+        const data = await supabaseService.searchICD10Codes(params);
+        setResults(data);
       } catch (error) {
         console.error('Error searching ICD-10 codes:', error);
         setResults([]);
@@ -68,11 +67,10 @@ export function ICD10Search({
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/icd10/categories');
-        if (response.ok) {
-          const data = await response.json();
-          setCategories(data);
-        }
+        // Use Supabase service for ICD-10 categories
+        const { supabaseService } = await import('../../services/supabaseService');
+        const data = await supabaseService.getICD10Categories();
+        setCategories(data);
       } catch (error) {
         console.error('Error loading categories:', error);
       }
