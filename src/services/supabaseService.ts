@@ -2050,6 +2050,20 @@ export const supabaseService = {
       console.log('🔍 Supabase createVitalSigns - Data to insert:', vitalSignsData);
       console.log('🔍 Supabase createVitalSigns - Client URL:', supabase.supabaseUrl);
       
+      // Check authentication status
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('🔍 Authentication status:', { 
+        user: user?.id, 
+        userEmail: user?.email,
+        authError: authError?.message,
+        sessionExists: !!supabase.auth.getSession()
+      });
+      
+      if (authError || !user) {
+        console.error('❌ Authentication failed:', authError);
+        throw new Error('Authentication required. Please log in again.');
+      }
+      
       const { data, error } = await supabase
         .from('vital_signs')
         .insert([vitalSignsData])
