@@ -149,7 +149,15 @@ export function NurseTriageVitals() {
         notes: `Triage vitals recorded by ${user.name || 'Nurse'}`
       };
       
-      const response = await fetch('/api/vital-signs', {
+      // Check if we're in development and server might not be running
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? '/api/vital-signs' 
+        : 'http://localhost:3001/api/vital-signs';
+      
+      console.log('🔍 Attempting to save vital signs to:', apiUrl);
+      console.log('🔍 Vital data:', vitalData);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,14 +165,23 @@ export function NurseTriageVitals() {
         body: JSON.stringify(vitalData),
       });
       
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', errorText);
+        console.error('❌ API Error Response:', errorText);
+        
+        // Check if it's an HTML response (server not running)
+        if (errorText.includes('<!doctype') || errorText.includes('<html')) {
+          throw new Error('Server not running. Please start the backend server on port 3001.');
+        }
+        
         throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
-      console.log('Vital signs saved successfully:', result);
+      console.log('✅ Vital signs saved successfully:', result);
       
       if (queueId) {
         // Update queue status to triage completed
