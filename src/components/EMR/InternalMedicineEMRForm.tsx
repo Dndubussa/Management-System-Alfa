@@ -18,6 +18,8 @@ import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { MedicalRecord, Prescription, LabOrder, Patient } from '../../types';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
+import { DuplicateDetection } from '../Common/DuplicateDetection';
+import { useToast } from '../../context/ToastContext';
 
 interface InternalMedicineEMRFormProps {
   patientId: string;
@@ -29,6 +31,7 @@ interface InternalMedicineEMRFormProps {
 export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }: InternalMedicineEMRFormProps) {
   const { addMedicalRecord, patients, addNotification, servicePrices } = useHospital();
   const { user } = useAuth();
+  const { showError, showWarning, showSuccess } = useToast();
   const [triageVitals, setTriageVitals] = useState<any>(null);
   const [vitalsLoaded, setVitalsLoaded] = useState(false);
   
@@ -55,6 +58,9 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
     },
     status: record?.status || 'active' as const
   });
+
+  const [duplicateCheck, setDuplicateCheck] = useState<any>(null);
+  const [allowDuplicate, setAllowDuplicate] = useState(false);
 
   // Load triage vital signs when component mounts
   useEffect(() => {
@@ -115,6 +121,12 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check for duplicates before submitting
+    if (!record && duplicateCheck?.isDuplicate && !allowDuplicate) {
+      showWarning('Duplicate Medical Record Found', 'Please review the duplicate detection results before proceeding.');
+      return;
+    }
     
     const now = new Date().toISOString();
     
@@ -578,6 +590,61 @@ MH: ${formData.medicationHistory}
             </div>
           </div>
         </div>
+
+        {/* Duplicate Detection - Only show for new records */}
+        {!record && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+              Duplicate Check
+            </h3>
+            
+            <DuplicateDetection
+              type="medical_record"
+              data={{
+                patientId: patientId,
+                doctorId: user?.id || '',
+                visitDate: formData.visitDate
+              }}
+              onDuplicateFound={(result) => {
+                setDuplicateCheck(result);
+                if (result.isDuplicate) {
+                  showWarning('Duplicate Medical Record Found', result.message);
+                }
+              }}
+              onNoDuplicate={() => {
+                setDuplicateCheck(null);
+              }}
+              showSuggestions={true}
+              autoCheck={true}
+            />
+
+            {duplicateCheck?.isDuplicate && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 text-red-600">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-red-800">
+                      Duplicate medical record detected. Please review before proceeding.
+                    </span>
+                  </div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={allowDuplicate}
+                      onChange={(e) => setAllowDuplicate(e.target.checked)}
+                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="text-sm text-red-700">Proceed anyway</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Chief Complaint */}
         <div>

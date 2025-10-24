@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Save, X, DollarSign, Calculator } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import { useHospital } from '../../context/HospitalContext';
 import { useError } from '../../context/ErrorContext';
 import { Appointment } from '../../types';
 import { ConsultationCostDisplay } from '../Common/ConsultationCostDisplay';
 import { useConsultationBilling } from '../../hooks/useConsultationBilling';
 import { findPatientSafely } from '../../utils/patientUtils';
+import { DuplicateDetection } from '../Common/DuplicateDetection';
+import { useToast } from '../../context/ToastContext';
 
 interface AppointmentFormProps {
   appointment?: Appointment;
@@ -17,6 +19,7 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
   const { patients, addNotification, addAppointment, users } = useHospital();
   const { addError } = useError();
   const { createConsultationBill } = useConsultationBilling();
+  const { showWarning } = useToast();
   const doctors = users.filter(user => user.role === 'doctor' || user.role === 'ophthalmologist');
   
   // Initialize with current date and time
@@ -45,6 +48,8 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
 
   const [consultationCost, setConsultationCost] = useState<number>(0);
   const [consultationService, setConsultationService] = useState<string>('');
+  const [duplicateCheck, setDuplicateCheck] = useState<any>(null);
+  const [allowDuplicate, setAllowDuplicate] = useState(false);
 
   // Handle consultation cost calculation from the reusable component
   const handleCostCalculated = (cost: number, serviceName: string) => {
@@ -69,6 +74,12 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check for duplicates before submitting
+    if (!appointment && duplicateCheck?.isDuplicate && !allowDuplicate) {
+      showWarning('Duplicate Appointment Found', 'Please review the duplicate detection results before proceeding.');
+      return;
+    }
     
     try {
       const dateTime = `${formData.date}T${formData.time}:00Z`;
@@ -254,6 +265,62 @@ export function AppointmentForm({ appointment, onSave, onCancel }: AppointmentFo
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
           />
         </div>
+
+        {/* Duplicate Detection - Only show for new appointments */}
+        {!appointment && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+              Duplicate Check
+            </h3>
+            
+            <DuplicateDetection
+              type="appointment"
+              data={{
+                patientId: formData.patientId,
+                doctorId: formData.doctorId,
+                dateTime: formData.date && formData.time ? `${formData.date}T${formData.time}:00Z` : undefined,
+                type: formData.type
+              }}
+              onDuplicateFound={(result) => {
+                setDuplicateCheck(result);
+                if (result.isDuplicate) {
+                  showWarning('Duplicate Appointment Found', result.message);
+                }
+              }}
+              onNoDuplicate={() => {
+                setDuplicateCheck(null);
+              }}
+              showSuggestions={true}
+              autoCheck={true}
+            />
+
+            {duplicateCheck?.isDuplicate && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-5 h-5 text-red-600">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-red-800">
+                      Duplicate appointment detected. Please review before proceeding.
+                    </span>
+                  </div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={allowDuplicate}
+                      onChange={(e) => setAllowDuplicate(e.target.checked)}
+                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="text-sm text-red-700">Proceed anyway</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Consultation Cost Display */}
         {!appointment && (
