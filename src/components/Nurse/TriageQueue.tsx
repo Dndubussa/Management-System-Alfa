@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { Clock, User, AlertCircle, CheckCircle } from 'lucide-react';
@@ -6,6 +7,7 @@ import { Clock, User, AlertCircle, CheckCircle } from 'lucide-react';
 export function TriageQueue() {
   const { patientQueue, getPatientQueue, updateQueueStatus } = useHospital();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
@@ -33,8 +35,8 @@ export function TriageQueue() {
     try {
       await updateQueueStatus(queueItem.id, 'in-progress', 'triage');
       setSelectedPatient(queueItem);
-      // Navigate to triage form with patient ID
-      window.location.href = `/nurse-triage/${queueItem.patient_id}`;
+      // Navigate to triage form with patient ID using React Router
+      navigate(`/nurse-triage/${queueItem.patient_id}`);
     } catch (error) {
       console.error('Error starting triage:', error);
     }

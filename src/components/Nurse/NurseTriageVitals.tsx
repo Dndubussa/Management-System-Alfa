@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useHospital } from '../../context/HospitalContext';
 import { useAuth } from '../../context/AuthContext';
 import { API_ENDPOINTS } from '../../config/api';
@@ -6,6 +7,7 @@ import { API_ENDPOINTS } from '../../config/api';
 export function NurseTriageVitals() {
   const { patients, users, addNotification } = useHospital();
   const { user } = useAuth();
+  const { patientId } = useParams<{ patientId?: string }>();
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [form, setForm] = useState({
     temperature: '', pulse: '', respiratoryRate: '', bloodPressure: '',
@@ -14,6 +16,14 @@ export function NurseTriageVitals() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showGlobalError, setShowGlobalError] = useState(false);
+
+  // Handle patient ID from URL parameters
+  useEffect(() => {
+    if (patientId) {
+      setSelectedPatientId(patientId);
+      console.log('🔍 Patient ID from URL:', patientId);
+    }
+  }, [patientId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

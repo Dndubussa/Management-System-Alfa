@@ -565,6 +565,7 @@ function AppContent() {
             <Route path="/nurse-dashboard" element={<NurseDashboard />} />
             <Route path="/triage-queue" element={<TriageQueue />} />
             <Route path="/nurse-triage" element={<NurseTriageVitals />} />
+            <Route path="/nurse-triage/:patientId" element={<NurseTriageVitals />} />
             <Route path="/nurse-notes" element={<NurseCareNotes />} />
             <Route path="/nurse-mar" element={<NurseMedicationAdmin />} />
             <Route path="/nurse-procedures" element={<NurseProcedures />} />

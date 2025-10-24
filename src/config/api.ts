@@ -1,20 +1,11 @@
 // API Configuration
 export const getApiUrl = (endpoint: string = '') => {
-  // Check if we're running on Vercel (production) or locally
-  const isVercel = window.location.hostname.includes('vercel.app') || 
-                   window.location.hostname.includes('alfasystem.vercel.app') ||
-                   process.env.NODE_ENV === 'production';
-  
-  // For local development, always use Vercel API since local backend might not be running
-  const baseUrl = isVercel
-    ? '/api'  // Vercel serverless functions
-    : 'https://alfasystem.vercel.app/api';  // Use Vercel API even for local development
-  
+  // Force Vercel API for all environments to ensure consistency
+  const baseUrl = 'https://alfasystem.vercel.app/api';
   const fullUrl = endpoint ? `${baseUrl}/${endpoint}` : baseUrl;
   
-  console.log('🔍 API Configuration:', {
+  console.log('🔍 API Configuration (FORCED VERCEL):', {
     hostname: window.location.hostname,
-    isVercel,
     baseUrl,
     endpoint,
     fullUrl,
