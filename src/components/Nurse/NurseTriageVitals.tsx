@@ -171,19 +171,38 @@ export function NurseTriageVitals() {
       console.log('🔍 Response status:', response.status);
       console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()));
       
+      const responseText = await response.text();
+      console.log('🔍 Raw response text:', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error Response:', errorText);
-        
-        // Check if it's an HTML response (server not running)
-        if (errorText.includes('<!doctype') || errorText.includes('<html')) {
-          throw new Error('Server not running. Please start the backend server on port 3001.');
+        // Check if it's an HTML response (server not running or error page)
+        if (responseText.trim().startsWith('<!doctype') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<!DOCTYPE')) {
+          throw new Error('Server not running or API endpoint not found. Please check that the backend server is running on port 3001.');
         }
         
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+        let errorDetails = responseText;
+        try {
+          const errorObj = JSON.parse(responseText);
+          errorDetails = errorObj.error || errorObj.message || responseText;
+        } catch (e) {
+          // If we can't parse as JSON, use the raw text
+        }
+        
+        throw new Error(`API Error: ${response.status} - ${errorDetails}`);
       }
       
-      const result = await response.json();
+      // Try to parse the response as JSON
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        // If we can't parse as JSON but the response was OK, it's still an error
+        if (responseText.trim().startsWith('<!doctype') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<!DOCTYPE')) {
+          throw new Error('Received HTML instead of JSON. Server may be misconfigured.');
+        }
+        throw new Error('Invalid JSON response from server');
+      }
+      
       console.log('✅ Vital signs saved successfully:', result);
       
       if (queueId) {
@@ -234,7 +253,6 @@ export function NurseTriageVitals() {
           weight: '', 
           muac: '', 
           oxygenSaturation: '', 
-          painScore: '', 
           urgency: 'normal' 
         });
         setSelectedPatientId('');
@@ -252,14 +270,14 @@ export function NurseTriageVitals() {
       let errorTitle = 'Save Failed';
       let errorDetails = '';
       
-      if (error instanceof SyntaxError && error.message.includes('<!doctype')) {
-        errorTitle = 'Server Not Running';
-        errorMessage = 'The backend server is not running or the API endpoint is not available.';
-        errorDetails = 'Please start the backend server on port 3001 or check if the API endpoint exists.';
+      if (error instanceof SyntaxError && (error.message.includes('<!doctype') || error.message.includes('<!DOCTYPE'))) {
+        errorTitle = 'Server Configuration Error';
+        errorMessage = 'Received HTML instead of JSON response.';
+        errorDetails = 'This usually means the API endpoint is not properly configured or the server is returning an error page.';
       } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         errorTitle = 'Network Error';
         errorMessage = 'Cannot connect to the backend server.';
-        errorDetails = 'Please check if the server is running and accessible.';
+        errorDetails = 'Please check if the server is running and accessible on port 3001.';
       } else if (error instanceof Error) {
         errorTitle = 'API Error';
         errorMessage = error.message;
