@@ -24,6 +24,11 @@ export function OphthalmologyEMRForm() {
 
   const patient = patients.find(p => p.id === patientId);
   
+  // Debug logging
+  console.log('👁️ OphthalmologyEMRForm - Patient ID:', patientId);
+  console.log('👁️ OphthalmologyEMRForm - Total patients:', patients.length);
+  console.log('👁️ OphthalmologyEMRForm - Patient found:', patient ? `${patient.firstName} ${patient.lastName}` : 'Not found');
+  
   // Form state
   const [chiefComplaint, setChiefComplaint] = useState('');
   const [visualAcuity, setVisualAcuity] = useState<VisualAcuity>({

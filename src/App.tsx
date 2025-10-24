@@ -167,6 +167,32 @@ function NewEMRRecordRoute() {
   // Check if user has permission to create EMR records
   const hasPermission = user?.role === 'doctor' || user?.role === 'ophthalmologist' || user?.role === 'physical-therapist';
   
+  // Handle role-based redirections in useEffect
+  React.useEffect(() => {
+    console.log('🔄 NewEMRRecordRoute - User role:', user?.role, 'Patient ID:', patientId, 'Has permission:', hasPermission);
+    
+    if (!hasPermission) {
+      console.log('❌ NewEMRRecordRoute - No permission, showing access denied');
+      return; // Will show access denied UI
+    }
+    
+    // For ophthalmologists, redirect to their specialized EMR form with patient ID
+    if (user?.role === 'ophthalmologist') {
+      console.log('👁️ NewEMRRecordRoute - Redirecting ophthalmologist to:', `/ophthalmology-emr/${patientId || ''}`);
+      navigate(`/ophthalmology-emr/${patientId || ''}`);
+      return;
+    }
+    
+    // For physical therapists, redirect to their specialized EMR form with patient ID
+    if (user?.role === 'physical-therapist') {
+      console.log('🏥 NewEMRRecordRoute - Redirecting physical therapist to:', `/pt-emr/${patientId || ''}`);
+      navigate(`/pt-emr/${patientId || ''}`);
+      return;
+    }
+    
+    console.log('👨‍⚕️ NewEMRRecordRoute - Doctor role, showing internal medicine form');
+  }, [user?.role, patientId, navigate, hasPermission]);
+  
   if (!hasPermission) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
@@ -182,25 +208,25 @@ function NewEMRRecordRoute() {
     );
   }
   
-  // For ophthalmologists, redirect to their specialized EMR form with patient ID
-  if (user?.role === 'ophthalmologist') {
-    navigate(`/ophthalmology-emr/${patientId || ''}`);
-    return null;
-  }
-  
-  // For physical therapists, redirect to their specialized EMR form with patient ID
-  if (user?.role === 'physical-therapist') {
-    navigate(`/pt-emr/${patientId || ''}`);
-    return null;
-  }
-  
   // For doctors, use the internal medicine EMR form
+  if (user?.role === 'doctor') {
+    return (
+      <InternalMedicineEMRForm
+        patientId={patientId || ''}
+        onSave={() => navigate('/emr')}
+        onCancel={() => navigate('/emr')}
+      />
+    );
+  }
+  
+  // For ophthalmologists and physical therapists, show loading while redirecting
   return (
-    <InternalMedicineEMRForm
-      patientId={patientId || ''}
-      onSave={() => navigate('/emr')}
-      onCancel={() => navigate('/emr')}
-    />
+    <div className="flex items-center justify-center min-h-64">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting to specialized EMR form...</p>
+      </div>
+    </div>
   );
 }
 
