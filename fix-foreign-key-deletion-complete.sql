@@ -1,11 +1,9 @@
 -- =====================================================
--- QUICK FIX: Delete specialized medical records first
+-- COMPLETE QUICK FIX: Delete all records that reference patients
 -- =====================================================
 
--- Delete ophthalmology records that are causing foreign key constraint
+-- Delete specialized medical records first
 DELETE FROM ophthalmology_records;
-
--- Delete other specialized medical records
 DELETE FROM visual_acuity_tests;
 DELETE FROM refraction_data;
 DELETE FROM intraocular_pressure;
