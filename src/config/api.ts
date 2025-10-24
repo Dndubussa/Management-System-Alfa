@@ -10,15 +10,18 @@ export const getApiUrl = (endpoint: string = '') => {
     ? '/api'  // Vercel serverless functions
     : 'https://alfasystem.vercel.app/api';  // Use Vercel API even for local development
   
+  const fullUrl = endpoint ? `${baseUrl}/${endpoint}` : baseUrl;
+  
   console.log('🔍 API Configuration:', {
     hostname: window.location.hostname,
     isVercel,
     baseUrl,
     endpoint,
-    fullUrl: endpoint ? `${baseUrl}/${endpoint}` : baseUrl
+    fullUrl,
+    timestamp: new Date().toISOString()
   });
   
-  return endpoint ? `${baseUrl}/${endpoint}` : baseUrl;
+  return fullUrl;
 };
 
 export const API_ENDPOINTS = {
