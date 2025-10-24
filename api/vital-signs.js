@@ -15,6 +15,25 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('📥 Request received:', {
+      method: req.method,
+      headers: req.headers,
+      bodyType: typeof req.body,
+      body: req.body
+    });
+    
+    // In Vercel functions, the body should already be parsed if Content-Type is application/json
+    // But let's add some defensive parsing
+    let body = req.body;
+    if (typeof req.body === 'string') {
+      try {
+        body = JSON.parse(req.body);
+      } catch (parseError) {
+        console.error('❌ Error parsing request body:', parseError);
+        return res.status(400).json({ error: 'Invalid JSON in request body' });
+      }
+    }
+    
     const { createClient } = await import('@supabase/supabase-js');
     
     // Try to get environment variables - Vercel functions need non-VITE variables
@@ -43,22 +62,22 @@ export default async function handler(req, res) {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     const vitalData = {
-      patient_id: req.body.patientId,
-      queue_id: req.body.queueId,
-      recorded_by: req.body.recordedBy,
-      temperature: req.body.temperature,
-      pulse: req.body.pulse,
-      respiratory_rate: req.body.respiratoryRate,
-      blood_pressure_systolic: req.body.bloodPressureSystolic,
-      blood_pressure_diastolic: req.body.bloodPressureDiastolic,
-      height: req.body.height,
-      weight: req.body.weight,
-      bmi: req.body.bmi,
-      muac: req.body.muac,
-      oxygen_saturation: req.body.oxygenSaturation,
-      pain_level: req.body.painLevel,
-      urgency: req.body.urgency,
-      notes: req.body.notes,
+      patient_id: body.patientId,
+      queue_id: body.queueId,
+      recorded_by: body.recordedBy,
+      temperature: body.temperature,
+      pulse: body.pulse,
+      respiratory_rate: body.respiratoryRate,
+      blood_pressure_systolic: body.bloodPressureSystolic,
+      blood_pressure_diastolic: body.bloodPressureDiastolic,
+      height: body.height,
+      weight: body.weight,
+      bmi: body.bmi,
+      muac: body.muac,
+      oxygen_saturation: body.oxygenSaturation,
+      pain_level: body.painLevel,
+      urgency: body.urgency,
+      notes: body.notes,
       recorded_at: new Date().toISOString()
     };
     

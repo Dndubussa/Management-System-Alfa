@@ -15,6 +15,25 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('📥 Auth request received:', {
+      method: req.method,
+      headers: req.headers,
+      bodyType: typeof req.body,
+      body: req.body
+    });
+    
+    // In Vercel functions, the body should already be parsed if Content-Type is application/json
+    // But let's add some defensive parsing
+    let body = req.body;
+    if (typeof req.body === 'string') {
+      try {
+        body = JSON.parse(req.body);
+      } catch (parseError) {
+        console.error('❌ Error parsing request body:', parseError);
+        return res.status(400).json({ error: 'Invalid JSON in request body' });
+      }
+    }
+    
     const { createClient } = await import('@supabase/supabase-js');
     
     // Try to get environment variables - Vercel functions need non-VITE variables
@@ -40,7 +59,7 @@ export default async function handler(req, res) {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    const { email, password } = req.body;
+    const { email, password } = body;
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
