@@ -17,24 +17,21 @@ export default async function handler(req, res) {
   try {
     const { createClient } = await import('@supabase/supabase-js');
     
-    // Use server-side environment variables for Vercel functions
-    // These should be configured in Vercel dashboard
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    // Use service role key only on the server side
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    // Use the VITE environment variables that are available in Vercel
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.VITE_SUPABASE_KEY;
     
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseKey) {
       console.error('Missing Supabase credentials');
-      console.error('SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
-      console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'SET' : 'MISSING');
+      console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
+      console.error('VITE_SUPABASE_KEY:', supabaseKey ? 'SET' : 'MISSING');
       return res.status(500).json({ 
-        error: 'Missing Supabase credentials. Please check server configuration.',
-        details: 'Server-side service role key is required for backend operations.'
+        error: 'Missing Supabase credentials. Please check server configuration.'
       });
     }
     
-    // Create Supabase client with service role key for full access
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Create Supabase client with the available credentials
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
     const vitalData = {
       patient_id: req.body.patientId,
