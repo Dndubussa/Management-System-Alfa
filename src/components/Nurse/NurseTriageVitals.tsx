@@ -10,7 +10,7 @@ export function NurseTriageVitals() {
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [form, setForm] = useState({
     temperature: '', pulse: '', respiratoryRate: '', bloodPressure: '',
-    height: '', weight: '', muac: '', oxygenSaturation: '', painScore: '', urgency: 'normal'
+    height: '', weight: '', muac: '', oxygenSaturation: '', urgency: 'normal'
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -72,7 +72,7 @@ export function NurseTriageVitals() {
         weight: form.weight ? parseFloat(form.weight) : null,
         bmi: bmi,
         oxygenSaturation: form.oxygenSaturation ? parseInt(form.oxygenSaturation) : null,
-        painLevel: form.painScore ? parseInt(form.painScore) : null,
+        painLevel: null, // Pain score removed
         urgency: form.urgency,
         notes: `Triage vitals recorded by ${user.name || 'Nurse'}`
       };
@@ -85,7 +85,16 @@ export function NurseTriageVitals() {
         body: JSON.stringify(vitalData),
       });
       
-      if (response.ok && queueId) {
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Vital signs saved successfully:', result);
+      
+      if (queueId) {
         // Update queue status to triage completed
         // We already have the queueId from above
             // Get the patient to check if doctor is already assigned
@@ -169,10 +178,19 @@ export function NurseTriageVitals() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {['temperature','pulse','respiratoryRate','bloodPressure','height','weight','muac','oxygenSaturation','painScore'].map((field) => (
+          {['temperature','pulse','respiratoryRate','bloodPressure','height','weight','muac','oxygenSaturation'].map((field) => (
             <div key={field}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
-              <input name={field} value={(form as any)[field]} onChange={handleChange} className="w-full border rounded-md p-2" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {field === 'muac' ? 'MUAC (Optional)' : field}
+                {field === 'muac' && <span className="text-gray-500 text-xs ml-1">(for children and elders)</span>}
+              </label>
+              <input 
+                name={field} 
+                value={(form as any)[field]} 
+                onChange={handleChange} 
+                className="w-full border rounded-md p-2"
+                placeholder={field === 'muac' ? 'Optional - for children/elders' : ''}
+              />
             </div>
           ))}
           <div>
