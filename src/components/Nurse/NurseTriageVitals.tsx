@@ -271,17 +271,17 @@ export function NurseTriageVitals() {
       let errorDetails = '';
       
       if (error instanceof SyntaxError && (error.message.includes('<!doctype') || error.message.includes('<!DOCTYPE'))) {
-        errorTitle = 'Server Configuration Error';
+        errorTitle = 'Vercel Function Not Deployed';
         errorMessage = 'Received HTML instead of JSON response.';
-        errorDetails = 'This usually means the API endpoint is not properly configured or the server is returning an error page.';
+        errorDetails = 'The Vercel serverless function may not be deployed or environment variables are missing. Check Vercel dashboard.';
       } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         errorTitle = 'Network Error';
-        errorMessage = 'Cannot connect to the backend server.';
-        errorDetails = 'Please check if the server is running and accessible on port 3001.';
+        errorMessage = 'Cannot connect to the API endpoint.';
+        errorDetails = 'Please check your internet connection and Vercel deployment status.';
       } else if (error instanceof Error) {
         errorTitle = 'API Error';
         errorMessage = error.message;
-        errorDetails = 'Please check the server logs for more details.';
+        errorDetails = 'Check Vercel function logs for detailed error information.';
       }
       
       // Show comprehensive error message
@@ -325,7 +325,7 @@ export function NurseTriageVitals() {
                     <div className="font-medium text-red-800 mb-2">🚨 Backend Server Issue</div>
                     <div className="text-red-700 mb-2">{errors.api}</div>
                     <div className="text-xs text-red-600 bg-red-50 p-2 rounded border">
-                      <strong>Quick Fix:</strong> Run <code className="bg-red-200 px-1 rounded">node server.js</code> in your terminal to start the backend server.
+                      <strong>Quick Fix:</strong> Check Vercel dashboard for function deployment status and environment variables configuration.
                     </div>
                   </div>
                 ) : (
