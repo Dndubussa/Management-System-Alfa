@@ -11,11 +11,11 @@ import {
   formatDuplicateResult,
   getDuplicateIcon
 } from '../../utils/duplicateDetection';
-import { Patient, User, Appointment, MedicalRecord } from '../../types';
+import { Patient, Appointment, MedicalRecord } from '../../types';
 
 interface DuplicateDetectionProps {
   type: 'patient' | 'user' | 'appointment' | 'medical_record';
-  data: Partial<Patient> | Partial<User> | Partial<Appointment> | Partial<MedicalRecord>;
+  data: Partial<Patient> | Partial<Appointment> | Partial<MedicalRecord> | any;
   onDuplicateFound?: (result: DuplicateCheckResult) => void;
   onNoDuplicate?: () => void;
   showSuggestions?: boolean;
