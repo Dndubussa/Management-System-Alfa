@@ -98,8 +98,8 @@ export function Sidebar({ onTabChange }: SidebarProps) {
         return [
           ...baseItems,
           { id: 'patients', label: 'My Patients', icon: Users, path: '/patients' },
+          { id: 'ophthalmologist-queue', label: 'Patient Queue', icon: ListOrdered, path: '/ophthalmologist-queue' },
           { id: 'appointments', label: 'Appointments', icon: Calendar, path: '/appointments' },
-          // Remove patient queue
           { id: 'emr', label: 'Ophthalmology EMR', icon: Eye, path: '/emr' },
           { id: 'imaging', label: 'Ophthalmology Imaging', icon: Camera, path: '/imaging' },
           { id: 'clinical-orders', label: 'Clinical Orders', icon: TestTube, path: '/lab-orders' },

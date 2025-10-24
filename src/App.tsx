@@ -79,6 +79,9 @@ import { PTReports } from './components/PhysicalTherapist/PTReports';
 // Doctor Components
 import { DoctorQueue } from './components/Doctor/DoctorQueue';
 
+// Ophthalmologist Components
+import { OphthalmologistPatientQueue } from './components/Ophthalmologist/OphthalmologistPatientQueue';
+
 // Nurse Components (to be created)
 import { NurseDashboard } from './components/Nurse/NurseDashboard';
 import { TriageQueue } from './components/Nurse/TriageQueue';
@@ -464,6 +467,7 @@ function AppContent() {
             <Route path="/appointment/new" element={<AppointmentForm appointment={undefined} onSave={handleSaveAppointment} onCancel={() => navigate('/appointments')} />} />
             <Route path="/appointment-edit" element={selectedAppointment ? <AppointmentForm appointment={selectedAppointment} onSave={handleSaveAppointment} onCancel={() => navigate('/appointments')} /> : <div>Appointment not selected</div>} />
             <Route path="/doctor-queue" element={<DoctorQueue />} />
+            <Route path="/ophthalmologist-queue" element={<OphthalmologistPatientQueue />} />
             <Route path="/emr" element={<EMRDashboard onCreateRecord={handleCreateRecord} onViewRecord={handleViewRecord} />} />
             <Route path="/emr/:patientId" element={<NewEMRRecordRoute />} />
             <Route path="/ophthalmology-emr/:patientId?" element={<OphthalmologyEMRRoute />} />
@@ -687,7 +691,7 @@ function DashboardRoute() {
             </>
           )}
           
-          {(isDoctor || isOphthalmologist) && (
+          {isDoctor && (
             <>
               <button
                 onClick={() => navigate('/doctor-queue')}
@@ -696,6 +700,23 @@ function DashboardRoute() {
                 <div className="text-green-600 font-medium">Patient Queue</div>
                 <div className="text-xs text-green-700 mt-1">Patients ready for consultation</div>
               </button>
+            </>
+          )}
+          
+          {isOphthalmologist && (
+            <>
+              <button
+                onClick={() => navigate('/ophthalmologist-queue')}
+                className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-4 text-center transition-colors"
+              >
+                <div className="text-green-600 font-medium">Patient Queue</div>
+                <div className="text-xs text-green-700 mt-1">Patients ready for eye consultation</div>
+              </button>
+            </>
+          )}
+          
+          {(isDoctor || isOphthalmologist) && (
+            <>
               <button
                 onClick={() => navigate('/emr')}
                 className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 text-center transition-colors"
