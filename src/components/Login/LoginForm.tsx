@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { validateForm } from '../../utils/formValidation';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -8,11 +9,27 @@ export function LoginForm() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showGlobalError, setShowGlobalError] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    const validationSchema = {
+      email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' },
+      password: { required: true, minLength: 6, message: 'Password must be at least 6 characters' }
+    };
+
+    const validation = validateForm({ email, password }, validationSchema);
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      setShowGlobalError(true);
+      return;
+    }
+    
     setError('');
     setIsLoading(true);
 

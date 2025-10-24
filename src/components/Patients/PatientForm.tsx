@@ -43,6 +43,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
   const [duplicateCheck, setDuplicateCheck] = useState<any>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showGlobalError, setShowGlobalError] = useState(false);
 
   // Helper function to calculate age from date of birth
   function calculateAge(dateOfBirth: string): string {
@@ -95,7 +96,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
     const validation = validateForm(formData, validationSchema);
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
-      showError('Validation Error', 'Please fill in all required fields correctly');
+      setShowGlobalError(true);
       return;
     }
     
@@ -333,6 +334,41 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
           </div>
         </div>
 
+        {/* Global validation error message */}
+        {showGlobalError && Object.keys(validationErrors).length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 relative">
+            <button
+              onClick={() => setShowGlobalError(false)}
+              className="absolute top-2 right-2 text-red-400 hover:text-red-600"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-red-800">
+                  Please fix the following errors:
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <ul className="list-disc list-inside space-y-1">
+                    {Object.entries(validationErrors).map(([field, message]) => (
+                      <li key={field}>
+                        <span className="font-medium capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}:</span> {message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Name Field */}
@@ -353,7 +389,9 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
               disabled={isSubmitting}
             />
             {validationErrors.name && (
-              <p className="text-red-500 text-sm mt-1">{validationErrors.name}</p>
+              <div className="bg-red-50 border border-red-200 rounded-md p-2 mt-1">
+                <p className="text-red-700 text-sm font-medium">{validationErrors.name}</p>
+              </div>
             )}
           </div>
 

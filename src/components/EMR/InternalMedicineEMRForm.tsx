@@ -20,6 +20,7 @@ import { MedicalRecord, Prescription, LabOrder, Patient } from '../../types';
 import { exportEMRToCSV, exportEMRToJSON, exportEMRToText, exportEMRToHTML, downloadFile } from '../../utils/emrExport';
 import { DuplicateDetection } from '../Common/DuplicateDetection';
 import { useToast } from '../../context/ToastContext';
+import { validateForm } from '../../utils/formValidation';
 
 interface InternalMedicineEMRFormProps {
   patientId: string;
@@ -62,6 +63,8 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
   const [duplicateCheck, setDuplicateCheck] = useState<any>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showGlobalError, setShowGlobalError] = useState(false);
 
   // Load triage vital signs when component mounts
   useEffect(() => {
@@ -122,6 +125,22 @@ export function InternalMedicineEMRForm({ patientId, record, onSave, onCancel }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    const validationSchema = {
+      chiefComplaint: { required: true, minLength: 5, message: 'Chief complaint is required (minimum 5 characters)' },
+      historyOfPresentIllness: { required: true, minLength: 10, message: 'History of present illness is required (minimum 10 characters)' },
+      physicalExamination: { required: true, minLength: 10, message: 'Physical examination is required (minimum 10 characters)' },
+      assessment: { required: true, minLength: 5, message: 'Assessment is required (minimum 5 characters)' },
+      plan: { required: true, minLength: 5, message: 'Plan is required (minimum 5 characters)' }
+    };
+
+    const validation = validateForm(medicalRecord, validationSchema);
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      setShowGlobalError(true);
+      return;
+    }
     
     // Check for duplicates before submitting
     if (!record && duplicateCheck?.isDuplicate && !allowDuplicate) {
