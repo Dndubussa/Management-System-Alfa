@@ -5,6 +5,7 @@ import { Patient } from '../../types';
 import InsuranceValidation from '../Receptionist/InsuranceValidation';
 import { DuplicateDetection } from '../Common/DuplicateDetection';
 import { useToast } from '../../context/ToastContext';
+import { validateForm, commonSchemas } from '../../utils/formValidation';
 
 interface PatientFormProps {
   patient?: Patient;
@@ -41,6 +42,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
   const [registeredPatient, setRegisteredPatient] = useState<Patient | null>(null);
   const [duplicateCheck, setDuplicateCheck] = useState<any>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Helper function to calculate age from date of birth
   function calculateAge(dateOfBirth: string): string {
@@ -79,6 +81,24 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form before submission
+    const validationSchema = {
+      name: { required: true, minLength: 2, message: 'Patient name is required' },
+      age: { required: true, min: 0, max: 150, message: 'Valid age is required' },
+      phone: { required: true, pattern: /^[\+]?[0-9\s\-\(\)]{10,15}$/, message: 'Valid phone number is required' },
+      address: { required: true, minLength: 5, message: 'Address is required' },
+      emergencyContactName: { required: true, minLength: 2, message: 'Emergency contact name is required' },
+      emergencyContactPhone: { required: true, pattern: /^[\+]?[0-9\s\-\(\)]{10,15}$/, message: 'Emergency contact phone is required' },
+      emergencyContactRelationship: { required: true, message: 'Emergency contact relationship is required' }
+    };
+
+    const validation = validateForm(formData, validationSchema);
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      showError('Validation Error', 'Please fill in all required fields correctly');
+      return;
+    }
+    
     // Check for duplicates before submitting
     if (!patient && duplicateCheck?.isDuplicate && !allowDuplicate) {
       showWarning('Duplicate Patient Found', 'Please review the duplicate detection results before proceeding.');
@@ -87,6 +107,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
     
     setIsSubmitting(true);
     setError('');
+    setValidationErrors({});
 
     try {
       // Validate required fields
@@ -326,8 +347,14 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
               value={formData.name}
               onChange={handleChange}
               placeholder="Enter patient's full name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 placeholder-gray-500 ${
+                validationErrors.name ? 'border-red-500' : 'border-gray-300'
+              }`}
+              disabled={isSubmitting}
             />
+            {validationErrors.name && (
+              <p className="text-red-500 text-sm mt-1">{validationErrors.name}</p>
+            )}
           </div>
 
           {/* Age and Gender Row */}
