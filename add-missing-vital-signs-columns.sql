@@ -1,0 +1,63 @@
+-- =====================================================
+-- ADD MISSING COLUMNS TO VITAL SIGNS TABLE
+-- =====================================================
+
+-- Add missing columns to existing vital_signs table
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS temperature DECIMAL(4,1);
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS pulse INTEGER;
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS respiratory_rate INTEGER;
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS blood_pressure_systolic INTEGER;
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS blood_pressure_diastolic INTEGER;
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS height DECIMAL(5,2);
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS weight DECIMAL(5,2);
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS bmi DECIMAL(4,1);
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS muac DECIMAL(4,1);
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS oxygen_saturation INTEGER;
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS pain_level INTEGER;
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS urgency VARCHAR(20) DEFAULT 'normal';
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS notes TEXT;
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS recorded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+ALTER TABLE vital_signs 
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+-- Verify the columns were added
+SELECT 
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'vital_signs' 
+  AND table_schema = 'public'
+ORDER BY ordinal_position;
