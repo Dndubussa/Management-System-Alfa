@@ -1,57 +1,76 @@
-# 🔧 Vercel Environment Variables Setup
+# 🔐 Vercel Environment Variables Setup Guide
+
+## Security Best Practices
+
+For security reasons, we should never expose the Supabase service role key to the frontend. Here's how to properly configure environment variables for Vercel deployment:
 
 ## Required Environment Variables
 
-You need to set these environment variables in your Vercel dashboard:
+### 1. Frontend Variables (Public)
+These variables are safe to expose to the frontend:
 
-### 1. Go to Vercel Dashboard
-- Navigate to your project
-- Go to **Settings** > **Environment Variables**
-
-### 2. Add These Variables
-
-#### For Serverless Functions (Backend):
 ```
-SUPABASE_URL = https://your-project-id.supabase.co
-SUPABASE_SERVICE_ROLE_KEY = your-service-role-key-here
+VITE_SUPABASE_URL=your-supabase-project-url
+VITE_SUPABASE_KEY=your-anon-key
 ```
 
-#### For Frontend (Client-side):
+### 2. Backend Variables (Server-side Only)
+These variables should ONLY be available on the server-side:
+
 ```
-VITE_SUPABASE_URL = https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY = your-anon-key-here
+SUPABASE_URL=your-supabase-project-url
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### 3. Get Your Supabase Credentials
+## Vercel Dashboard Configuration
 
-1. **Go to your Supabase project dashboard**
-2. **Settings** > **API**
-3. **Copy the values:**
-   - **Project URL** → `SUPABASE_URL` and `VITE_SUPABASE_URL`
-   - **anon public** → `VITE_SUPABASE_ANON_KEY`
-   - **service_role secret** → `SUPABASE_SERVICE_ROLE_KEY`
+1. Go to your Vercel project dashboard
+2. Navigate to Settings → Environment Variables
+3. Add the following variables:
 
-### 4. Deploy After Setting Variables
+| Variable Name | Value | Environment |
+|---------------|-------|-------------|
+| `VITE_SUPABASE_URL` | Your Supabase project URL | All |
+| `VITE_SUPABASE_KEY` | Your Supabase anon key | All |
+| `SUPABASE_URL` | Your Supabase project URL | All |
+| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase service role key | Production & Preview Only |
 
-After adding the environment variables:
-1. **Redeploy your project** in Vercel
-2. **Test the vital signs form**
-3. **Check Vercel function logs** for any errors
+## Why This Approach?
+
+1. **Security**: The service role key has full access to your database and should never be exposed to the frontend
+2. **Functionality**: Serverless functions need the service role key to perform backend operations
+3. **Separation**: Frontend uses anon key for limited, user-authenticated access
+4. **Flexibility**: Backend operations use service role key for full access when needed
+
+## Environment Variable Availability
+
+- **Development**: Both frontend and backend variables available
+- **Preview**: Both frontend and backend variables available
+- **Production**: Both frontend and backend variables available
+
+## Testing Your Configuration
+
+After setting up the environment variables:
+
+1. Redeploy your application
+2. Test the vital signs form
+3. Check Vercel function logs for any errors
 
 ## Troubleshooting
 
-### If you still get HTML responses:
-1. **Check Vercel function logs** in the dashboard
-2. **Verify environment variables** are set correctly
-3. **Ensure the function is deployed** (check Functions tab)
+### Issue: "Missing Supabase credentials"
+**Solution**: Ensure all required environment variables are set in Vercel dashboard
 
-### Common Issues:
-- **Missing SUPABASE_SERVICE_ROLE_KEY** → Functions can't write to database
-- **Wrong SUPABASE_URL** → Functions can't connect to database
-- **Missing VITE_ variables** → Frontend can't connect to Supabase
+### Issue: "Supabase error: permission denied"
+**Solution**: The service role key is not properly configured for backend operations
 
-## Success Indicators:
-- ✅ API calls return JSON responses
-- ✅ No more "SyntaxError" messages
-- ✅ Vital signs save successfully
-- ✅ Vercel function logs show successful database operations
+### Issue: Functions not deploying
+**Solution**: Check that your API routes follow the correct Vercel function structure
+
+## Need Help?
+
+If you're still experiencing issues:
+1. Check Vercel function logs for specific error messages
+2. Verify your Supabase project is active and accessible
+3. Confirm all environment variables are correctly set
+4. Ensure your database RLS policies are properly configured

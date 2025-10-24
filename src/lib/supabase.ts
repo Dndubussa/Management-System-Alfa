@@ -21,14 +21,36 @@ export function getSupabaseClient() {
 export function getSupabaseServiceClient() {
   if (!supabaseServiceInstance) {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+    // Always use the service role key from environment variables for server-side operations
+    // This should only be available on the server-side, not in the browser
+    const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     
-    // In production (Vercel), use the anon key instead of service role key for security
-    const isProduction = import.meta.env.PROD;
-    const keyToUse = isProduction ? import.meta.env.VITE_SUPABASE_KEY : supabaseServiceKey;
-    
-    if (!supabaseUrl || !keyToUse) {
-      throw new Error(`Missing Supabase ${isProduction ? 'anon' : 'service role'} key`);
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.warn('Missing Supabase service role key - falling back to anon key for limited functionality');
+      const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase environment variables');
+      }
+      
+      // Suppress the multiple GoTrueClient warning for service role client
+      const originalWarn = console.warn;
+      console.warn = (...args) => {
+        if (args[0]?.includes?.('Multiple GoTrueClient instances')) {
+          return; // Suppress this specific warning
+        }
+        originalWarn.apply(console, args);
+      };
+      
+      supabaseServiceInstance = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+      
+      // Restore original console.warn
+      console.warn = originalWarn;
+      return supabaseServiceInstance;
     }
     
     // Suppress the multiple GoTrueClient warning for service role client
@@ -40,7 +62,7 @@ export function getSupabaseServiceClient() {
       originalWarn.apply(console, args);
     };
     
-    supabaseServiceInstance = createClient(supabaseUrl, keyToUse, {
+    supabaseServiceInstance = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false

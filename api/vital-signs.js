@@ -18,20 +18,23 @@ export default async function handler(req, res) {
     const { createClient } = await import('@supabase/supabase-js');
     
     // Use server-side environment variables for Vercel functions
-    // These should be configured in Vercel dashboard or .env file
+    // These should be configured in Vercel dashboard
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    // Use service role key only on the server side
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase credentials');
       console.error('SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
-      console.error('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING');
-      console.error('VITE_SUPABASE_SERVICE_ROLE_KEY:', process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING');
-      console.error('VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
-      return res.status(500).json({ error: 'Missing Supabase credentials. Please check server configuration.' });
+      console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'SET' : 'MISSING');
+      return res.status(500).json({ 
+        error: 'Missing Supabase credentials. Please check server configuration.',
+        details: 'Server-side service role key is required for backend operations.'
+      });
     }
     
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Create Supabase client with service role key for full access
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     const vitalData = {
       patient_id: req.body.patientId,
