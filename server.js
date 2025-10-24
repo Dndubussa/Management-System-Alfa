@@ -2597,6 +2597,376 @@ app.delete('/api/insurance-providers/:id', async (req, res) => {
 });
 
 // API health/info root
+// =============================================
+// OPHTHALMOLOGY API ENDPOINTS
+// =============================================
+
+// Get all ophthalmology records
+app.get('/api/ophthalmology-records', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ophthalmology_records')
+      .select('*')
+      .order('visit_date', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get ophthalmology record by ID
+app.get('/api/ophthalmology-records/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ophthalmology_records')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create new ophthalmology record
+app.post('/api/ophthalmology-records', async (req, res) => {
+  try {
+    const recordData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('ophthalmology_records')
+      .insert([recordData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update ophthalmology record
+app.put('/api/ophthalmology-records/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ophthalmology_records')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get visual acuity tests for a patient
+app.get('/api/visual-acuity-tests/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('visual_acuity_tests')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('test_date', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create visual acuity test
+app.post('/api/visual-acuity-tests', async (req, res) => {
+  try {
+    const testData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('visual_acuity_tests')
+      .insert([testData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get refraction data for a patient
+app.get('/api/refraction-data/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('refraction_data')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('test_date', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create refraction data
+app.post('/api/refraction-data', async (req, res) => {
+  try {
+    const refractionData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('refraction_data')
+      .insert([refractionData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get intraocular pressure for a patient
+app.get('/api/intraocular-pressure/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('intraocular_pressure')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('test_date', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create intraocular pressure record
+app.post('/api/intraocular-pressure', async (req, res) => {
+  try {
+    const pressureData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('intraocular_pressure')
+      .insert([pressureData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get ophthalmology findings for a patient
+app.get('/api/ophthalmology-findings/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ophthalmology_findings')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('created_at', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create ophthalmology finding
+app.post('/api/ophthalmology-findings', async (req, res) => {
+  try {
+    const findingData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('ophthalmology_findings')
+      .insert([findingData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get ophthalmology images for a patient
+app.get('/api/ophthalmology-images/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('ophthalmology_images')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('created_at', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create ophthalmology image
+app.post('/api/ophthalmology-images', async (req, res) => {
+  try {
+    const imageData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('ophthalmology_images')
+      .insert([imageData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================================
+// PHYSICAL THERAPY API ENDPOINTS
+// =============================================
+
+// Get all physical therapy records
+app.get('/api/physical-therapy-records', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('physical_therapy_records')
+      .select('*')
+      .order('visit_date', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get physical therapy record by ID
+app.get('/api/physical-therapy-records/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('physical_therapy_records')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create new physical therapy record
+app.post('/api/physical-therapy-records', async (req, res) => {
+  try {
+    const recordData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('physical_therapy_records')
+      .insert([recordData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update physical therapy record
+app.put('/api/physical-therapy-records/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('physical_therapy_records')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get therapy plans for a patient
+app.get('/api/therapy-plans/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('therapy_plans')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('start_date', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create therapy plan
+app.post('/api/therapy-plans', async (req, res) => {
+  try {
+    const planData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('therapy_plans')
+      .insert([planData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get therapy sessions for a patient
+app.get('/api/therapy-sessions/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('therapy_sessions')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('session_date', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create therapy session
+app.post('/api/therapy-sessions', async (req, res) => {
+  try {
+    const sessionData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('therapy_sessions')
+      .insert([sessionData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get assessment data for a patient
+app.get('/api/assessment-data/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('assessment_data')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('assessment_date', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create assessment data
+app.post('/api/assessment-data', async (req, res) => {
+  try {
+    const assessmentData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('assessment_data')
+      .insert([assessmentData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get exercise prescriptions for a patient
+app.get('/api/exercise-prescriptions/:patientId', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('exercise_prescriptions')
+      .select('*')
+      .eq('patient_id', req.params.patientId)
+      .order('created_at', { ascending: false });
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create exercise prescription
+app.post('/api/exercise-prescriptions', async (req, res) => {
+  try {
+    const prescriptionData = convertCamelToSnake(req.body);
+    const { data, error } = await supabase
+      .from('exercise_prescriptions')
+      .insert([prescriptionData])
+      .select();
+    handleSupabaseResponse(data, error, res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api', (req, res) => {
   res.json({ status: 'ok', name: 'Alfa Hospital API', version: 1 });
 });

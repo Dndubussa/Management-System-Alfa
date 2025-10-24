@@ -1,0 +1,233 @@
+NHIF INTEGRATION FLOW DIAGRAM
+================================
+
+PHASE 1: PATIENT ARRIVAL & VERIFICATION
+========================================
+
+Patient Arrives
+       ↓
+   Reception Desk
+       ↓
+  NHIF Card Presented
+       ↓
+  Enter NHIF Number
+       ↓
+  HMS → NHIF API Call
+       ↓
+  NHIF Response:
+  • Member Name
+  • Member ID  
+  • Facility Eligibility
+  • Benefit Plan
+  • Coverage Limit
+  • Remaining Balance
+       ↓
+  Store Verification
+       ↓
+  Display Member Details
+
+PHASE 2: DOCTOR CONSULTATION & TREATMENT
+=========================================
+
+Doctor Consultation
+       ↓
+  Services Selection
+       ↓
+  NHIF Coverage Check
+       ↓
+  Diagnosis Entry
+       ↓
+  ICD-10 Validation
+       ↓
+  Drug Prescription
+       ↓
+  NHIF Formulary Check
+       ↓
+  Cost Calculation:
+  • Total Amount
+  • NHIF Coverage
+  • Patient Copay
+
+PHASE 3: CLAIM GENERATION
+=========================
+
+Compile Services
+       ↓
+  Generate Claim ID
+       ↓
+  Create Digital Claim File
+       ↓
+  JSON/XML Format
+       ↓
+  Include Attachments
+       ↓
+  Validate Claim Data
+
+PHASE 4: CLAIM SUBMISSION
+=========================
+
+Submit to NHIF API
+       ↓
+  NHIF Validation:
+  • Member Eligibility ✓
+  • Service Codes ✓
+  • Benefit Limits ✓
+  • Prior Authorization ✓
+       ↓
+  NHIF Response:
+  • Accepted
+  • Pending
+  • Rejected
+
+PHASE 5: CLAIM PROCESSING
+=========================
+
+If ACCEPTED:
+  • Process Payment
+  • Update Status
+  • Notify Patient
+  • Generate Receipt
+
+If PENDING:
+  • Schedule Follow-up
+  • Monitor Status
+  • Send Reminders
+
+If REJECTED:
+  • Log Reasons
+  • Notify Patient
+  • Suggest Alternatives
+  • Resubmit if Possible
+
+PHASE 6: STATUS TRACKING
+========================
+
+Automatic Status Sync
+       ↓
+  Check NHIF API
+       ↓
+  Update Local Database
+       ↓
+  Real-time Notifications
+       ↓
+  Payment Processing
+       ↓
+  Final Settlement
+
+TECHNICAL COMPONENTS
+====================
+
+Frontend:
+• NHIF Verification Form
+• Claim Submission Interface
+• Status Tracking Dashboard
+• Patient Notifications
+
+Backend:
+• NHIF API Integration
+• Claim Validation
+• Status Synchronization
+• Payment Processing
+
+Database:
+• nhif_verifications
+• nhif_claims
+• nhif_service_tariffs
+• nhif_drug_formulary
+
+APIs:
+• POST /api/nhif/verify-member
+• POST /api/nhif/submit-claim
+• GET /api/nhif/claim-status/:id
+• GET /api/nhif/service-tariffs
+• GET /api/nhif/drug-formulary
+
+BENEFITS
+========
+
+For Patients:
+✅ Instant NHIF verification
+✅ Transparent cost breakdown
+✅ Real-time status updates
+✅ Reduced paperwork
+
+For Hospital:
+✅ Automated claim processing
+✅ Faster NHIF payments
+✅ Reduced manual errors
+✅ Better financial tracking
+
+For NHIF:
+✅ Standardized data format
+✅ Automated validation
+✅ Fraud prevention
+✅ Improved analytics
+
+INTEGRATION POINTS
+==================
+
+1. Patient Registration
+   → NHIF verification
+   → Member details storage
+
+2. Service Selection
+   → NHIF tariff lookup
+   → Coverage calculation
+
+3. Diagnosis Entry
+   → ICD-10 validation
+   → NHIF category check
+
+4. Drug Prescription
+   → Formulary lookup
+   → Copay calculation
+
+5. Billing
+   → Claim generation
+   → NHIF submission
+
+6. Payment
+   → Status tracking
+   → Settlement processing
+
+ERROR HANDLING
+==============
+
+Verification Errors:
+• Invalid NHIF number
+• Inactive membership
+• Expired coverage
+• Facility not eligible
+
+Claim Errors:
+• Service not covered
+• Exceeds benefit limit
+• Missing prior auth
+• Invalid codes
+
+Processing Errors:
+• API timeout
+• Network issues
+• Data validation
+• System errors
+
+MONITORING & ALERTS
+===================
+
+Real-time Monitoring:
+• API response times
+• Claim success rates
+• Error frequencies
+• Payment delays
+
+Automated Alerts:
+• Failed verifications
+• Rejected claims
+• Processing delays
+• System errors
+
+Reporting:
+• Daily claim summaries
+• Monthly NHIF reports
+• Error analysis
+• Performance metrics
