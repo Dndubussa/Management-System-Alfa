@@ -2191,7 +2191,7 @@ export const supabaseService = {
 
       const { data, error } = await supabase
         .from('patient_queue')
-        .insert([queueRecord])
+        .insert(queueRecord)
         .select()
         .single();
       
