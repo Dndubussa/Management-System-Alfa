@@ -185,15 +185,20 @@ export function NurseTriageDropdown() {
       });
       setSelectedPatientId('');
       
-      // Show success notification
-      addNotification({
-        userIds: [user.id],
-        type: 'success',
-        title: 'Triage Completed',
-        message: `Vital signs recorded successfully for ${selectedPatient.firstName} ${selectedPatient.lastName}`,
-        isRead: false,
-        patientId: selectedPatientId
-      });
+      // Show success notification (optional - don't fail if notification fails)
+      try {
+        addNotification({
+          userIds: [user.id],
+          type: 'success',
+          title: 'Triage Completed',
+          message: `Vital signs recorded successfully for ${selectedPatient.firstName} ${selectedPatient.lastName}`,
+          isRead: false,
+          patientId: selectedPatientId
+        });
+      } catch (notificationError) {
+        console.warn('Notification failed (non-critical):', notificationError);
+        // Don't fail the save if notification fails
+      }
 
     } catch (error: any) {
       console.error('Error saving vital signs:', error);
