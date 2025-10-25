@@ -85,7 +85,7 @@ import { OphthalmologistPatientQueue } from './components/Ophthalmologist/Ophtha
 // Nurse Components (to be created)
 import { NurseDashboard } from './components/Nurse/NurseDashboard';
 import { TriageQueue } from './components/Nurse/TriageQueue';
-import { NurseTriageVitals } from './components/Nurse/NurseTriageVitals';
+import { NurseTriageDropdown } from './components/Nurse/NurseTriageDropdown';
 import { NurseCareNotes } from './components/Nurse/NurseCareNotes';
 import { NurseMedicationAdmin } from './components/Nurse/NurseMedicationAdmin';
 import { NurseProcedures } from './components/Nurse/NurseProcedures';
@@ -563,9 +563,9 @@ function AppContent() {
             
             {/* Nurse Routes */}
             <Route path="/nurse-dashboard" element={<NurseDashboard />} />
-            <Route path="/triage-queue" element={<TriageQueue />} />
-            <Route path="/nurse-triage" element={<NurseTriageVitals />} />
-            <Route path="/nurse-triage/:patientId" element={<NurseTriageVitals />} />
+            <Route path="/triage-queue" element={<NurseTriageDropdown />} />
+            <Route path="/nurse-triage" element={<NurseTriageDropdown />} />
+            <Route path="/nurse-triage/:patientId" element={<NurseTriageDropdown />} />
             <Route path="/nurse-notes" element={<NurseCareNotes />} />
             <Route path="/nurse-mar" element={<NurseMedicationAdmin />} />
             <Route path="/nurse-procedures" element={<NurseProcedures />} />

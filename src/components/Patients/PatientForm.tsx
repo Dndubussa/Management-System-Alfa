@@ -183,8 +183,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
           setRegisteredPatient(newPatient);
           setShowInsuranceValidation(true);
         } else if (newPatient && newPatient.id) {
-          // For cash patients, directly add to triage queue
-          await addPatientToTriageQueue(newPatient, firstName, lastName);
+          // For cash patients, show success immediately (no queue needed)
           setShowSuccessState(true);
           setTimeout(() => {
             setShowSuccessState(false);
@@ -259,8 +258,7 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
   const handleInsuranceValidationComplete = async (isValid: boolean, validationData?: any) => {
     if (registeredPatient) {
       if (isValid) {
-        // Insurance validated successfully, add to triage queue
-        await addPatientToTriageQueue(registeredPatient, registeredPatient.firstName, registeredPatient.lastName);
+        // Insurance validated successfully, show success (no queue needed)
         setShowSuccessState(true);
         setTimeout(() => {
           setShowSuccessState(false);
@@ -268,7 +266,6 @@ export function PatientForm({ patient, onSave, onCancel }: PatientFormProps) {
         }, 2000);
       } else {
         // Insurance validation failed, but continue with cash payment
-        await addPatientToTriageQueue(registeredPatient, registeredPatient.firstName, registeredPatient.lastName);
         setShowSuccessState(true);
         setTimeout(() => {
           setShowSuccessState(false);
