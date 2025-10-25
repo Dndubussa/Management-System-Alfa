@@ -2070,7 +2070,7 @@ export const supabaseService = {
       
       const { data, error } = await supabase
         .from('vital_signs')
-        .insert([vitalSignsData])
+        .insert(vitalSignsData)
         .select()
         .single();
       

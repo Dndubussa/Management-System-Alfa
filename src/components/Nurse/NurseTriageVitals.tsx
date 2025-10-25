@@ -169,6 +169,11 @@ export function NurseTriageVitals() {
       // Use direct Supabase service for optimal performance
       console.log('🔄 Using direct Supabase service...');
       const result = await supabaseService.createVitalSigns(vitalData);
+      
+      if (!result) {
+        throw new Error('Failed to save vital signs - no data returned');
+      }
+      
       console.log('✅ Vital signs saved successfully via Supabase service:', result);
       
       // Update queue status to triage completed
