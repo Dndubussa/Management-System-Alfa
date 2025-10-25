@@ -180,8 +180,7 @@ export function Sidebar({ onTabChange }: SidebarProps) {
       case 'nurse':
         return [
           { id: 'nurse-dashboard', label: 'Dashboard', icon: BarChart3, path: '/nurse-dashboard' },
-          { id: 'triage-queue', label: 'Triage Queue', icon: ListOrdered, path: '/triage-queue' },
-          { id: 'nurse-triage', label: 'Triage & Vitals', icon: Activity, path: '/nurse-triage' },
+          { id: 'nurse-triage', label: 'Patient Triage', icon: Activity, path: '/nurse-triage' },
           { id: 'nurse-notes', label: 'Patient Care Notes', icon: FileText, path: '/nurse-notes' },
           { id: 'nurse-mar', label: 'Medication Admin', icon: PieChart, path: '/nurse-mar' },
           { id: 'nurse-procedures', label: 'Procedures & Immunizations', icon: CheckSquare, path: '/nurse-procedures' },
