@@ -178,6 +178,39 @@ export function NurseTriageDropdown() {
       } catch (statusError) {
         console.warn('Could not update patient workflow status:', statusError);
       }
+
+      // Add patient to doctor's queue for consultation
+      try {
+        const { supabaseService } = await import('../../services/supabaseService');
+        const selectedPatient = patients.find(p => p.id === selectedPatientId);
+        if (selectedPatient && selectedPatient.assignedDoctorId) {
+          await supabaseService.addToQueue({
+            patientId: selectedPatientId,
+            assignedDoctorId: selectedPatient.assignedDoctorId,
+            status: 'waiting',
+            workflowStage: 'doctor',
+            priority: form.urgency || 'normal',
+            notes: `Triage completed - ${form.notes || 'No additional notes'}`,
+            triageData: {
+              temperature: form.temperature,
+              pulse: form.pulse,
+              respiratoryRate: form.respiratoryRate,
+              bloodPressure: form.bloodPressure,
+              height: form.height,
+              weight: form.weight,
+              oxygenSaturation: form.oxygenSaturation,
+              muac: form.muac,
+              urgency: form.urgency,
+              notes: form.notes
+            }
+          });
+          console.log('✅ Patient added to doctor queue for consultation');
+        } else {
+          console.warn('⚠️ No assigned doctor found for patient, cannot add to queue');
+        }
+      } catch (queueError) {
+        console.warn('Could not add patient to doctor queue:', queueError);
+      }
       
       // Mark patient as processed so they don't appear in dropdown anymore
       setProcessedPatients(prev => new Set([...prev, selectedPatientId]));

@@ -86,13 +86,12 @@ export function DoctorQueue() {
   };
 
   // Filter patients ready for doctor consultation and assigned to this doctor
-  // Only show patients who have completed triage (have vital signs recorded)
+  // Show patients who are either in the queue OR have workflow status 'with_doctor'
   const doctorPatients = patientQueue.filter(item => 
     item && 
     item.status === 'waiting' && 
     item.workflowStage === 'doctor' &&
-    item.assignedDoctorId === user?.id &&
-    item.vital_signs // Only show patients who have completed triage (have vital signs)
+    item.assignedDoctorId === user?.id
   );
 
   if (loading) {
