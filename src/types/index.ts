@@ -30,6 +30,9 @@ export interface Patient {
   assignedDoctorName?: string;
   assignmentDate?: string;
   assignmentReason?: string;
+  // Workflow status fields
+  workflowStatus?: 'registered' | 'ready_for_triage' | 'triaged' | 'with_doctor' | 'completed';
+  triageCompletedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

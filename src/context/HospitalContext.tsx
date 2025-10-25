@@ -770,6 +770,19 @@ export function HospitalProvider({ children }: { children: React.ReactNode }) {
       } else {
         // For receptionists and other roles, add immediately
         setPatients(prev => [...prev, newPatient]);
+        
+        // If created by receptionist, set status to ready for triage
+        if (user && user.role === 'receptionist') {
+          try {
+            await service.updatePatient(newPatient.id, { 
+              workflowStatus: 'ready_for_triage',
+              assignedDoctorId: patientData.assignedDoctorId 
+            });
+            console.log('✅ Patient marked as ready for triage');
+          } catch (statusError) {
+            console.warn('Could not update patient workflow status:', statusError);
+          }
+        }
       }
     } catch (err) {
       console.error('Error creating patient:', err);

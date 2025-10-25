@@ -27,13 +27,12 @@ export function NurseTriageDropdown() {
   const [processedPatients, setProcessedPatients] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Filter patients who haven't been triaged today
-    const today = new Date().toISOString().split('T')[0];
-    const untriagedPatients = patients.filter(patient => {
-      // For now, show all patients - in a real system, you'd check if they have vital signs for today
-      return !processedPatients.has(patient.id);
+    // Filter patients who are ready for triage (processed by receptionist) and haven't been triaged yet
+    const readyForTriagePatients = patients.filter(patient => {
+      // Only show patients who are ready for triage and haven't been processed yet
+      return patient.workflowStatus === 'ready_for_triage' && !processedPatients.has(patient.id);
     });
-    setAvailablePatients(untriagedPatients);
+    setAvailablePatients(readyForTriagePatients);
   }, [patients, processedPatients]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -167,6 +166,18 @@ export function NurseTriageDropdown() {
       }
       
       console.log('✅ Vital signs saved successfully via Supabase service:', result);
+      
+      // Update patient workflow status to 'with_doctor' so doctor can see them in EMR
+      try {
+        const { supabaseService } = await import('../../services/supabaseService');
+        await supabaseService.updatePatient(selectedPatientId, {
+          workflowStatus: 'with_doctor',
+          triageCompletedAt: new Date().toISOString()
+        });
+        console.log('✅ Patient workflow status updated to with_doctor');
+      } catch (statusError) {
+        console.warn('Could not update patient workflow status:', statusError);
+      }
       
       // Mark patient as processed so they don't appear in dropdown anymore
       setProcessedPatients(prev => new Set([...prev, selectedPatientId]));
